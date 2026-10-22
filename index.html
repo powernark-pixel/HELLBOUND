@@ -1,164 +1,395 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>HELLBOUND: Descent of the Knight</title>
 <script>addEventListener('error',e=>{const d=document.getElementById('err');if(d){d.style.display='block';d.textContent='HELLBOUND hit an error:\n'+e.message+'\nLine '+e.lineno+', column '+e.colno+'\n\nSend this text to the developer.'}});</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@400;700&family=Cinzel:wght@600;800&family=Pirata+One&family=Silkscreen&display=swap" rel="stylesheet">
 <style>
-html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:Consolas,"Courier New",monospace;color:#f2e2d0;user-select:none}
-/* PIXEL PIPELINE: the game draws to a 640x360 canvas. The script scales it by a whole number,
-   and CSS keeps the pixels sharp (pixelated). Never let the browser blur it. */
+/* ===================================================================
+   GOTHIC UI. Every size is in GAME PIXELS: calc(var(--u)*N) = N game px.
+   --u is set by fitCanvas() to the canvas scale, so UI pixels line up
+   with the pixel art. Frames are PNG border-images from assets/ui/.
+   =================================================================== */
+:root{
+  --u:2px;
+  --ink:#0a0608; --stone:#120b0f; --iron:#45414e;
+  --blood:#8f1a1f; --blood-hi:#c4302c; --gold:#b48a34; --gold-hi:#e0bf68; --gold-lo:#7a5a1c;
+  --bone:#d6cab2; --bone-lo:#a89a84; --ash:#8a8494;
+  --f-title:'Pirata One','UnifrakturMaguntia',Georgia,serif;
+  --f-label:'Cinzel',Georgia,serif;
+  --f-body:'Alegreya',Georgia,serif;
+  --f-pixel:'Silkscreen',Consolas,monospace;
+}
+html,body{margin:0;height:100%;background:#000;overflow:hidden;color:var(--bone);user-select:none;font-family:var(--f-body)}
 canvas{display:block;position:fixed;image-rendering:pixelated;image-rendering:crisp-edges}
-#hud{position:fixed;left:12px;top:12px;width:300px;pointer-events:none;text-shadow:0 0 6px #ff7a2b}
-.bar{height:12px;background:#1a0f14;border:1px solid #533;margin:4px 0;border-radius:3px;overflow:hidden}
-.bar>div{height:100%;transition:width .15s}
-#tr{position:fixed;right:12px;top:12px;text-align:right;pointer-events:none;text-shadow:0 0 8px #ff3ec8;font-size:14px;line-height:1.5}
-#log{position:fixed;left:12px;bottom:12px;width:480px;font-size:13px;pointer-events:none}
-#log div{transition:opacity 1s;text-shadow:0 0 6px currentColor}
-#banner{position:fixed;left:0;right:0;top:26%;text-align:center;font-size:52px;font-weight:bold;pointer-events:none;opacity:0;transition:opacity .4s;letter-spacing:3px}
-#help{position:fixed;right:12px;bottom:12px;font-size:11px;opacity:.6;text-align:right;pointer-events:none;max-width:460px}
-#inv{position:fixed;inset:40px;background:rgba(14,6,10,.96);border:1px solid #6a3a2a;border-radius:10px;padding:16px;display:none;overflow:auto;box-shadow:0 0 60px #ff5a1a66;gap:16px}
-#inv.open{display:flex}
-.col{flex:1;min-width:0}
-.slots{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap}
-.slot{width:200px;min-height:120px;border:1px dashed #654;border-radius:8px;padding:8px;font-size:12px;line-height:1.5}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
-.card{border:2px solid;border-radius:8px;padding:8px;font-size:12px;cursor:pointer;background:#120810;min-height:70px;line-height:1.5}
-.card:hover{transform:translateY(-2px)}
-.card b{display:block;margin-bottom:3px;font-size:13px}
-.card small{color:#c9a99a}
-.statsbox{width:260px;font-size:13px;line-height:1.6;background:#120810;padding:10px;border-radius:8px;border:1px solid #422;height:fit-content}
-button{background:#3a1a1a;color:#f2e2d0;border:1px solid #8a4a3a;padding:4px 8px;border-radius:4px;cursor:pointer;font-family:inherit;margin-top:6px;font-size:12px}
-button:hover{background:#552626}
-h3{margin:6px 0}
-/* PASSIVE TREE overlay (replaces the old boon picker). Open with T. */
-#tree{position:fixed;inset:0;background:rgba(6,3,8,.94);display:none;z-index:40}
-#tree.open{display:block}
-#treeArea{position:absolute;left:50%;top:50%;width:760px;height:520px;margin:-260px 0 0 -380px}
-#treeLines{position:absolute;left:0;top:0;width:760px;height:520px;pointer-events:none}
-#treeNodes{position:absolute;left:0;top:0;width:760px;height:520px}
-.tn{position:absolute;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;border:2px solid #553;background:#120810;font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#d9b3ff}
-.tn.root{width:50px;height:50px;margin:-25px 0 0 -25px;border-color:#ffb347;color:#ffb347}
-.tn.on{border-color:#b46bff;background:#3a1a5a;box-shadow:0 0 14px #b46bff}
-.tn.av{border-color:#ffb347;animation:pulse 1s infinite alternate}
-@keyframes pulse{to{box-shadow:0 0 16px #ffb347}}
-#treeInfo{position:absolute;top:-36px;left:0;right:0;text-align:center;color:#d9b3ff;font-size:14px}
+#ui{position:fixed;pointer-events:none;font-size:calc(var(--u)*7);line-height:1.25;overflow:hidden}
+#ui .hit{pointer-events:auto}
+.px{image-rendering:pixelated;image-rendering:crisp-edges}
+
+/* Frames */
+.frame{border-style:solid;border-color:#3a2a2a;border-width:calc(var(--u)*10);
+  border-image:url(assets/ui/panel.png) 10 fill / calc(var(--u)*10) round;image-rendering:pixelated;background-clip:padding-box}
+.slotf{border-style:solid;border-color:#2a2228;border-width:calc(var(--u)*5);
+  border-image:url(assets/ui/slot.png) 5 fill / calc(var(--u)*5) stretch;image-rendering:pixelated}
+.tipf{border-style:solid;border-color:#5a4014;border-width:calc(var(--u)*4);
+  border-image:url(assets/ui/tip.png) 4 fill / calc(var(--u)*4) stretch;image-rendering:pixelated}
+
+/* Buttons */
+.gbtn{pointer-events:auto;cursor:pointer;font-family:var(--f-label);font-weight:800;letter-spacing:.06em;color:var(--gold-hi);
+  font-size:calc(var(--u)*7);padding:0 calc(var(--u)*4);min-height:calc(var(--u)*6);text-transform:uppercase;
+  border-style:solid;border-color:#5a4014;border-width:calc(var(--u)*5);background:transparent;
+  border-image:url(assets/ui/btn.png) 5 fill / calc(var(--u)*5) stretch;image-rendering:pixelated;text-shadow:0 calc(var(--u)*1) 0 #000}
+.gbtn:hover,.gbtn.sel,.gbtn:focus-visible{border-image-source:url(assets/ui/btnHot.png);color:#fff1c2;outline:none}
+.gbtn.small{font-size:calc(var(--u)*5.5);border-width:calc(var(--u)*4);padding:0 calc(var(--u)*2);min-height:0}
+.gbtn.on{border-image-source:url(assets/ui/btnHot.png);color:#fff1c2}
+/* compact text button for cards, slots and tabs */
+.mini{pointer-events:auto;cursor:pointer;font-family:var(--f-pixel);font-size:calc(var(--u)*5);line-height:1;color:var(--gold-hi);
+  background:linear-gradient(#2a1416,#1d0d10);border:calc(var(--u)*1) solid var(--gold-lo);box-shadow:inset 0 calc(var(--u)*1) 0 #4a2a20,0 calc(var(--u)*1) 0 #000;
+  padding:calc(var(--u)*2) calc(var(--u)*3);text-transform:uppercase;white-space:nowrap}
+.mini:hover,.mini.on{background:linear-gradient(#6b1218,#4a0b10);color:#fff1c2;border-color:var(--gold-hi)}
+.xbtn{position:absolute;right:calc(var(--u)*2);top:calc(var(--u)*-2);font-family:var(--f-label);font-weight:800}
+h2,h3{font-family:var(--f-title);font-weight:400;color:var(--gold-hi);margin:0;letter-spacing:.03em;text-shadow:0 0 calc(var(--u)*4) #8f1a1f,0 calc(var(--u)*1) 0 #000}
+h2{font-size:calc(var(--u)*16)}
+h3{font-size:calc(var(--u)*10);margin:calc(var(--u)*3) 0 calc(var(--u)*2)}
+.divider{height:calc(var(--u)*7);background:url(assets/ui/divider.png) center/calc(var(--u)*64) 100% no-repeat;image-rendering:pixelated;margin:calc(var(--u)*2) 0}
+.muted{color:var(--bone-lo)}
+.small{font-size:calc(var(--u)*5.5)}
+
+/* HUD */
+#hud{position:absolute;left:calc(var(--u)*8);top:calc(var(--u)*7);width:calc(var(--u)*170)}
+#hudName{font-family:var(--f-label);font-weight:800;font-size:calc(var(--u)*6.5);color:var(--gold-hi);text-shadow:0 calc(var(--u)*1) 0 #000;letter-spacing:.05em}
+.barrow{display:flex;align-items:center;gap:calc(var(--u)*3);margin-top:calc(var(--u)*1)}
+.bar{position:relative;flex:1;height:calc(var(--u)*6);border-style:solid;border-color:#5a4014;border-width:calc(var(--u)*4);
+  border-image:url(assets/ui/barFrame.png) 4 fill / calc(var(--u)*4) stretch;image-rendering:pixelated}
+.bar.thin{height:calc(var(--u)*2)}
+.bar>i{position:absolute;left:0;top:0;bottom:0;width:0;background-size:calc(var(--u)*2) 100%;background-repeat:repeat-x;image-rendering:pixelated;transition:width .15s}
+#hpb{background-image:url(assets/ui/fillHp.png);background-color:#8f1a1f}
+#hpLag{background:#e8c0a0;opacity:.55;transition:width .6s .25s!important}
+#shb{background-image:url(assets/ui/fillWard.png);background-color:#b48a34}
+#xpb{background-image:url(assets/ui/fillXp.png);background-color:#5f308f}
+.barlbl{font-family:var(--f-pixel);font-size:calc(var(--u)*5);min-width:calc(var(--u)*40);text-shadow:0 calc(var(--u)*1) 0 #000}
+#hudSub{font-family:var(--f-pixel);font-size:calc(var(--u)*5);margin-top:calc(var(--u)*2);color:var(--bone-lo);text-shadow:0 calc(var(--u)*1) 0 #000}
+#hudSub b{color:var(--gold-hi);font-weight:400}
+#circle{position:absolute;left:0;right:0;top:calc(var(--u)*6);text-align:center;font-family:var(--f-title);font-size:calc(var(--u)*11);color:#d9a066;text-shadow:0 0 calc(var(--u)*4) #000,0 calc(var(--u)*1) 0 #000}
+#tr{position:absolute;right:calc(var(--u)*8);top:calc(var(--u)*7);text-align:right;font-family:var(--f-pixel);font-size:calc(var(--u)*5);line-height:1.6;text-shadow:0 calc(var(--u)*1) 0 #000}
+#bossbar{position:absolute;left:50%;top:calc(var(--u)*22);width:calc(var(--u)*220);margin-left:calc(var(--u)*-110);display:none;text-align:center}
+#bossbar .name{font-family:var(--f-title);font-size:calc(var(--u)*9);color:#ff8a6a;text-shadow:0 0 calc(var(--u)*3) #000}
+#bossb{background-image:url(assets/ui/fillBoss.png);background-color:#7d1218}
+#log{position:absolute;left:calc(var(--u)*8);bottom:calc(var(--u)*8);width:calc(var(--u)*260);font-size:calc(var(--u)*6);text-shadow:0 calc(var(--u)*1) 0 #000,0 0 calc(var(--u)*3) #000}
+#log div{transition:opacity 1s}
+#hint{position:absolute;right:calc(var(--u)*8);bottom:calc(var(--u)*8);font-family:var(--f-pixel);font-size:calc(var(--u)*5);opacity:.65;text-align:right;text-shadow:0 calc(var(--u)*1) 0 #000}
+#banner{position:absolute;left:0;right:0;top:28%;text-align:center;font-family:var(--f-title);font-size:calc(var(--u)*30);opacity:0;transition:opacity .4s;letter-spacing:.04em}
+#banner small{display:block;font-family:var(--f-label);font-size:calc(var(--u)*7);letter-spacing:.1em;color:var(--bone);text-shadow:0 0 calc(var(--u)*3) #000}
+
+/* Overlays */
+.overlay{position:absolute;inset:0;display:none;pointer-events:auto}
+.overlay.open{display:block}
+.shade{background:rgba(5,2,4,.62)}
+.panel{position:absolute;box-sizing:border-box}
+
+/* Title */
+#title{background:transparent}
+#logo{position:absolute;left:0;right:0;top:calc(var(--u)*14);text-align:center}
+#logo .big{font-family:var(--f-title);font-size:calc(var(--u)*58);line-height:1;letter-spacing:.04em;
+  background:linear-gradient(#fff1c2 0%,#e0bf68 35%,#b48a34 60%,#6b4a17 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 calc(var(--u)*1) 0 #000) drop-shadow(0 0 calc(var(--u)*8) rgba(196,48,44,.85))}
+#logo .sub{font-family:var(--f-label);font-weight:800;font-size:calc(var(--u)*7.5);letter-spacing:.42em;color:#e8b8a0;text-shadow:0 0 calc(var(--u)*4) #000,0 calc(var(--u)*1) 0 #000;margin-top:calc(var(--u)*2)}
+#menu{position:absolute;left:calc(var(--u)*34);top:calc(var(--u)*160);display:flex;flex-direction:column;gap:calc(var(--u)*4);width:calc(var(--u)*110)}
+#menu .gbtn{font-size:calc(var(--u)*8)}
+#titleHint{position:absolute;left:0;right:0;bottom:calc(var(--u)*6);text-align:center;font-family:var(--f-pixel);font-size:calc(var(--u)*5);color:#c9a99a;opacity:.8;text-shadow:0 calc(var(--u)*1) 0 #000}
+
+/* Controls / pause */
+#controlsPanel,#pausePanel{left:50%;top:50%;transform:translate(-50%,-50%);width:calc(var(--u)*300)}
+#pausePanel{width:calc(var(--u)*170);text-align:center}
+#pausePanel .gbtn{display:block;width:100%;margin:calc(var(--u)*3) 0}
+.keys{display:grid;grid-template-columns:auto 1fr;gap:calc(var(--u)*2) calc(var(--u)*6);align-items:center;margin:calc(var(--u)*3) 0 calc(var(--u)*5)}
+.kbd{font-family:var(--f-pixel);font-size:calc(var(--u)*5.5);color:#fff1c2;background:#1d0d10;border:calc(var(--u)*1) solid var(--gold-lo);padding:0 calc(var(--u)*2);white-space:nowrap;text-align:center}
+
+/* Inventory */
+#invPanel{left:calc(var(--u)*8);top:calc(var(--u)*8);right:calc(var(--u)*8);bottom:calc(var(--u)*8);display:flex;flex-direction:column}
+#invHead{position:relative;display:flex;align-items:baseline;gap:calc(var(--u)*8);margin-bottom:calc(var(--u)*2)}
+#invBody{flex:1;min-height:0;display:flex;gap:calc(var(--u)*6)}
+#equip{width:calc(var(--u)*152);display:grid;grid-template-columns:1fr 1fr;gap:calc(var(--u)*3);align-content:start;overflow:auto}
+.eslot{position:relative;min-height:calc(var(--u)*34);box-sizing:border-box;font-size:calc(var(--u)*5.5);cursor:default}
+.eslot .lbl{display:block;font-family:var(--f-label);font-weight:800;font-size:calc(var(--u)*4.8);letter-spacing:.08em;color:var(--ash);text-transform:uppercase}
+.eslot .nm{display:block;font-weight:700;line-height:1.1;margin-top:calc(var(--u)*1)}
+.eslot .mini{display:inline-block;margin-top:calc(var(--u)*2)}
+#bag{flex:1;min-width:0;display:flex;flex-direction:column}
+#bagTools{display:flex;flex-wrap:wrap;gap:calc(var(--u)*2);align-items:center;margin-bottom:calc(var(--u)*3)}
+#bagTools .sep{flex:1}
+#bagTools label{font-family:var(--f-label);font-weight:800;font-size:calc(var(--u)*5);color:var(--ash);letter-spacing:.08em}
+#grid{flex:1;min-height:0;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(calc(var(--u)*96),1fr));grid-auto-rows:max-content;gap:calc(var(--u)*3);align-content:start;padding-right:calc(var(--u)*2)}
+.card{position:relative;box-sizing:border-box;padding:calc(var(--u)*3) calc(var(--u)*3) calc(var(--u)*3) calc(var(--u)*23);min-height:calc(var(--u)*34);
+  background:linear-gradient(#170c10,#0d0709);border:calc(var(--u)*1) solid;box-shadow:inset 0 0 0 calc(var(--u)*1) #000,0 0 calc(var(--u)*4) var(--rc,transparent);
+  font-size:calc(var(--u)*5.5);cursor:pointer;pointer-events:auto}
+.card:hover{background:linear-gradient(#2a1216,#150a0d)}
+.card .nm{display:block;font-weight:700;line-height:1.1}
+.card .meta{color:var(--bone-lo)}
+.card .acts{display:flex;gap:calc(var(--u)*2);margin-top:calc(var(--u)*2)}
+.ico{position:absolute;left:calc(var(--u)*3);top:calc(var(--u)*3);width:calc(var(--u)*16);height:calc(var(--u)*16);
+  background-image:url(assets/items/item_icons.png);background-size:calc(var(--u)*128) calc(var(--u)*16);image-rendering:pixelated}
+.eslot .ico{position:relative;left:auto;top:auto;float:left;margin-right:calc(var(--u)*3)}
+.up{color:#8fe07a}.down{color:#ff6a5a}.same{color:var(--ash)}
+.delta{font-family:var(--f-pixel);font-size:calc(var(--u)*4.6);line-height:1.5}
+#stats{width:calc(var(--u)*120);overflow:auto;font-size:calc(var(--u)*5.8)}
+#stats .row{display:flex;justify-content:space-between;border-bottom:calc(var(--u)*1) solid #24161a;padding:calc(var(--u)*.5) 0}
+#stats .row b{color:var(--gold-hi);font-weight:700}
+.trait{color:#ff8ad8}
+#tip{position:absolute;z-index:30;display:none;width:calc(var(--u)*130);font-size:calc(var(--u)*5.6);pointer-events:none}
+#tip .nm{display:block;font-weight:700;font-size:calc(var(--u)*6.5);line-height:1.1}
+#tip hr{border:0;height:calc(var(--u)*1);background:#3a2a1a;margin:calc(var(--u)*2) 0}
+#tip .cmp{display:grid;grid-template-columns:1fr auto;gap:0 calc(var(--u)*4)}
+
+/* Passive tree */
+#treePanel{left:calc(var(--u)*8);top:calc(var(--u)*8);right:calc(var(--u)*8);bottom:calc(var(--u)*8)}
+#treeHead{position:relative}
+#treeArea{position:absolute;left:0;top:calc(var(--u)*16);width:calc(var(--u)*400);height:calc(var(--u)*300)}
+#treeLines{position:absolute;inset:0;width:100%;height:100%}
+#treeNodes{position:absolute;inset:0}
+.tn{position:absolute;width:calc(var(--u)*22);height:calc(var(--u)*22);margin:calc(var(--u)*-11) 0 0 calc(var(--u)*-11);background:url(assets/ui/nodeLocked.png) center/100% 100%;image-rendering:pixelated;
+  display:flex;align-items:center;justify-content:center;font-size:calc(var(--u)*9);color:#8a8494;cursor:pointer;pointer-events:auto;text-shadow:0 calc(var(--u)*1) 0 #000}
+.tn.av{background-image:url(assets/ui/nodeAvail.png);color:var(--gold-hi);animation:pulse 1s infinite alternate}
+.tn.on{background-image:url(assets/ui/nodeOn.png);color:#fff1c2}
+.tn.root{width:calc(var(--u)*30);height:calc(var(--u)*30);margin:calc(var(--u)*-15) 0 0 calc(var(--u)*-15);background-image:url(assets/ui/nodeRoot.png);color:var(--gold-hi);font-size:calc(var(--u)*12)}
+@keyframes pulse{to{filter:drop-shadow(0 0 calc(var(--u)*4) #e0bf68)}}
+.blabel{position:absolute;transform:translate(-50%,-50%);font-family:var(--f-title);font-size:calc(var(--u)*9);color:#c9a99a;pointer-events:none;text-shadow:0 calc(var(--u)*1) 0 #000;white-space:nowrap}
+#treeSide{position:absolute;right:0;top:calc(var(--u)*16);bottom:0;width:calc(var(--u)*178);overflow:auto;font-size:calc(var(--u)*6)}
+#treeInfo{min-height:calc(var(--u)*44)}
+#treeInfo .nm{font-family:var(--f-label);font-weight:800;color:var(--gold-hi)}
+
+#err{position:fixed;inset:0;background:#000e;color:#ff8a8a;padding:30px;white-space:pre-wrap;z-index:99;display:none;font:14px/1.6 Consolas,monospace}
 </style>
 </head>
 <body>
-<div id="err" style="position:fixed;inset:0;background:#000e;color:#ff8a8a;padding:30px;white-space:pre-wrap;z-index:99;display:none;font-size:14px;line-height:1.6"></div>
+<div id="err"></div>
 <canvas id="c"></canvas>
-<div id="hud">
-  <div id="lvl" style="font-size:15px"></div>
-  <div class="bar"><div id="hpb" style="background:#ff4f3e"></div></div>
-  <div class="bar"><div id="shb" style="background:#ffb347"></div></div>
-  <div class="bar"><div id="xpb" style="background:#b46bff"></div></div>
-  <div id="stats" style="font-size:12px;line-height:1.6"></div>
-</div>
-<div id="tr"></div>
-<div id="log"></div>
-<div id="banner"></div>
-<div id="tree"><div id="treeArea"><div id="treeInfo"></div><div id="treeLines"></div><div id="treeNodes"></div></div></div>
-<div id="help">WASD move · Mouse aim · Hold click to swing · SPACE roll · E open chest · walk onto the ◆ stairs to descend · I inventory · T passive tree · F loot filter · R restart<br>Personal loot: only your drops exist. Nothing to trade.</div>
-<div id="inv">
-  <div class="col">
-    <h3 id="invtitle"></h3>
-    <div class="slots" id="slots"></div>
-    <div class="grid" id="grid"></div>
-    <div style="font-size:11px;opacity:.6;margin-top:10px">Click an item to equip it. Right-click to salvage it for ★ Stardust.</div>
+<div id="ui">
+  <!-- In-game HUD -->
+  <div id="hudWrap" style="display:none">
+    <div id="hud">
+      <div id="hudName"></div>
+      <div class="barrow"><div class="bar"><i id="hpLag"></i><i id="hpb"></i></div><span class="barlbl" id="hpTxt"></span></div>
+      <div class="barrow"><div class="bar"><i id="shb"></i></div><span class="barlbl" id="shTxt"></span></div>
+      <div class="barrow"><div class="bar thin"><i id="xpb"></i></div><span class="barlbl" id="xpTxt"></span></div>
+      <div id="hudSub"></div>
+    </div>
+    <div id="circle"></div>
+    <div id="tr"></div>
+    <div id="bossbar"><div class="name" id="bossName">The Warden</div><div class="bar"><i id="bossb"></i></div></div>
+    <div id="log"></div>
+    <div id="hint">ESC menu · I reliquary · T passives · F filter</div>
+    <div id="banner"></div>
   </div>
-  <div class="statsbox" id="statsbox"></div>
+
+  <!-- Title screen -->
+  <div id="title" class="overlay open">
+    <div id="logo"><div class="big">HELLBOUND</div><div class="sub">DESCENT OF THE KNIGHT</div></div>
+    <div id="menu">
+      <button class="gbtn sel" id="btnNew" data-menu="0">New Game</button>
+      <button class="gbtn" id="btnControls" data-menu="1">Controls</button>
+    </div>
+    <div id="titleHint">↑ ↓ to choose · ENTER to confirm</div>
+  </div>
+
+  <!-- Controls -->
+  <div id="controls" class="overlay shade">
+    <div class="panel frame" id="controlsPanel">
+      <div style="position:relative"><h2>Controls</h2><button class="gbtn small xbtn" data-close="controls" title="Close (Esc)">✕</button></div>
+      <div class="divider"></div>
+      <div class="keys">
+        <span class="kbd">W A S D</span><span>Move (arrow keys work too)</span>
+        <span class="kbd">MOUSE</span><span>Aim. Hold left click to swing your blade</span>
+        <span class="kbd">SPACE</span><span>Roll. Brief invulnerability</span>
+        <span class="kbd">E</span><span>Open a reliquary chest</span>
+        <span class="kbd">I</span><span>Reliquary: equip, compare, sort, salvage</span>
+        <span class="kbd">RIGHT CLICK</span><span>Salvage an item in the reliquary</span>
+        <span class="kbd">T</span><span>Passive tree: spend points from levelling</span>
+        <span class="kbd">F</span><span>Cycle the loot filter</span>
+        <span class="kbd">ESC</span><span>Close a window, or open the menu</span>
+        <span class="kbd">R</span><span>Rise again after death</span>
+      </div>
+      <div class="small muted">Slay the Warden of each circle to unseal the stairs, then step onto them to descend.</div>
+      <div style="text-align:center;margin-top:calc(var(--u)*4)"><button class="gbtn" data-close="controls">Back</button></div>
+    </div>
+  </div>
+
+  <!-- Pause menu -->
+  <div id="pause" class="overlay shade">
+    <div class="panel frame" id="pausePanel">
+      <h2>Paused</h2>
+      <div class="divider"></div>
+      <button class="gbtn" id="btnResume">Resume</button>
+      <button class="gbtn" id="btnPauseControls">Controls</button>
+      <button class="gbtn" id="btnQuit">Abandon Run</button>
+    </div>
+  </div>
+
+  <!-- Inventory / Reliquary -->
+  <div id="inv" class="overlay shade">
+    <div class="panel frame" id="invPanel">
+      <div id="invHead"><h2>Reliquary</h2><span id="invtitle" class="muted"></span>
+        <button class="gbtn small xbtn" data-close="inv" title="Close (I or Esc)">✕</button></div>
+      <div id="invBody">
+        <div id="equip"></div>
+        <div id="bag">
+          <div id="bagTools">
+            <span id="filterTabs"></span>
+            <span class="sep"></span>
+            <label for="sortSel">SORT</label>
+            <span id="sortTabs"></span>
+          </div>
+          <div id="grid"></div>
+          <div class="small muted" style="margin-top:calc(var(--u)*2)">Click to equip · Right-click to salvage for ★ Stardust · Hover to compare with what you wear</div>
+        </div>
+        <div id="stats"></div>
+      </div>
+    </div>
+    <div id="tip" class="tipf"></div>
+  </div>
+
+  <!-- Passive tree -->
+  <div id="tree" class="overlay shade">
+    <div class="panel frame" id="treePanel">
+      <div id="treeHead"><h2>Passive Tree</h2><button class="gbtn small xbtn" data-close="tree" title="Close (T or Esc)">✕</button></div>
+      <div id="treeArea"><svg id="treeLines" viewBox="0 0 400 300" preserveAspectRatio="none"></svg><div id="treeNodes"></div></div>
+      <div id="treeSide">
+        <div id="treePts"></div>
+        <div class="divider"></div>
+        <div id="treeInfo" class="muted">Hover a node to read it. Glowing gold nodes can be taken now.</div>
+        <div class="divider"></div>
+        <h3>Bonuses</h3>
+        <div id="treeSum"></div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
 /* =====================================================================
    0. CORE SETUP AND PIXEL PIPELINE
    The game is drawn on a small internal canvas (LW x LH = 640 x 360).
-   fitCanvas() stretches it to the window by a whole-number factor (SCALE),
-   and image smoothing is turned off so pixel art stays crisp.
+   fitCanvas() scales it to the window: a whole number when that fills the
+   window well, so pixels stay perfectly even. Smoothing is always off.
+   The HTML UI (#ui) sits exactly over the canvas and uses --u = 1 game pixel.
    ===================================================================== */
 const LW=640, LH=360;
 const cv=document.getElementById('c'), ctx=cv.getContext('2d');
 cv.width=LW; cv.height=LH;
 let SCALE=2;
 function fitCanvas(){
-  SCALE=Math.max(1,Math.floor(Math.min(innerWidth/LW,innerHeight/LH)));
-  cv.style.width=LW*SCALE+'px';cv.style.height=LH*SCALE+'px';
-  cv.style.left=(innerWidth-LW*SCALE)/2+'px';cv.style.top=(innerHeight-LH*SCALE)/2+'px';
+  const fit=Math.min(innerWidth/LW,innerHeight/LH);
+  const whole=Math.floor(fit);
+  // Whole-number scale unless that would waste a lot of the window
+  SCALE=whole>=1&&whole/fit>=0.8?whole:Math.max(0.5,fit);
+  const w=LW*SCALE,h=LH*SCALE,l=Math.round((innerWidth-w)/2),t=Math.round((innerHeight-h)/2);
+  cv.style.width=w+'px';cv.style.height=h+'px';cv.style.left=l+'px';cv.style.top=t+'px';
+  const ui=document.getElementById('ui');
+  ui.style.left=l+'px';ui.style.top=t+'px';ui.style.width=w+'px';ui.style.height=h+'px';
+  document.documentElement.style.setProperty('--u',SCALE+'px');
   ctx.imageSmoothingEnabled=false;   // nearest-neighbour: no blur on sprites
 }
 addEventListener('resize',fitCanvas);fitCanvas();
 
 const $=id=>document.getElementById(id);
 const TAU=Math.PI*2, T=32, MW=72, MH=72, VIS=230;   // T = size of one tile in logical pixels
-const SPR=2;                                       // sprite scale: 16px art drawn at 32 logical px
+const SPR=2;                                       // scale for the 16px code-drawn fallback art
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
 const pick=a=>a[Math.floor(Math.random()*a.length)];
 const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+const hash=(x,y)=>{const n=Math.sin(x*127.1+y*311.7)*43758.5453;return n-Math.floor(n)};
 let uid=1,time=0,ready=false;
+let scene='title', paused=false;
+const PXFONT='Silkscreen, Consolas, monospace';
 
 /* =====================================================================
    1. ASSET PIPELINE
-   Put real PNG art at these paths and the game uses it automatically.
-   If a file is missing, the game generates placeholder art in code,
-   so it always runs.
-
-   Create these folders in your repo (next to index.html):
-     assets/sprites/player/knight_sheet.png  (16px frames; rows = idle, walk, attack, hurt, death)
-     assets/sprites/enemies/imp_sheet.png    (16px frames; same row order)
-     assets/tiles/dungeon_tiles.png          (16px tiles in ONE row, order = TILE below)
-     assets/items/item_icons.png             (16px icons in ONE row, order = SLOTS)
-     assets/effects/effects.png              (cell 0 = glow orb, cell 1 = spark)
+   Real pixel art lives in assets/ (built by tools/art/build_art.py).
+   If a file is missing, the game falls back to placeholder art drawn
+   in code, so it always runs.
    ===================================================================== */
 const ASSET_PATHS={
   player:'assets/sprites/player/knight_sheet.png',
   imp:'assets/sprites/enemies/imp_sheet.png',
+  hound:'assets/sprites/enemies/hound_sheet.png',
+  archer:'assets/sprites/enemies/archer_sheet.png',
+  demon:'assets/sprites/enemies/demon_sheet.png',
+  warden:'assets/sprites/enemies/warden_sheet.png',
   tiles:'assets/tiles/dungeon_tiles.png',
   items:'assets/items/item_icons.png',
-  effects:'assets/effects/effects.png'
+  effects:'assets/effects/effects.png',
+  title:'assets/ui/title_bg.png'
 };
-// SHEETS: how each sprite sheet is cut up.
-// fw/fh = frame size in pixels. row = which row holds the animation.
-// n = frame count. fps = speed. loop:true repeats, loop:false plays once and holds the last frame.
-// To add an animation later, add a row here and draw that row in your art sheet.
+// SHEETS: how each PNG sprite sheet is cut up.
+// fw/fh = frame size. ax/ay = the point in the frame placed on the entity's position.
+// row = which row holds the animation, n = frame count, fps = speed, loop = repeat or hold last frame.
+const MON_ANIMS={
+  idle:  {row:0,n:4,fps:5, loop:true},
+  walk:  {row:1,n:4,fps:9, loop:true},
+  attack:{row:2,n:3,fps:12,loop:false},
+  hurt:  {row:3,n:2,fps:12,loop:false},
+  death: {row:4,n:4,fps:7, loop:false}};
 const SHEETS={
-  player:{fw:16,fh:16,anims:{
-    idle:  {row:0,n:4,fps:5, loop:true},
+  player:{fw:32,fh:32,ax:16,ay:22,anims:{
+    idle:  {row:0,n:4,fps:4, loop:true},
     walk:  {row:1,n:6,fps:12,loop:true},
-    attack:{row:2,n:4,fps:14,loop:false},
+    attack:{row:2,n:4,fps:16,loop:false},
     hurt:  {row:3,n:2,fps:10,loop:false},
-    death: {row:4,n:4,fps:6, loop:false}}},
-  imp:{fw:16,fh:16,anims:{
-    idle:  {row:0,n:4,fps:5, loop:true},
-    walk:  {row:1,n:4,fps:10,loop:true},
-    attack:{row:2,n:3,fps:12,loop:false},
-    hurt:  {row:3,n:2,fps:10,loop:false},
-    death: {row:4,n:4,fps:6, loop:false}}}
+    death: {row:4,n:4,fps:5, loop:false}}},
+  imp:   {fw:24,fh:24,ax:12,ay:15,anims:MON_ANIMS},
+  hound: {fw:32,fh:32,ax:16,ay:20,anims:MON_ANIMS},
+  archer:{fw:32,fh:32,ax:15,ay:20,anims:MON_ANIMS},
+  demon: {fw:40,fh:40,ax:20,ay:26,anims:MON_ANIMS},
+  warden:{fw:56,fh:56,ax:28,ay:36,anims:MON_ANIMS}
 };
-// TILE: index of each tile in dungeon_tiles.png (left to right, 16px each)
-const TILE={floorA:0,floorB:1,wallTop:2,wallFace:3,lava0:4,lava1:5,stairs:6,chestShut:7,chestOpen:8};
-const IMG={};
+// Code-drawn fallbacks (old 16px placeholders, drawn at 2x)
+const FALLBACK_SHEETS={
+  player:{fw:16,fh:16,ax:8,ay:8,scale:SPR,anims:{
+    idle:{row:0,n:4,fps:5,loop:true},walk:{row:1,n:6,fps:12,loop:true},attack:{row:2,n:4,fps:14,loop:false},
+    hurt:{row:3,n:2,fps:10,loop:false},death:{row:4,n:4,fps:6,loop:false}}},
+  imp:{fw:16,fh:16,ax:8,ay:8,scale:SPR,anims:{
+    idle:{row:0,n:4,fps:5,loop:true},walk:{row:1,n:4,fps:10,loop:true},attack:{row:2,n:3,fps:12,loop:false},
+    hurt:{row:3,n:2,fps:10,loop:false},death:{row:4,n:4,fps:6,loop:false}}}
+};
+// TILE_NAMES: order of the 32px tiles in dungeon_tiles.png (must match tools/art/environment.py)
+const TILE_NAMES=['floor0','floor1','floor2','floorBlood','floorCrack',
+  'wallTop','wallFace','wallCross','wallWindow','wallSconce','wallChains','wallOssuary','wallBlood',
+  'lava0','lava1','lava2','stairs','stairsSealed','chestShut','chestOpen',
+  'decoSkulls','decoBones','decoCandles','decoPool','decoPillar','decoCrucifix'];
+// Fallback tile sheet (16px code art): which old tile stands in for each name
+const FALLBACK_TILE={floor0:0,floor1:1,floor2:0,floorBlood:1,floorCrack:0,wallTop:2,wallFace:3,wallCross:3,wallWindow:3,
+  wallSconce:3,wallChains:3,wallOssuary:3,wallBlood:3,lava0:4,lava1:5,lava2:4,stairs:6,stairsSealed:6,chestShut:7,chestOpen:8};
+// Candle wick positions inside the decor/sconce tiles (for animated flames + light)
+const FLAMES={decoCandles:[[9,15],[15,11],[21,16],[12,18]],wallSconce:[[16,9]]};
+const IMG={}, SD={}, TS={img:null,size:32,idx:{}};
 
-// Load every asset. Each one falls back to placeholder art if its file is missing.
 function loadAssets(){
   return Promise.all(Object.keys(ASSET_PATHS).map(key=>new Promise(res=>{
     let done=false;
-    const finish=img=>{if(done)return;done=true;IMG[key]=img;res()};
+    const finish=(img,real)=>{if(done)return;done=true;IMG[key]=img;
+      if(SHEETS[key])SD[key]=real?SHEETS[key]:FALLBACK_SHEETS[key]||null;
+      if(key==='tiles'){TS.img=img;TS.size=real?32:16;
+        TILE_NAMES.forEach((n,i)=>TS.idx[n]=real?i:(FALLBACK_TILE[n]??-1))}
+      res()};
     const im=new Image();
-    im.onload=()=>finish(im);
-    im.onerror=()=>finish(makeFallback(key));
+    im.onload=()=>finish(im,true);
+    im.onerror=()=>finish(makeFallback(key),false);
     im.src=ASSET_PATHS[key];
-    setTimeout(()=>finish(makeFallback(key)),2500);   // safety timeout
+    setTimeout(()=>finish(makeFallback(key),false),4000);   // safety timeout
   })));
 }
 function mk(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;return c}
 function makeFallback(key){
-  if(key==='player')return makeSheet(SHEETS.player,drawKnight);
-  if(key==='imp')return makeSheet(SHEETS.imp,drawImp);
+  if(key==='player')return makeSheet(FALLBACK_SHEETS.player,drawKnight);
+  if(key==='imp')return makeSheet(FALLBACK_SHEETS.imp,drawImp);
   if(key==='tiles')return makeTiles();
   if(key==='items')return makeItemIcons();
   if(key==='effects')return makeEffects();
+  return null;   // no fallback: those enemies are drawn as shapes
 }
 // Builds a sheet by calling drawFn for every frame of every animation row.
 function makeSheet(sd,drawFn){
@@ -171,7 +402,7 @@ function makeSheet(sd,drawFn){
   }
   return c;
 }
-// Placeholder knight (16x16 pixels). Replace with real art anytime.
+// Placeholder knight (16x16 pixels), only used if the PNG is missing.
 function drawKnight(g,anim,f){
   const bob=(anim==='idle'||anim==='walk')&&f%2?-1:0;
   const lean=anim==='attack'?[0,1,2,1][f%4]:0;
@@ -192,7 +423,7 @@ function drawKnight(g,anim,f){
   g.fillStyle='#4a2a10';g.fillRect(1,8+bob,3,5);g.fillStyle='#c9a24a';g.fillRect(2,9+bob,1,3);
   if(anim==='hurt'){g.globalCompositeOperation='source-atop';g.fillStyle='rgba(255,40,40,0.65)';g.fillRect(0,0,16,16);g.globalCompositeOperation='source-over'}
 }
-// Placeholder imp (16x16 pixels).
+// Placeholder imp (16x16 pixels), only used if the PNG is missing.
 function drawImp(g,anim,f){
   const bob=(anim==='idle'||anim==='walk')&&f%2?-1:0;
   const legA=anim==='walk'?(f%2?1:-1):0;
@@ -208,12 +439,11 @@ function drawImp(g,anim,f){
   g.fillStyle='#2a0a04';g.fillRect(6,8+bob,4,1);
   if(anim==='hurt'){g.globalCompositeOperation='source-atop';g.fillStyle='rgba(255,255,255,0.7)';g.fillRect(0,0,16,16);g.globalCompositeOperation='source-over'}
 }
-// Placeholder dungeon tiles: 9 tiles in one row (see TILE)
+// Placeholder dungeon tiles: 9 tiles in one row, only used if the PNG is missing.
 function makeTiles(){
   const c=mk(16*9,16),g=c.getContext('2d');
-  const hsh=(x,y)=>{const n=Math.sin(x*127.1+y*311.7)*43758.5453;return n-Math.floor(n)};
   const noisy=(i,col,amt)=>{g.save();g.translate(i*16,0);
-    for(let y=0;y<16;y++)for(let x=0;x<16;x++){const k=hsh(x+i*7,y+i*3)*amt;
+    for(let y=0;y<16;y++)for(let x=0;x<16;x++){const k=hash(x+i*7,y+i*3)*amt;
       g.fillStyle=`rgb(${col[0]+k},${col[1]+k*.5},${col[2]+k*.4})`;g.fillRect(x,y,1,1)}
     g.restore()};
   noisy(0,[52,38,42],18);
@@ -245,27 +475,59 @@ function makeItemIcons(){
 }
 // Placeholder effects: glow orb (cell 0) and spark (cell 1)
 function makeEffects(){
-  const c=mk(32,16),g=c.getContext('2d');
+  const c=mk(128,16),g=c.getContext('2d');
   const gr=g.createRadialGradient(8,8,0,8,8,8);
   gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(0.4,'rgba(255,255,255,0.5)');gr.addColorStop(1,'rgba(255,255,255,0)');
   g.fillStyle=gr;g.fillRect(0,0,16,16);
   g.fillStyle='#fff';g.fillRect(16+7,4,2,8);g.fillRect(16+4,7,8,2);
+  for(let i=2;i<6;i++){g.fillStyle='#6a0e14';g.fillRect(i*16+5,6,6,4)}
   return c;
 }
 
 /* ----- DRAW HELPERS (the only code that touches sprite sheets) ----- */
 // Which frame to show: loops wrap, one-shot animations hold their last frame.
 function animIndex(at,A){const f=Math.floor(at*A.fps);return A.loop?f%A.n:Math.min(A.n-1,f)}
-// Draw one sprite frame centred on x,y. key = sheet name, anim = 'idle'|'walk'|..., at = seconds in that anim.
-function drawSprite(key,anim,at,x,y){
-  const sd=SHEETS[key],img=IMG[key];if(!img||!sd)return;
-  const A=sd.anims[anim]||sd.anims.idle;const f=animIndex(at,A);
-  ctx.drawImage(img,f*sd.fw,A.row*sd.fh,sd.fw,sd.fh,Math.round(x-8*SPR),Math.round(y-8*SPR),sd.fw*SPR,sd.fh*SPR);
+// Draw one sprite frame with its anchor on x,y. flip mirrors it (sheets face right).
+// Returns false when there is no art for that key, so callers can fall back to shapes.
+function drawSprite(key,anim,at,x,y,flip){
+  const sd=SD[key],img=IMG[key];if(!img||!sd)return false;
+  const A=sd.anims[anim]||sd.anims.idle;const f=animIndex(at,A);const k=sd.scale||1;
+  const w=sd.fw*k,h=sd.fh*k,ax=sd.ax*k,ay=sd.ay*k;
+  if(flip){
+    ctx.save();ctx.translate(Math.round(x),0);ctx.scale(-1,1);
+    ctx.drawImage(img,f*sd.fw,A.row*sd.fh,sd.fw,sd.fh,-ax,Math.round(y-ay),w,h);ctx.restore();
+  }else ctx.drawImage(img,f*sd.fw,A.row*sd.fh,sd.fw,sd.fh,Math.round(x-ax),Math.round(y-ay),w,h);
+  return true;
 }
-// Draw one dungeon tile at world position px,py
-function drawTile(idx,px,py){ctx.drawImage(IMG.tiles,idx*16,0,16,16,px,py,T,T)}
+// Draw one dungeon tile (by name) at world position px,py
+function drawTile(name,px,py){
+  const i=TS.idx[name];if(i==null||i<0)return false;
+  ctx.drawImage(TS.img,i*TS.size,0,TS.size,TS.size,Math.round(px),Math.round(py),T,T);return true;
+}
 // Switch a character to a new animation and restart its timer
 function setAnim(e,name){if(e.anim!==name){e.anim=name;e.animT=0}}
+// Pixel helpers: crisp shapes made of whole pixels
+function pxRect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),w,h)}
+function pxShadow(x,y,w){
+  ctx.fillStyle='rgba(0,0,0,0.45)';x=Math.round(x);y=Math.round(y);w=Math.max(6,Math.round(w));
+  ctx.fillRect(x-w/2+2,y-1,w-4,1);ctx.fillRect(x-w/2,y,w,2);ctx.fillRect(x-w/2+2,y+2,w-4,1);
+}
+function pxOrb(x,y,r,c){
+  x=Math.round(x);y=Math.round(y);r=Math.max(1,Math.round(r));
+  ctx.fillStyle=c;ctx.fillRect(x-r,y-r+1,r*2,r*2-2);ctx.fillRect(x-r+1,y-r,r*2-2,r*2);
+  ctx.fillStyle='#fff6d8';ctx.fillRect(x-1,y-1,Math.max(1,r-1),Math.max(1,r-1));
+}
+function pxRing(x,y,r,c,step=0.35){
+  ctx.fillStyle=c;for(let a=0;a<TAU;a+=step/Math.max(1,r/8))ctx.fillRect(Math.round(x+Math.cos(a)*r),Math.round(y+Math.sin(a)*r),1,1);
+}
+function drawFlame(x,y,seed,s=1){
+  const f=Math.floor(time*10+seed*7)%3,w=Math.sin(time*13+seed*5)>0?1:0;
+  x=Math.round(x);y=Math.round(y);
+  ctx.fillStyle='#a12a06';ctx.fillRect(x-1,y+1,3,1);
+  ctx.fillStyle='#ff6a1a';ctx.fillRect(x-1,y-1,3,2);
+  ctx.fillStyle='#ffd27a';ctx.fillRect(x,y-2-f%2,1,2+f%2);
+  ctx.fillStyle='#fff1c2';ctx.fillRect(x+w-1+1,y-3-(f===2?1:0),1,1);
+}
 
 /* =====================================================================
    2. GAME DATA: loot, affixes, enemies, passive tree
@@ -312,19 +574,22 @@ const BASES={
 // SLOTS order also sets the item icon order in item_icons.png
 const SLOTS=['helm','blade','plate','gloves','greaves','boots','ring','sigil'];
 const SLOTNAME={helm:'Helm',blade:'Weapon',plate:'Chest',gloves:'Gloves',greaves:'Legs',boots:'Boots',ring:'Ring',sigil:'Amulet'};
+// Inventory groups for the filter tabs
+const SLOTGROUP={blade:'weapon',helm:'armour',plate:'armour',gloves:'armour',greaves:'armour',boots:'armour',ring:'jewel',sigil:'jewel'};
 const BVBASE={helm:14,blade:8,plate:40,gloves:6,greaves:12,boots:7,ring:10,sigil:20};
 const BVGROW={helm:2.5,blade:2,plate:8,gloves:1.2,greaves:3,boots:1.4,ring:1.8,sigil:5};
 const MPRE=['Infernal','Damned','Abyssal','Hellforged','Brimstone-Cursed','Soul-Forged','Eternal'];
 const MSUF=[' of the Burning Choir',' of the Last Circle',' from the Pit of Dis',' of Undying Embers',' that Sang in Hell'];
 const FILTERS=['All loot','Magic+','Rare+','Epic+','Legendary+','MYTHIC only'];
 const CIRCLES=['Limbo','Lust','Gluttony','Greed','Wrath','Heresy','Violence','Fraud','Treachery'];
-// ET: enemy types. sprite:true means this enemy uses the sprite renderer (imp). Others are still drawn as shapes.
+// ET: enemy types. Every type now has a PNG sprite sheet (sprite:true); shapes are only a fallback.
 const ET={
  imp:{r:10,hp:20,spd:90,xp:4,drop:.15,c:'#ff9a3c',shape:'circle',dmg:6,aggro:330,sprite:true},
- hound:{r:13,hp:40,spd:125,xp:8,drop:.3,c:'#ff3e3e',shape:'diamond',dmg:9,aggro:400},
- archer:{r:13,hp:34,spd:50,xp:9,drop:.4,c:'#e8e0d0',shape:'hex',dmg:5,aggro:460,shoot:2},
- demon:{r:22,hp:170,spd:55,xp:25,drop:.9,c:'#9b3cff',shape:'hex',dmg:14,aggro:380}
+ hound:{r:13,hp:40,spd:125,xp:8,drop:.3,c:'#ff3e3e',shape:'diamond',dmg:9,aggro:400,sprite:true},
+ archer:{r:13,hp:34,spd:50,xp:9,drop:.4,c:'#e8e0d0',shape:'hex',dmg:5,aggro:460,shoot:2,sprite:true},
+ demon:{r:22,hp:170,spd:55,xp:25,drop:.9,c:'#9b3cff',shape:'hex',dmg:14,aggro:380,sprite:true}
 };
+const spriteKey=e=>e.boss?'warden':e.type;
 
 /* ----- PASSIVE TREE -----
    Each level-up gives 1 passive point (press T to spend).
@@ -354,11 +619,11 @@ BRANCHES.forEach(b=>{
   let prev='root';
   b.keys.forEach((k,i)=>{
     const d=50*(i+1),x=Math.cos(b.a)*d,y=Math.sin(b.a)*d,id=b.n+i,st=NODE_STATS[k];
-    addNode({id,name:st.name,desc:st.desc,k,v:st.v,sym:st.sym,x,y,parents:[prev]});
+    addNode({id,name:st.name,desc:st.desc,k,v:st.v,sym:st.sym,x,y,parents:[prev],branch:b.n});
     prev=id;
     if(i===2){   // side node off the middle of the branch
       const sx=x+Math.cos(b.a+0.9)*60,sy=y+Math.sin(b.a+0.9)*60;
-      addNode({id:b.n+'side',name:NODE_STATS.crit.name+' II',desc:NODE_STATS.crit.desc,k:'crit',v:4,sym:'✦',x:sx,y:sy,parents:[id]});
+      addNode({id:b.n+'side',name:NODE_STATS.crit.name+' II',desc:NODE_STATS.crit.desc,k:'crit',v:4,sym:'✦',x:sx,y:sy,parents:[id],branch:b.n});
     }
   });
 });
@@ -370,6 +635,7 @@ function canAlloc(n){return !P.alloc[n.id]&&P.points>0&&n.parents.some(p=>P.allo
    ===================================================================== */
 let map,seen,rooms,stairsT,chests,enemies,boss,bullets,ebullets,ground,parts,texts,swings,corpses,
     floor,stardust,filter,dead,shake,invOpen,treeOpen,P,S,eq,inv;
+let decor=[],decals=[],pickupSeq=0;
 const keys={},mouse={x:LW/2,y:LH/2,down:false};
 
 function rollRarity(ilvl){
@@ -404,12 +670,13 @@ function fmtAff(a){return AFF.find(x=>x.k===a.k).t.replace('{v}',a.v)}
 function colorOf(it){return it.r===5?`hsl(${(time*180)%360} 100% 62%)`:RAR[it.r].c}
 function hasTrait(k){return S.traits.includes(k)}
 
-// calc(): adds up stats from equipment, affixes and owned passive nodes into S
-function calc(){
+// computeStats(): adds up stats from an equipment set, affixes and owned passive nodes.
+// It has no side effects, so the inventory can use it to preview a swap.
+function computeStats(eqx){
   const s={dmgB:0,hpB:0,wardB:0,spB:0,traits:[]};
   AFF.forEach(a=>s[a.k]=0);
   for(const slot of SLOTS){
-    const it=eq[slot];if(!it)continue;
+    const it=eqx[slot];if(!it)continue;
     if(slot==='blade'||slot==='gloves')s.dmgB+=it.bv;
     if(slot==='plate'||slot==='helm')s.hpB+=it.bv;
     if(slot==='sigil'||slot==='ring')s.wardB+=it.bv;
@@ -430,9 +697,13 @@ function calc(){
   s.range=56+s.reach;
   s.arcDeg=70+s.arc;
   s.rollCD=2.2*(1-Math.min(.6,s.warp/100));
-  S=s;
+  return s;
+}
+// calc(): recompute the player's totals into S
+function calc(){
+  S=computeStats(eq);
   if(P){
-    P.maxHp=s.maxHp;P.maxSh=s.maxSh;
+    P.maxHp=S.maxHp;P.maxSh=S.maxSh;
     P.hp=Math.min(P.hp,P.maxHp);P.sh=Math.min(P.sh,P.maxSh);
   }
 }
@@ -440,6 +711,7 @@ function calc(){
 /* =====================================================================
    4. DUNGEON GENERATION (logic unchanged from HELLBOUND v7)
    Map values: 0 = wall, 1 = floor, 2 = lava, 3 = stairs
+   decorate() only adds props to draw; it never changes the map.
    ===================================================================== */
 function tileAt(x,y){
   const tx=Math.floor(x/T),ty=Math.floor(y/T);
@@ -472,7 +744,7 @@ function spawnEnemy(type,o={}){
   const hp=(o.boss?900:Tt.hp)*mult;
   const e={type,x:o.x,y:o.y,hp,max:hp,r:o.boss?34:Tt.r,spd:Tt.spd,fire:0,touch:0,flash:0,
     boss:!!o.boss,c:o.boss?'#ff2b6b':Tt.c,shape:Tt.shape,wt:0,wa:0,shot:2.4,phase:0,
-    anim:'idle',animT:0};
+    anim:'idle',animT:Math.random(),face:1};
   enemies.push(e);
   return e;
 }
@@ -518,6 +790,23 @@ function genFloor(){
   boss=spawnEnemy('demon',{x:(L.x+L.w/2)*T,y:(L.y+L.h/2)*T,boss:true});
   const s0=rooms[0];
   P.x=(s0.x+s0.w/2)*T;P.y=(s0.y+s0.h/2)*T;P.vx=0;P.vy=0;
+  decorate();
+}
+// Scatter bones, candles, blood and broken pillars on room floors (visual only).
+function decorate(){
+  decor=[];decals=[];
+  const used=new Set(chests.map(c=>Math.floor(c.x/T)+','+Math.floor(c.y/T)));
+  used.add(stairsT.x+','+stairsT.y);
+  const kinds=['decoBones','decoBones','decoSkulls','decoCandles','decoCandles','decoPool','decoPillar','decoCrucifix'];
+  rooms.forEach((r,ri_)=>{
+    const n=ri_===0?2:ri(1,3);
+    for(let k=0;k<n;k++){
+      const tx=ri(r.x,r.x+r.w-1),ty=ri(r.y,r.y+r.h-1),key=tx+','+ty;
+      if(map[ty][tx]!==1||used.has(key))continue;
+      used.add(key);
+      decor.push({tx,ty,kind:pick(kinds),seed:Math.random()});
+    }
+  });
 }
 function circleName(){
   const i=(floor-1)%CIRCLES.length;
@@ -529,19 +818,19 @@ function newGame(){
      atk:0,atkAnim:0,hurtT:0,roll:0,inv:0,sinceHit:9,aim:0,face:1,swings:0,warned:false,
      points:0,alloc:{root:1},anim:'idle',animT:0};
   eq={blade:makeItem('blade',1,0),helm:null,plate:null,gloves:null,greaves:null,boots:null,ring:null,sigil:null};
-  inv=[];stardust=0;filter=0;dead=false;shake=0;parts=[];texts=[];swings=[];invOpen=false;treeOpen=false;
-  $('inv').classList.remove('open');$('tree').classList.remove('open');
+  inv=[];stardust=0;filter=0;dead=false;shake=0;parts=[];texts=[];swings=[];invOpen=false;treeOpen=false;pickupSeq=0;
+  closeAllOverlays();
   genFloor();calc();P.hp=P.maxHp;P.sh=P.maxSh;
   $('log').innerHTML='';
   log('You descend into hell. Your blade is all you have.','#ffb347');
-  announce(`CIRCLE 1: ${circleName()}`,'#ff7a2b',2);
+  announce(`CIRCLE 1: ${circleName()}`,'#ff7a2b',2.4);
 }
 function descend(){
   floor++;
   genFloor();calc();
   P.hp=Math.min(P.maxHp,P.hp+P.maxHp*0.3);
   P.warned=false;
-  announce(`CIRCLE ${floor}: ${circleName()}`,'#b46bff',2.2);
+  announce(`CIRCLE ${floor}: ${circleName()}`,'#b46bff',2.4);
   log(`Descended to Circle ${floor}`,'#b46bff');
 }
 
@@ -556,9 +845,10 @@ function log(txt,c='#f2e2d0'){
   setTimeout(()=>d.remove(),5000);
 }
 let bannerTimer=null;
-function announce(txt,c,dur=2){
+function announce(txt,c,dur=2,sub=''){
   const b=$('banner');
-  b.textContent=txt;b.style.color=c;b.style.textShadow=`0 0 25px ${c}, 0 0 60px ${c}`;
+  b.textContent=txt;b.style.color=c;b.style.textShadow=`0 0 calc(var(--u)*8) ${c}, 0 calc(var(--u)*1) 0 #000`;
+  if(sub){const s=document.createElement('small');s.textContent=sub;b.appendChild(s)}
   b.style.opacity=1;clearTimeout(bannerTimer);
   bannerTimer=setTimeout(()=>b.style.opacity=0,dur*1000);
 }
@@ -576,6 +866,50 @@ function updateFX(dt){
   texts=texts.filter(t=>t.life>0);
   shake=Math.max(0,shake-dt*2);
 }
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ----- Overlays: title, controls, pause, inventory, tree ----- */
+function setOverlay(id,open){$(id).classList.toggle('open',open)}
+function closeAllOverlays(){
+  ['controls','pause','inv','tree'].forEach(id=>setOverlay(id,false));
+  invOpen=false;treeOpen=false;paused=false;hideTip();
+}
+function anyPanelOpen(){return invOpen||treeOpen||paused||$('controls').classList.contains('open')}
+function startGame(){
+  scene='game';setOverlay('title',false);$('hudWrap').style.display='';
+  newGame();
+}
+function toTitle(){
+  scene='title';closeAllOverlays();$('hudWrap').style.display='none';setOverlay('title',true);
+  $('banner').style.opacity=0;selectMenu(0);
+}
+function openControls(){setOverlay('controls',true)}
+function closeControls(){setOverlay('controls',false)}
+function togglePause(on){
+  paused=on??!paused;setOverlay('pause',paused);mouse.down=false;
+  if(!paused){quitArmed=false;$('btnQuit').textContent='Abandon Run'}
+}
+let menuSel=0,quitArmed=false;
+function selectMenu(i){
+  const b=[...document.querySelectorAll('#menu .gbtn')];
+  menuSel=(i+b.length)%b.length;b.forEach((x,k)=>x.classList.toggle('sel',k===menuSel));
+}
+$('btnNew').onclick=()=>startGame();
+$('btnControls').onclick=()=>openControls();
+document.querySelectorAll('#menu .gbtn').forEach(b=>b.onmouseenter=()=>selectMenu(+b.dataset.menu));
+$('btnResume').onclick=()=>togglePause(false);
+$('btnPauseControls').onclick=()=>openControls();
+$('btnQuit').onclick=()=>{
+  if(!quitArmed){quitArmed=true;$('btnQuit').textContent='Click again to abandon';
+    setTimeout(()=>{quitArmed=false;$('btnQuit').textContent='Abandon Run'},3000);return}
+  toTitle();
+};
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>{
+  const w=b.dataset.close;
+  if(w==='controls')closeControls();
+  if(w==='inv')toggleInv(false);
+  if(w==='tree')toggleTree(false);
+});
 
 /* =====================================================================
    6. ITEMS (drops, equip, salvage, reroll, inventory UI)
@@ -601,6 +935,10 @@ function salvageIdx(i){
   log(`Salvaged ${it.name} for +${gain} ★`,'#ffe14f');
   renderInv();
 }
+// The bag can be sorted and filtered, so cards refer to items by id, never by position.
+const idxOfId=id=>inv.findIndex(it=>it.id===id);
+function equipId(id){const i=idxOfId(id);if(i>=0){hideTip();equipIdx(i)}}
+function salvageId(id){const i=idxOfId(id);if(i>=0){hideTip();salvageIdx(i)}}
 function rerollSlot(slot){
   const it=eq[slot];if(!it)return;
   if(stardust<25){log('Need 25 ★ Stardust to reroll.','#ff4f6e');return}
@@ -609,69 +947,185 @@ function rerollSlot(slot){
   if(it.r===5)it.trait=pick(TKEYS);
   calc();log(`Rerolled ${it.name}`,colorOf(it));renderInv();
 }
-function renderInv(){
-  $('invtitle').textContent=`Inventory ${inv.length}/60 · ★ ${stardust}`;
-  $('slots').innerHTML=SLOTS.map(slot=>{
-    const it=eq[slot];
-    const body=it?`<b style="color:${colorOf(it)}">${it.name}</b><small>${RAR[it.r].n} · iLvl ${it.ilvl}</small><br>`+
-      it.aff.map(a=>fmtAff(a)).join('<br>')+(it.trait?`<br><span style="color:#ff8ad8">${TR[it.trait]}</span>`:''):
-      '<small>Empty</small>';
-    const btn=it?`<br><button data-reroll="${slot}">Reroll (25 ★)</button>`:'';
-    return `<div class="slot" style="border-color:${it?colorOf(it):'#654'}"><small>${SLOTNAME[slot]}</small><br>${body}${btn}</div>`;
-  }).join('');
-  $('grid').innerHTML=inv.map((it,i)=>{
-    const c=colorOf(it);
-    return `<div class="card" data-i="${i}" style="border-color:${c};box-shadow:0 0 14px ${c}55"><b style="color:${c}">${it.name}</b><small>${RAR[it.r].n} · ${SLOTNAME[it.slot]} · iLvl ${it.ilvl}</small><br>${it.aff.map(a=>fmtAff(a)).join('<br>')}${it.trait?`<br><span style="color:#ff8ad8">${TR[it.trait]}</span>`:''}<br><small>Salvage value ★${Math.ceil(it.bv/2)+it.r*3}</small></div>`;
-  }).join('') || '<small>No loot yet. Go kill something.</small>';
-  $('statsbox').innerHTML=`<h3>Totals</h3>
-    Max Hull: ${Math.round(P.maxHp)}<br>
-    Max Ward: ${Math.round(S.maxSh)}<br>
-    Damage: ${S.damage.toFixed(1)}<br>
-    Swing speed: ${S.atkRate.toFixed(2)}/s<br>
-    Crit: ${S.critC.toFixed(1)}% × ${(S.critM/100).toFixed(2)}<br>
-    Reach: ${S.range.toFixed(0)} · Arc: ${S.arcDeg.toFixed(0)}°<br>
-    Stride: ${S.spd.toFixed(0)} · Pickup: ${S.mag.toFixed(0)}<br>
-    Regen: ${S.regen.toFixed(1)}/s · Leech: ${S.leech.toFixed(1)}%<br>
-    Roll CD: ${S.rollCD.toFixed(2)}s<br><br>
-    <h3>Filter</h3>${FILTERS[filter]} (press F)<br><br>
-    <h3>Traits</h3>${S.traits.length?S.traits.map(t=>TR[t]).join('<br>'):'<small>None. Find a MYTHIC.</small>'}`;
+
+/* ----- sorting, filtering and stat comparison ----- */
+const SORTS=[['new','Newest'],['rarity','Rarity'],['level','Level'],['type','Type']];
+const GROUPS=[['all','All'],['weapon','Weapons'],['armour','Armour'],['jewel','Jewellery']];
+let sortMode='new',groupMode='all';
+function bagView(){
+  let v=inv.filter(it=>groupMode==='all'||SLOTGROUP[it.slot]===groupMode);
+  const by={
+    new:(a,b)=>(b.got||0)-(a.got||0)||b.id-a.id,
+    rarity:(a,b)=>b.r-a.r||b.ilvl-a.ilvl||b.id-a.id,
+    level:(a,b)=>b.ilvl-a.ilvl||b.r-a.r||b.id-a.id,
+    type:(a,b)=>SLOTS.indexOf(a.slot)-SLOTS.indexOf(b.slot)||b.r-a.r||b.ilvl-a.ilvl||b.id-a.id
+  }[sortMode];
+  return v.slice().sort(by);
 }
-$('grid').onclick=e=>{const c=e.target.closest('.card');if(c)equipIdx(+c.dataset.i)};
-$('grid').oncontextmenu=e=>{e.preventDefault();const c=e.target.closest('.card');if(c)salvageIdx(+c.dataset.i)};
-$('slots').onclick=e=>{const b=e.target.closest('[data-reroll]');if(b)rerollSlot(b.dataset.reroll)};
-function toggleInv(){
-  if(treeOpen)return;
-  invOpen=!invOpen;
-  $('inv').classList.toggle('open',invOpen);
+// [stat key, label, decimals, lower-is-better]
+const CMP=[['damage','Damage',1],['atkRate','Swing / s',2],['critC','Crit %',1],['critM','Crit damage %',0],
+  ['maxHp','Max Hull',0],['maxSh','Ward',0],['regen','Regen / s',1],['leech','Leech %',1],['spd','Stride',0],
+  ['range','Reach',0],['arcDeg','Arc °',0],['mag','Pickup',0],['rollCD','Roll cooldown',2,true]];
+function compareStats(it){
+  const after=computeStats({...eq,[it.slot]:it});
+  const out=[];
+  for(const [k,label,d,low] of CMP){
+    const diff=after[k]-S[k];
+    if(Math.abs(diff)<Math.pow(10,-d)/2)continue;
+    const better=low?diff<0:diff>0;
+    out.push({k,label,diff,d,better});
+  }
+  const lost=S.traits.filter(t=>!after.traits.includes(t)),gained=after.traits.filter(t=>!S.traits.includes(t));
+  return {rows:out,lost,gained};
+}
+const fmtDiff=r=>(r.diff>0?'+':'')+r.diff.toFixed(r.d);
+function iconStyle(slot){return `background-position:calc(var(--u)*${-16*Math.max(0,SLOTS.indexOf(slot))}) 0`}
+function itemBlock(it){
+  return `<span class="nm" style="color:${colorOf(it)}">${esc(it.name)}</span>`+
+    `<span class="meta">${RAR[it.r].n} · ${SLOTNAME[it.slot]} · iLvl ${it.ilvl} · base ${it.bv}</span><br>`+
+    it.aff.map(a=>esc(fmtAff(a))).join('<br>')+(it.trait?`<br><span class="trait">${TR[it.trait]}</span>`:'');
+}
+function renderInv(){
+  if(!invOpen)return;
+  $('invtitle').textContent=`${inv.length} / 60 relics · ★ ${stardust} Stardust`;
+  // equipped slots
+  $('equip').innerHTML=SLOTS.map(slot=>{
+    const it=eq[slot];
+    const body=it?`<span class="nm" style="color:${colorOf(it)}">${esc(it.name)}</span><span class="muted">${RAR[it.r].n} · iLvl ${it.ilvl}</span>`+
+      `<button class="mini" data-reroll="${slot}" title="Reroll affixes for 25 ★">Reroll 25★</button>`:'<span class="muted">Empty</span>';
+    return `<div class="eslot slotf hit" data-slot="${slot}" style="${it?`box-shadow:0 0 0 calc(var(--u)*1) ${RAR[it.r].c}`:''}">`+
+      `<div class="ico" style="${iconStyle(slot)};${it?'':'opacity:.25'}"></div><span class="lbl">${SLOTNAME[slot]}</span>${body}</div>`;
+  }).join('');
+  // filter + sort tabs
+  $('filterTabs').innerHTML=GROUPS.map(([k,l])=>{
+    const n=k==='all'?inv.length:inv.filter(it=>SLOTGROUP[it.slot]===k).length;
+    return `<button class="mini ${groupMode===k?'on':''}" data-group="${k}">${l} ${n}</button>`}).join(' ');
+  $('sortTabs').innerHTML=SORTS.map(([k,l])=>`<button class="mini ${sortMode===k?'on':''}" data-sort="${k}">${l}</button>`).join(' ');
+  // bag
+  const view=bagView();
+  $('grid').innerHTML=view.map(it=>{
+    const c=colorOf(it),cmp=compareStats(it);
+    const top=cmp.rows.slice().sort((a,b)=>Math.abs(b.diff/(S[b.k]||1))-Math.abs(a.diff/(S[a.k]||1))).slice(0,3);
+    const deltas=top.length?top.map(r=>`<span class="${r.better?'up':'down'}">${r.better?'▲':'▼'} ${r.label} ${fmtDiff(r)}</span>`).join('<br>'):'<span class="same">= no change</span>';
+    return `<div class="card" data-id="${it.id}" style="border-color:${c};--rc:${c}66">`+
+      `<div class="ico" style="${iconStyle(it.slot)}"></div>`+
+      `<span class="nm" style="color:${c}">${esc(it.name)}</span><span class="meta">${RAR[it.r].n} ${SLOTNAME[it.slot]} · iLvl ${it.ilvl}</span>`+
+      `<div class="delta">${deltas}</div>`+
+      `<div class="acts"><button class="mini" data-equip="${it.id}">Equip</button>`+
+      `<button class="mini" data-salvage="${it.id}" title="Salvage for ★${Math.ceil(it.bv/2)+it.r*3}">Salvage ★${Math.ceil(it.bv/2)+it.r*3}</button></div></div>`;
+  }).join('') || `<span class="muted">${inv.length?'Nothing of that kind.':'No relics yet. Go kill something.'}</span>`;
+  // totals
+  const row=(l,v)=>`<div class="row"><span>${l}</span><b>${v}</b></div>`;
+  $('stats').innerHTML=`<h3>Totals</h3>`+
+    row('Max Hull',Math.round(P.maxHp))+row('Max Ward',Math.round(S.maxSh))+row('Damage',S.damage.toFixed(1))+
+    row('Swing speed',S.atkRate.toFixed(2)+'/s')+row('Crit',`${S.critC.toFixed(1)}% ×${(S.critM/100).toFixed(2)}`)+
+    row('Reach / Arc',`${S.range.toFixed(0)} / ${S.arcDeg.toFixed(0)}°`)+row('Stride',S.spd.toFixed(0))+row('Pickup',S.mag.toFixed(0))+
+    row('Regen',S.regen.toFixed(1)+'/s')+row('Leech',S.leech.toFixed(1)+'%')+row('Roll CD',S.rollCD.toFixed(2)+'s')+
+    `<h3>Loot filter</h3>${FILTERS[filter]} <span class="muted small">(F)</span>`+
+    `<h3>Traits</h3>${S.traits.length?S.traits.map(t=>`<div class="trait">${TR[t]}</div>`).join(''):'<span class="muted small">None. Find a MYTHIC.</span>'}`;
+}
+/* Tooltip: full item text + comparison against what is equipped in that slot */
+function showTip(html,ev){
+  const t=$('tip');t.innerHTML=html;t.style.display='block';moveTip(ev);
+}
+function moveTip(ev){
+  const t=$('tip');if(t.style.display!=='block')return;
+  const r=$('ui').getBoundingClientRect();
+  let x=ev.clientX-r.left+14,y=ev.clientY-r.top+14;
+  if(x+t.offsetWidth>r.width)x=ev.clientX-r.left-t.offsetWidth-10;
+  if(y+t.offsetHeight>r.height)y=Math.max(4,r.height-t.offsetHeight-4);
+  t.style.left=x+'px';t.style.top=y+'px';
+}
+function hideTip(){const t=$('tip');if(t)t.style.display='none'}
+function tipForItem(it){
+  const cur=eq[it.slot],cmp=compareStats(it);
+  let h=itemBlock(it)+'<hr>';
+  h+=cur?`<span class="muted small">Compared with your ${SLOTNAME[it.slot]}:</span><br><span style="color:${colorOf(cur)}">${esc(cur.name)}</span>`:
+    `<span class="muted small">${SLOTNAME[it.slot]} slot is empty.</span>`;
+  h+='<div class="cmp delta">'+(cmp.rows.length?cmp.rows.map(r=>`<span>${r.label}</span><span class="${r.better?'up':'down'}">${fmtDiff(r)}</span>`).join(''):'<span class="same">No stat change</span><span></span>')+'</div>';
+  cmp.gained.forEach(t=>h+=`<div class="up small">+ ${TR[t]}</div>`);
+  cmp.lost.forEach(t=>h+=`<div class="down small">− loses ${TR[t]}</div>`);
+  return h+'<hr><span class="muted small">Click: equip · Right-click: salvage</span>';
+}
+$('grid').onclick=e=>{
+  const eb=e.target.closest('[data-equip]');if(eb){equipId(+eb.dataset.equip);return}
+  const sb=e.target.closest('[data-salvage]');if(sb){salvageId(+sb.dataset.salvage);return}
+  const c=e.target.closest('.card');if(c)equipId(+c.dataset.id);
+};
+$('grid').oncontextmenu=e=>{e.preventDefault();const c=e.target.closest('.card');if(c)salvageId(+c.dataset.id)};
+$('equip').onclick=e=>{const b=e.target.closest('[data-reroll]');if(b)rerollSlot(b.dataset.reroll)};
+$('bagTools').onclick=e=>{
+  const g=e.target.closest('[data-group]');if(g){groupMode=g.dataset.group;renderInv();return}
+  const s=e.target.closest('[data-sort]');if(s){sortMode=s.dataset.sort;renderInv()}
+};
+$('inv').addEventListener('mouseover',e=>{
+  const c=e.target.closest('.card');
+  if(c){const it=inv[idxOfId(+c.dataset.id)];if(it){showTip(tipForItem(it),e);return}}
+  const s=e.target.closest('.eslot');
+  if(s&&eq[s.dataset.slot]){showTip(itemBlock(eq[s.dataset.slot])+'<hr><span class="muted small">Equipped</span>',e);return}
+  hideTip();
+});
+$('inv').addEventListener('mousemove',moveTip);
+$('inv').addEventListener('mouseleave',hideTip);
+function toggleInv(on){
+  if(scene!=='game'||paused)return;
+  if(treeOpen&&on!==false)toggleTree(false);
+  invOpen=on??!invOpen;
+  setOverlay('inv',invOpen);mouse.down=false;hideTip();
   if(invOpen)renderInv();
 }
 
 /* =====================================================================
    7. PASSIVE TREE UI
    ===================================================================== */
-function toggleTree(){
-  if(invOpen)return;
-  treeOpen=!treeOpen;
-  $('tree').classList.toggle('open',treeOpen);
+const TREE_W=400,TREE_H=300,TREE_K=0.56;    // tree drawn in game pixels, scaled to fit
+const tpos=n=>({x:TREE_W/2+n.x*TREE_K,y:TREE_H/2+n.y*TREE_K});
+function toggleTree(on){
+  if(scene!=='game'||paused)return;
+  if(invOpen&&on!==false)toggleInv(false);
+  treeOpen=on??!treeOpen;
+  setOverlay('tree',treeOpen);
   if(treeOpen){renderTree();mouse.down=false}
 }
+function treeTotals(){
+  const t={};
+  for(const id in P.alloc){const n=TBY[id];if(n&&n.k)t[n.k]=(t[n.k]||0)+n.v}
+  return t;
+}
 function renderTree(){
-  const CX=380,CY=260;
-  $('treeInfo').textContent=`Passive points: ${P.points} · Click a glowing node · T or Esc to close`;
+  if(!treeOpen)return;
+  const owned=Object.keys(P.alloc).length-1;
+  $('treePts').innerHTML=`<h3 style="margin-top:0">Points: <span style="color:${P.points?'#ffe14f':'#a89a84'}">${P.points}</span></h3>`+
+    `<span class="muted small">${owned} of ${TREE.length-1} nodes taken · 1 point per level</span>`;
   let lines='',nodes='';
   for(const n of TREE){
     for(const pid of n.parents){
       const p=TBY[pid];if(!p)continue;
-      const on=P.alloc[n.id]&&P.alloc[pid];
-      lines+=`<line x1="${CX+p.x}" y1="${CY+p.y}" x2="${CX+n.x}" y2="${CY+n.y}" stroke="${on?'#b46bff':'#3a2a40'}" stroke-width="3"/>`;
+      const a=tpos(p),b=tpos(n),on=P.alloc[n.id]&&P.alloc[pid],av=!P.alloc[n.id]&&P.alloc[pid];
+      lines+=`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="#000" stroke-width="5"/>`+
+        `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${on?'#c4302c':av?'#b48a34':'#3a3040'}" stroke-width="${on?3:2}"/>`;
     }
   }
   for(const n of TREE){
     const cls=['tn',n.root?'root':'',P.alloc[n.id]?'on':(canAlloc(n)?'av':'')].join(' ');
-    nodes+=`<div class="${cls}" data-id="${n.id}" title="${n.name}: ${n.desc}" style="left:${CX+n.x}px;top:${CY+n.y}px">${n.root?'♛':(n.sym||'◉')}</div>`;
+    const p=tpos(n);
+    nodes+=`<div class="${cls}" data-id="${n.id}" style="left:${p.x/TREE_W*100}%;top:${p.y/TREE_H*100}%">${n.root?'♛':(n.sym||'◉')}</div>`;
   }
-  $('treeLines').innerHTML=`<svg width="760" height="520">${lines}</svg>`;
+  // branch names just past the end of each branch
+  BRANCHES.forEach(b=>{
+    const x=TREE_W/2+Math.cos(b.a)*292*TREE_K,y=TREE_H/2+Math.sin(b.a)*268*TREE_K;
+    nodes+=`<div class="blabel" style="left:${x/TREE_W*100}%;top:${y/TREE_H*100}%">${b.n}</div>`;
+  });
+  $('treeLines').innerHTML=lines;
   $('treeNodes').innerHTML=nodes;
+  const tt=treeTotals(),lbl={hp:'Max Hull',dmg:'Damage %',speed:'Stride %',crit:'Crit Chance %',ward:'Ward',rate:'Swing Speed %',regen:'Hull Regen /s'};
+  $('treeSum').innerHTML=Object.keys(tt).length?Object.entries(tt).map(([k,v])=>`<div class="row" style="display:flex;justify-content:space-between"><span>${lbl[k]||k}</span><b style="color:#e0bf68">+${v}</b></div>`).join(''):
+    '<span class="muted small">No passives yet.</span>';
+}
+function treeNodeInfo(n){
+  const st=P.alloc[n.id]?'<span class="up">Owned</span>':canAlloc(n)?'<span style="color:#ffe14f">Available: click to take</span>':
+    P.points<=0?'<span class="down">No points left. Level up to earn more.</span>':'<span class="down">Locked: take a connected node first</span>';
+  return `<div class="nm">${n.root?'♛':n.sym} ${esc(n.name)}</div><div>${esc(n.desc)}</div>`+(n.branch?`<div class="muted small">${n.branch} branch</div>`:'')+`<div class="small">${st}</div>`;
 }
 $('treeNodes').onclick=e=>{
   const b=e.target.closest('[data-id]');if(!b)return;
@@ -679,9 +1133,10 @@ $('treeNodes').onclick=e=>{
   if(canAlloc(n)){
     P.alloc[n.id]=1;P.points--;calc();
     log(`Passive: ${n.name} (${n.desc})`,'#d9b3ff');
-    renderTree();
+    renderTree();$('treeInfo').innerHTML=treeNodeInfo(n);
   }
 };
+$('treeNodes').addEventListener('mouseover',e=>{const b=e.target.closest('[data-id]');if(b)$('treeInfo').innerHTML=treeNodeInfo(TBY[b.dataset.id])});
 
 /* =====================================================================
    8. COMBAT
@@ -694,15 +1149,17 @@ function dealDamage(e,base){
   addText(e.x,e.y-e.r-6,Math.round(dmg),crit?'#ffe14f':'#ffffff',crit?1.5:1);
   if(S.leech)P.hp=Math.min(P.maxHp,P.hp+dmg*S.leech/100);
   if(hasTrait('siphon'))P.sh=Math.min(P.maxSh,P.sh+dmg*0.15);
-  burst(e.x,e.y,e.c,3);
+  burst(e.x,e.y,'#8f1a1f',3);
   if(e.hp<=0)killEnemy(e);
 }
 function killEnemy(e){
   if(e.dead)return;
   e.dead=true;
   const Tt=ET[e.type];
-  // Sprite enemies leave a death animation behind
-  if(Tt.sprite)corpses.push({key:e.type,x:e.x,y:e.y,animT:0,life:0.8});
+  // Sprite enemies leave a death animation and a blood stain behind
+  corpses.push({key:spriteKey(e),x:e.x,y:e.y,animT:0,life:0.9,flip:e.face<0});
+  decals.push({x:e.x+rnd(-4,4),y:e.y+rnd(2,8),cell:ri(2,5)});
+  if(decals.length>160)decals.shift();
   P.xp+=Tt.xp*(1+floor*0.1);
   const before=P.lvl;
   while(P.xp>=P.xpNext){
@@ -711,11 +1168,11 @@ function killEnemy(e){
     calc();P.hp=P.maxHp;P.sh=P.maxSh;
   }
   if(P.lvl>before){
-    announce(`LEVEL ${P.lvl}`,'#d9b3ff',1.6);
+    announce(`LEVEL ${P.lvl}`,'#d9b3ff',1.6,'Passive point gained · press T');
     log(`Level up! +${P.lvl-before} passive point (press T)`,'#d9b3ff');
   }
   stardust+=ri(1,3);
-  burst(e.x,e.y,e.c,18);
+  burst(e.x,e.y,'#8f1a1f',14);burst(e.x,e.y,'#5e0c13',8);
   if(hasTrait('inferno')){
     burst(e.x,e.y,'#ff7a2b',24);
     for(const o of enemies){
@@ -726,7 +1183,7 @@ function killEnemy(e){
     burst(e.x,e.y,'#ff2b6b',80);
     shake=1;
     for(let k=0;k<3;k++)dropItem(e.x,e.y,3,floor+3);
-    announce('THE WARDEN FALLS','#ffe14f',2.5);
+    announce('THE WARDEN FALLS','#ffe14f',2.5,'The stairs are unsealed');
     log('The stairs are unsealed.','#ffe14f');
   }else if(Math.random()<Tt.drop){
     dropItem(e.x,e.y,e.type==='demon'?2:0,floor+ri(0,3));
@@ -742,14 +1199,15 @@ function hurt(d,noIF){
   P.hp-=rem;shake=Math.max(shake,0.25);
   addText(P.x,P.y-24,'-'+Math.round(d),'#ff4f6e',1);
   if(P.hp<=0){
-    P.hp=0;dead=true;
-    announce('THE KNIGHT FALLS','#ff4f6e',99);
+    P.hp=0;dead=true;setAnim(P,'death');
+    announce('THE KNIGHT FALLS','#c4302c',99,'Press R to rise again · Esc for the menu');
     log('Press R to begin again','#ff4f6e');
   }
 }
 function swing(){
   P.atk=1/S.atkRate;P.swings++;
   P.atkAnim=0.25;              // triggers the player's attack animation
+  setAnim(P,'attack');P.animT=0;
   const oath=hasTrait('oath')&&P.swings%5===0;
   swings.push({x:P.x,y:P.y,a:P.aim,life:.18,r:S.range,arc:S.arcDeg*Math.PI/180,oath});
   const half=S.arcDeg*Math.PI/360;
@@ -775,15 +1233,19 @@ function swing(){
    ===================================================================== */
 function update(dt){
   time+=dt;
+  if(scene!=='game'){updateTitle(dt);return}
   updateFX(dt);
   if(Math.random()<dt*8){
-    parts.push({x:P.x+rnd(-150,150),y:P.y+rnd(-150,150),vx:rnd(-10,10),vy:rnd(-40,-10),life:rnd(1,2.5),max:2.5,c:pick(['#ff7a2b','#ffb347','#ff4f2b']),s:rnd(1,2.5)});
+    // drifting embers and ash
+    const ash=Math.random()<0.35;
+    parts.push({x:P.x+rnd(-320,320),y:P.y+rnd(-180,200),vx:rnd(-10,10),vy:rnd(-40,-10),life:rnd(1,2.5),max:2.5,
+      c:ash?'#5d5059':pick(['#ff7a2b','#ffb347','#ff4f2b']),s:ash?1:rnd(1,2)});
   }
   // Animation timers run even when paused
   P.animT+=dt;P.atkAnim-=dt;P.hurtT-=dt;
   for(const c of corpses){c.animT+=dt;c.life-=dt}
   corpses=corpses.filter(c=>c.life>0);
-  if(invOpen||treeOpen||dead)return;
+  if(invOpen||treeOpen||dead||paused)return;
 
   const mx=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0);
   const my=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0);
@@ -803,7 +1265,7 @@ function update(dt){
     if(!mx&&!my){dx=Math.cos(P.aim);dy=Math.sin(P.aim)}
     slide(P,dx*130,dy*130,10);
     P.roll=S.rollCD;P.inv=0.3;
-    burst(P.x,P.y,'#ffb347',20);
+    burst(P.x,P.y,'#5d5059',16);burst(P.x,P.y,'#ffb347',6);
     keys[' ']=false;
   }
   if(mouse.down&&P.atk<=0)swing();
@@ -847,13 +1309,13 @@ function update(dt){
         e.fire-=dt;
         if(e.fire<=0&&d<620){
           ebullets.push({x:e.x,y:e.y,vx:nx*190,vy:ny*190,life:3.5,dmg:9+floor*2,r:4,c:'#ffe6b0'});
-          e.fire=Tt.shoot;
+          e.fire=Tt.shoot;e.shotAnim=0.3;
         }
       }else if(e.boss){
         vx=nx*e.spd;vy=ny*e.spd;
         e.shot-=dt;
         if(e.shot<=0){
-          e.shot=2.4;
+          e.shot=2.4;e.shotAnim=0.35;
           for(let k=0;k<14;k++){
             const a=k/14*TAU+e.phase;
             ebullets.push({x:e.x,y:e.y,vx:Math.cos(a)*170,vy:Math.sin(a)*170,life:4,dmg:12+floor*2,r:6,c:'#ff2b6b'});
@@ -869,10 +1331,13 @@ function update(dt){
       vx=Math.cos(e.wa)*e.spd*.3;vy=Math.sin(e.wa)*e.spd*.3;
     }
     slide(e,vx*dt,vy*dt,e.r*0.8);
-    // Sprite enemies pick an animation from their state
+    // Face the player when hunting, otherwise face the way it walks
+    if(Math.abs(vx)>2)e.face=(d<Tt.aggro||e.boss)?(dx<0?-1:1):(vx<0?-1:1);
+    e.shotAnim=(e.shotAnim||0)-dt;
+    // Pick an animation from its state
     if(Tt.sprite){
       const mv=Math.hypot(vx,vy)>5;
-      setAnim(e, e.touch>0.5?'attack': e.flash>0.05?'hurt': mv?'walk':'idle');
+      setAnim(e, e.touch>0.5||e.shotAnim>0?'attack': e.flash>0.05?'hurt': mv?'walk':'idle');
     }
     if(tileAt(e.x,e.y)===2){
       e.hp-=14*dt;
@@ -913,7 +1378,7 @@ function update(dt){
     const d=dist(g,P);
     if(d<S.mag){g.x+=(P.x-g.x)*Math.min(1,dt*10);g.y+=(P.y-g.y)*Math.min(1,dt*10)}
     if(d<18&&inv.length<60){
-      inv.push(g);g.dead=true;
+      inv.push(g);g.dead=true;g.got=++pickupSeq;
       log(`Picked up ${g.name}`,colorOf(g));
       if(g.r>=4)announce(RAR[g.r].n.toUpperCase(),colorOf(g),1.4);
       if(invOpen)renderInv();
@@ -927,172 +1392,209 @@ function update(dt){
 /* =====================================================================
    10. DRAW (everything on screen; sprites come from section 1)
    The camera centres on the player. Coordinates are logical pixels.
+   Lighting: a half-resolution darkness layer with holes cut by every
+   light (torch, candles, sconces, lava, stairs), drawn over the world.
    ===================================================================== */
+const lc=mk(LW/2,LH/2),lctx=lc.getContext('2d');
+let lights=[];
+function addLight(x,y,r,i=1){lights.push(x,y,r,i)}
+function floorTile(x,y){
+  const h=hash(x,y);
+  return h<0.4?'floor0':h<0.65?'floor1':h<0.85?'floor2':h<0.95?'floorCrack':'floorBlood';
+}
+function wallFace(x,y){
+  const h=hash(x*3+1,y*7+2);
+  return h<0.64?'wallFace':h<0.71?'wallCross':h<0.77?'wallWindow':h<0.86?'wallSconce':h<0.9?'wallChains':h<0.95?'wallOssuary':'wallBlood';
+}
 function draw(){
+  if(scene!=='game'){drawTitle();return}
   ctx.setTransform(1,0,0,1,0,0);
-  ctx.fillStyle='#07040a';ctx.fillRect(0,0,LW,LH);
+  ctx.imageSmoothingEnabled=false;
+  ctx.fillStyle='#050305';ctx.fillRect(0,0,LW,LH);
+  lights=[];
   const sx=(Math.random()-.5)*shake*10,sy=(Math.random()-.5)*shake*10;
+  const camX=Math.round(LW/2-P.x+sx),camY=Math.round(LH/2-P.y+sy);
   ctx.save();
   // Round the camera so tiles stay pixel-aligned
-  ctx.translate(Math.round(LW/2-P.x+sx),Math.round(LH/2-P.y+sy));
+  ctx.translate(camX,camY);
+  const flick=0.92+Math.sin(time*9)*0.04+Math.sin(time*23)*0.03;
+  addLight(P.x,P.y-6,190*flick,1);
 
   // --- TILES: only the visible range is drawn ---
   const x0=Math.max(0,Math.floor((P.x-LW/2)/T)-1),x1=Math.min(MW-1,Math.ceil((P.x+LW/2)/T)+1);
   const y0=Math.max(0,Math.floor((P.y-LH/2)/T)-1),y1=Math.min(MH-1,Math.ceil((P.y+LH/2)/T)+1);
+  const flames=[];
   for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
     if(!seen[y][x])continue;
     const t=map[y][x],px=x*T,py=y*T;
-    const flick=0.5+0.5*Math.sin(time*2+x*.7+y*.3);
-    const dd=Math.hypot(px+T/2-P.x,py+T/2-P.y);
     if(t===0){
-      // Wall: top tile, plus the front face if the tile below is open floor
-      drawTile(TILE.wallTop,px,py);
-      if(tileAt(px+T/2,py+T+4)!==0){
-        ctx.drawImage(IMG.tiles,TILE.wallFace*16,8,16,8,px,py+T-16,T,16);
-      }
+      // Wall: a front face (with decor) when open floor lies below, otherwise the dark top
+      if(y+1<MH&&map[y+1][x]!==0){
+        const f=wallFace(x,y);
+        if(!drawTile(f,px,py))drawTile('wallFace',px,py);
+        if(f==='wallSconce'){flames.push([px+16,py+9,x+y]);addLight(px+16,py+12,85,0.85)}
+        if(f==='wallWindow')addLight(px+16,py+18,40,0.35);
+      }else drawTile('wallTop',px,py);
     }else if(t===2){
-      // Lava: two frames flicker, plus a warm glow
-      drawTile(flick>0.5?TILE.lava1:TILE.lava0,px,py);
-      ctx.save();ctx.globalCompositeOperation='lighter';
-      ctx.fillStyle=`rgba(255,120,40,${0.12+flick*0.12})`;
-      ctx.beginPath();ctx.arc(px+T/2,py+T/2,T*0.6,0,TAU);ctx.fill();ctx.restore();
+      // Lava: three animated frames, plus light
+      const fr=Math.floor(time*3+hash(x,y)*3)%3;
+      drawTile('lava'+fr,px,py);
+      addLight(px+16,py+16,46,0.55);
     }else if(t===3){
-      // Stairs: tile plus a pulsing ring
-      drawTile(TILE.stairs,px,py);
-      ctx.save();ctx.shadowBlur=18;ctx.shadowColor='#ff7a2b';
-      ctx.strokeStyle=boss&&!boss.dead?'#ff2b6b':'#ffb347';ctx.lineWidth=2;
-      ctx.beginPath();ctx.arc(px+T/2,py+T/2,10+Math.sin(time*4)*2,0,TAU);ctx.stroke();ctx.restore();
+      const sealed=boss&&!boss.dead;
+      drawTile(sealed?'stairsSealed':'stairs',px,py);
+      addLight(px+16,py+16,60,0.7);
     }else{
-      // Floor: alternate two tile variants by position
-      drawTile((x*7+y*13)%3===0?TILE.floorB:TILE.floorA,px,py);
+      drawTile(floorTile(x,y),px,py);
     }
-    // Fog of war: darken tiles beyond the vision radius
-    if(dd>VIS){ctx.fillStyle='rgba(0,0,0,0.55)';ctx.fillRect(px,py,T,T)}
+  }
+
+  // --- DECOR + BLOOD STAINS (visual only) ---
+  for(const d of decor){
+    if(d.tx<x0||d.tx>x1||d.ty<y0||d.ty>y1||!seen[d.ty][d.tx])continue;
+    const px=d.tx*T,py=d.ty*T;
+    drawTile(d.kind,px,py);
+    if(FLAMES[d.kind]){FLAMES[d.kind].forEach(([fx,fy],i)=>flames.push([px+fx,py+fy,d.seed*10+i]));addLight(px+16,py+14,70,0.75)}
+  }
+  for(const b of decals){
+    if(Math.abs(b.x-P.x)>LW/2+16||Math.abs(b.y-P.y)>LH/2+16)continue;
+    ctx.drawImage(IMG.effects,b.cell*16,0,16,16,Math.round(b.x-8),Math.round(b.y-8),16,16);
   }
 
   // --- CHESTS ---
   for(const c of chests){
     const tx=Math.floor(c.x/T),ty=Math.floor(c.y/T);
     if(!seen[ty]||!seen[ty][tx])continue;
-    drawTile(c.open?TILE.chestOpen:TILE.chestShut,c.x-T/2,c.y-T/2);
+    pxShadow(c.x,c.y+11,24);
+    drawTile(c.open?'chestOpen':'chestShut',c.x-T/2,c.y-T/2);
     if(!c.open){
-      ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=0.35;
-      ctx.drawImage(IMG.effects,0,0,16,16,c.x-12,c.y-12,24,24);ctx.restore();
-    }
+      addLight(c.x,c.y,34,0.4);
+      if(Math.floor(time*3+c.x)%4===0)pxRect(c.x-6+Math.floor(hash(c.x,time|0)*12),c.y-12,1,1,'#ffe9a8');
+    }else addLight(c.x,c.y-4,30,0.35);
   }
 
-  // --- GROUND LOOT: item icon from the item sheet, with a glow ---
+  // --- GROUND LOOT: item icon, a rarity light pillar for good drops, and a name ---
   for(const g of ground){
     if(g.r<filter)continue;
-    const c=colorOf(g),bob=Math.sin(g.bob)*2;
-    ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=0.6;
-    ctx.drawImage(IMG.effects,0,0,16,16,g.x-16,g.y+bob-16,32,32);ctx.restore();
-    ctx.save();ctx.shadowBlur=10;ctx.shadowColor=c;
+    const c=colorOf(g),bob=Math.round(Math.sin(g.bob)*2);
+    if(g.r>=2){
+      ctx.save();ctx.globalAlpha=0.18+0.06*Math.sin(time*4+g.id);ctx.fillStyle=c;
+      ctx.fillRect(Math.round(g.x)-2,Math.round(g.y)-40,4,40);ctx.fillRect(Math.round(g.x)-1,Math.round(g.y)-56,2,16);ctx.restore();
+    }
+    pxShadow(g.x,g.y+8,12);
     const idx=Math.max(0,SLOTS.indexOf(g.slot));
-    ctx.drawImage(IMG.items,idx*16,0,16,16,Math.round(g.x-8*SPR/2*1),Math.round(g.y+bob-8),16,16);
-    ctx.restore();
+    ctx.drawImage(IMG.items,idx*16,0,16,16,Math.round(g.x-8),Math.round(g.y+bob-8),16,16);
     if(g.r>=1){
-      ctx.save();ctx.font=`${g.r>=3?'bold ':''}8px Consolas, monospace`;
-      ctx.textAlign='center';ctx.fillStyle=c;ctx.shadowBlur=4;ctx.shadowColor=c;
-      ctx.fillText(g.name,g.x,g.y-14+bob);ctx.restore();
+      addLight(g.x,g.y,22+g.r*5,0.35);
+      ctx.save();ctx.font=`8px ${PXFONT}`;ctx.textAlign='center';
+      const ty=Math.round(g.y-14+bob);
+      ctx.fillStyle='#000';ctx.fillText(g.name,Math.round(g.x)+1,ty+1);
+      ctx.fillStyle=c;ctx.fillText(g.name,Math.round(g.x),ty);ctx.restore();
     }
   }
 
-  // --- DEAD SPRITE ENEMIES (death animation, then gone) ---
-  for(const c of corpses)drawSprite(c.key,'death',c.animT,c.x,c.y);
+  // --- DEAD ENEMIES (death animation, then gone) ---
+  for(const c of corpses){if(!drawSprite(c.key,'death',c.animT,c.x,c.y,c.flip)){}}
 
   // --- LIVING ENEMIES ---
   for(const e of enemies){
     const tx=Math.floor(e.x/T),ty=Math.floor(e.y/T);
     if(!seen[ty]||!seen[ty][tx])continue;
-    // Shadow under every enemy
-    ctx.save();ctx.globalAlpha=0.35;ctx.fillStyle='#000';
-    ctx.beginPath();ctx.ellipse(e.x,e.y+e.r*0.8,e.r*0.9,e.r*0.4,0,0,TAU);ctx.fill();ctx.restore();
-
-    if(ET[e.type].sprite){
-      // SPRITE renderer (imp)
-      drawSprite(e.type,e.anim,e.animT,e.x,e.y);
-    }else{
-      // Procedural renderer (other enemies, still to be converted)
+    pxShadow(e.x,e.y+e.r*0.75,e.r*1.9);
+    if(!drawSprite(spriteKey(e),e.anim,e.animT,e.x,e.y,e.face<0)){
+      // Shape fallback (only if a sprite sheet failed to load)
       const c=e.flash>0?'#ffffff':e.c;
-      ctx.save();ctx.shadowBlur=16;ctx.shadowColor=e.c;
-      const eg=ctx.createRadialGradient(e.x-e.r*0.35,e.y-e.r*0.4,e.r*0.1,e.x,e.y,e.r*1.1);
-      eg.addColorStop(0,'#ffffff');eg.addColorStop(0.25,c);eg.addColorStop(1,'#120204');
-      ctx.fillStyle=e.flash>0?'#ffffff':eg;
-      shape(e.shape,e.x,e.y,e.r);ctx.fill();
-      ctx.shadowBlur=0;ctx.strokeStyle='rgba(0,0,0,0.6)';ctx.lineWidth=1;ctx.stroke();
-      ctx.fillStyle='#ffe6a0';
-      ctx.beginPath();ctx.arc(e.x-e.r*0.35,e.y-e.r*0.15,Math.max(1,e.r*0.14),0,TAU);ctx.arc(e.x+e.r*0.35,e.y-e.r*0.15,Math.max(1,e.r*0.14),0,TAU);ctx.fill();
-      ctx.restore();
+      ctx.save();ctx.fillStyle=c;shape(e.shape,e.x,e.y,e.r);ctx.fill();ctx.restore();
+    }else if(e.flash>0){
+      // brief white hit-flash on top of the sprite
+      ctx.save();ctx.globalAlpha=0.5;ctx.globalCompositeOperation='lighter';
+      drawSprite(spriteKey(e),e.anim,e.animT,e.x,e.y,e.face<0);ctx.restore();
     }
-    // Health bar
-    if(e.hp<e.max){
-      ctx.fillStyle='#222';ctx.fillRect(e.x-e.r,e.y-e.r-8,e.r*2,3);
-      ctx.fillStyle=e.c;ctx.fillRect(e.x-e.r,e.y-e.r-8,e.r*2*Math.max(0,e.hp/e.max),3);
+    if(e.boss)addLight(e.x,e.y-10,70,0.45);
+    // Health bar (pixel style); the Warden's bar is in the HUD instead
+    if(e.hp<e.max&&!e.boss){
+      const w=Math.max(14,Math.round(e.r*2)),bx=Math.round(e.x-w/2),by=Math.round(e.y-e.r-12);
+      pxRect(bx-1,by-1,w+2,4,'#0a0608');pxRect(bx,by,w,2,'#33050a');
+      pxRect(bx,by,Math.round(w*Math.max(0,e.hp/e.max)),2,'#c4302c');pxRect(bx,by,Math.round(w*Math.max(0,e.hp/e.max)),1,'#e8564a');
     }
   }
 
   // --- PROJECTILES ---
-  ctx.lineWidth=2;
   for(const b of bullets){
-    ctx.strokeStyle=b.c;ctx.shadowBlur=8;ctx.shadowColor=b.c;
-    ctx.beginPath();ctx.moveTo(b.x,b.y);ctx.lineTo(b.x-b.vx*0.04,b.y-b.vy*0.04);ctx.stroke();
+    const tx=b.x-b.vx*0.03,ty=b.y-b.vy*0.03;
+    pxRect(tx,ty,2,2,'#a12a06');pxRect((b.x+tx)/2,(b.y+ty)/2,2,2,'#ff6a1a');pxRect(b.x,b.y,2,2,'#ffd27a');
+    addLight(b.x,b.y,20,0.4);
   }
-  ctx.shadowBlur=0;
   for(const b of ebullets){
-    ctx.fillStyle=b.c;ctx.shadowBlur=8;ctx.shadowColor=b.c;
-    ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,TAU);ctx.fill();
+    pxOrb(b.x,b.y,b.r,b.c==='#ffe6b0'?'#c9b48a':'#c4302c');
+    addLight(b.x,b.y,b.r*5,0.35);
   }
-  ctx.shadowBlur=0;
 
-  // --- SWING ARCS ---
+  // --- SWING ARCS (pixel arc that shows your reach) ---
   for(const s of swings){
-    const a0=s.a-s.arc/2,a1=s.a+s.arc/2;
-    ctx.save();ctx.globalAlpha=Math.max(0,s.life/.18);
-    ctx.strokeStyle=s.oath?'#ff7a2b':'#ffe2a0';ctx.lineWidth=3;ctx.shadowBlur=10;ctx.shadowColor='#ff7a2b';
-    ctx.beginPath();ctx.arc(s.x,s.y,s.r,a0,a1);ctx.stroke();ctx.restore();
+    const a0=s.a-s.arc/2,a1=s.a+s.arc/2,f=Math.max(0,s.life/.18);
+    ctx.save();ctx.globalAlpha=0.35+0.5*f;
+    const steps=Math.ceil(s.r*s.arc/2);
+    for(let i=0;i<=steps;i++){
+      const a=a0+(a1-a0)*i/steps;
+      pxRect(s.x+Math.cos(a)*s.r,s.y+Math.sin(a)*s.r,1,1,s.oath?'#ff7a2b':'#ffe2a0');
+      if(i%3===0)pxRect(s.x+Math.cos(a)*(s.r-2),s.y+Math.sin(a)*(s.r-2),1,1,'#8f1a1f');
+    }
+    ctx.restore();
   }
 
-  // --- PARTICLES ---
-  ctx.shadowBlur=0;
+  // --- THE KNIGHT (sprite renderer) ---
+  pxShadow(P.x,P.y+9,20);
+  if(P.sh>0&&P.maxSh>0)pxRing(P.x,P.y-2,15,`rgba(224,191,104,${0.25+0.45*(P.sh/P.maxSh)})`);
+  ctx.save();ctx.globalAlpha=P.inv>0?0.55:1;
+  drawSprite('player',P.anim,P.animT,P.x,P.y,P.face<0);
+  ctx.restore();
+
+  // --- PARTICLES (embers, ash, blood) ---
   for(const p of parts){
     ctx.globalAlpha=Math.max(0,p.life/p.max);ctx.fillStyle=p.c;
     ctx.fillRect(Math.round(p.x),Math.round(p.y),Math.max(1,Math.round(p.s)),Math.max(1,Math.round(p.s)));
   }
   ctx.globalAlpha=1;
+  for(const [fx,fy,s] of flames)drawFlame(fx,fy,s);
+  ctx.restore();
 
-  // --- DAMAGE NUMBERS ---
-  ctx.textAlign='center';
+  // --- LIGHTING (screen space, half resolution so it stays chunky and pixel-like) ---
+  lctx.globalCompositeOperation='source-over';
+  lctx.fillStyle='rgba(4,1,4,0.9)';lctx.fillRect(0,0,lc.width,lc.height);
+  lctx.globalCompositeOperation='destination-out';
+  for(let i=0;i<lights.length;i+=4){
+    const lx=(lights[i]+camX)/2,ly=(lights[i+1]+camY)/2,lr=lights[i+2]/2,li=lights[i+3];
+    if(lx<-lr||ly<-lr||lx>lc.width+lr||ly>lc.height+lr)continue;
+    const g=lctx.createRadialGradient(lx,ly,0,lx,ly,lr);
+    g.addColorStop(0,`rgba(0,0,0,${li})`);g.addColorStop(0.55,`rgba(0,0,0,${li*0.6})`);g.addColorStop(1,'rgba(0,0,0,0)');
+    lctx.fillStyle=g;lctx.fillRect(lx-lr,ly-lr,lr*2,lr*2);
+  }
+  ctx.drawImage(lc,0,0,LW,LH);
+  // warm firelight tint around the knight's torch
+  ctx.save();ctx.globalCompositeOperation='soft-light';ctx.globalAlpha=0.35;
+  const wg=ctx.createRadialGradient(LW/2,LH/2,10,LW/2,LH/2,260);
+  wg.addColorStop(0,'#ff9a4a');wg.addColorStop(1,'#3a0a10');
+  ctx.fillStyle=wg;ctx.fillRect(0,0,LW,LH);ctx.restore();
+
+  // --- DAMAGE NUMBERS (above the darkness so they stay readable) ---
+  ctx.save();ctx.translate(camX,camY);ctx.textAlign='center';
   for(const t of texts){
     ctx.globalAlpha=Math.max(0,t.life/t.max);
-    ctx.fillStyle=t.c;ctx.font=`bold ${Math.round(8*t.s)}px Consolas, monospace`;
-    ctx.fillText(t.t,t.x,t.y);
+    ctx.font=`${t.s>1?16:8}px ${PXFONT}`;
+    ctx.fillStyle='#000';ctx.fillText(t.t,Math.round(t.x)+1,Math.round(t.y)+1);
+    ctx.fillStyle=t.c;ctx.fillText(t.t,Math.round(t.x),Math.round(t.y));
   }
+  ctx.restore();
   ctx.globalAlpha=1;
 
-  // --- THE KNIGHT (sprite renderer) ---
-  ctx.save();
-  ctx.translate(P.x,P.y);
-  if(P.sh>0&&P.maxSh>0){ctx.strokeStyle=`rgba(255,179,71,${0.2+0.3*(P.sh/P.maxSh)})`;ctx.lineWidth=1;ctx.beginPath();ctx.arc(0,0,14,0,TAU);ctx.stroke()}
-  ctx.save();ctx.scale(P.face,1);
-  ctx.globalAlpha=P.inv>0?0.5:1;
-  drawSprite('player',P.anim,P.animT,0,0);
-  ctx.restore();
-  ctx.restore();
-
-  // --- TORCH LIGHT (world space) ---
-  const lg=ctx.createRadialGradient(P.x,P.y,8,P.x,P.y,VIS*0.6);
-  lg.addColorStop(0,'rgba(255,170,90,0.14)');lg.addColorStop(1,'rgba(0,0,0,0)');
-  ctx.fillStyle=lg;ctx.fillRect(P.x-VIS,P.y-VIS,VIS*2,VIS*2);
-  ctx.restore();
-
   // --- VIGNETTE (screen space) ---
-  const v=ctx.createRadialGradient(LW/2,LH/2,LH*0.3,LW/2,LH/2,LW*0.7);
-  v.addColorStop(0,'rgba(0,0,0,0)');v.addColorStop(1,'rgba(0,0,0,0.85)');
+  const v=ctx.createRadialGradient(LW/2,LH/2,LH*0.32,LW/2,LH/2,LW*0.66);
+  v.addColorStop(0,'rgba(0,0,0,0)');v.addColorStop(1,'rgba(0,0,0,0.75)');
   ctx.fillStyle=v;ctx.fillRect(0,0,LW,LH);
 }
 
-// Procedural shape helper (used by enemies that are not yet sprites)
+// Procedural shape helper (fallback when an enemy sprite sheet is missing)
 function shape(type,x,y,r){
   ctx.beginPath();
   if(type==='circle')ctx.arc(x,y,r,0,TAU);
@@ -1100,19 +1602,55 @@ function shape(type,x,y,r){
   else{for(let i=0;i<6;i++){const a=i/6*TAU+0.5,px=x+Math.cos(a)*r,py=y+Math.sin(a)*r;i?ctx.lineTo(px,py):ctx.moveTo(px,py)}ctx.closePath()}
 }
 
+/* ----- TITLE SCENE: painted backdrop, rising embers, a breathing rose window ----- */
+let tparts=[];
+function updateTitle(dt){
+  if(Math.random()<dt*30)tparts.push({x:rnd(0,LW),y:LH+2,vx:rnd(-8,8),vy:rnd(-40,-14),life:rnd(4,9),max:9,c:pick(['#ff6a1a','#ffd27a','#a12a06','#5d5059'])});
+  for(const p of tparts){p.x+=p.vx*dt+Math.sin(time+p.y*0.05)*0.2;p.y+=p.vy*dt;p.life-=dt}
+  tparts=tparts.filter(p=>p.life>0&&p.y>-4);
+}
+function drawTitle(){
+  ctx.setTransform(1,0,0,1,0,0);ctx.imageSmoothingEnabled=false;
+  ctx.fillStyle='#07030a';ctx.fillRect(0,0,LW,LH);
+  if(IMG.title)ctx.drawImage(IMG.title,0,0,LW,LH);
+  ctx.save();ctx.globalCompositeOperation='lighter';
+  const p=0.10+0.06*Math.sin(time*1.7)+0.03*Math.sin(time*7.3);
+  const g=ctx.createRadialGradient(320,196,4,320,196,70);
+  g.addColorStop(0,`rgba(255,120,40,${p})`);g.addColorStop(1,'rgba(255,60,20,0)');
+  ctx.fillStyle=g;ctx.fillRect(250,126,140,140);
+  const d=ctx.createRadialGradient(320,276,2,320,276,60);
+  d.addColorStop(0,`rgba(255,140,60,${p*0.9})`);d.addColorStop(1,'rgba(255,60,20,0)');
+  ctx.fillStyle=d;ctx.fillRect(260,216,120,120);
+  ctx.restore();
+  for(const q of tparts){ctx.globalAlpha=Math.min(1,q.life/q.max*1.5);ctx.fillStyle=q.c;ctx.fillRect(Math.round(q.x),Math.round(q.y),1,1)}
+  ctx.globalAlpha=1;
+  const v=ctx.createRadialGradient(LW/2,LH/2,LH*0.4,LW/2,LH/2,LW*0.7);
+  v.addColorStop(0,'rgba(0,0,0,0)');v.addColorStop(1,'rgba(0,0,0,0.6)');
+  ctx.fillStyle=v;ctx.fillRect(0,0,LW,LH);
+}
+
 /* =====================================================================
    11. HUD AND INPUT
    ===================================================================== */
+let hudCache='';
 function updateHUD(){
-  $('hpb').style.width=(P.hp/P.maxHp*100)+'%';
+  if(scene!=='game')return;
+  const hp=P.hp/P.maxHp*100;
+  $('hpb').style.width=hp+'%';$('hpLag').style.width=hp+'%';
   $('shb').style.width=(P.maxSh?P.sh/P.maxSh*100:0)+'%';
   $('xpb').style.width=(P.xp/P.xpNext*100)+'%';
-  $('lvl').textContent=`HELLBOUND · Circle ${floor} · ${circleName()} · Lv ${P.lvl} · ★ ${stardust}`;
-  $('stats').innerHTML=
-    `Damage ${S.damage.toFixed(0)} · Swing ${S.atkRate.toFixed(1)}/s · Crit ${S.critC.toFixed(0)}%<br>`+
-    `Reach ${S.range.toFixed(0)} · Arc ${S.arcDeg.toFixed(0)}° · Roll CD ${S.rollCD.toFixed(1)}s<br>`+
-    `Passive points: ${P.points}`;
-  $('tr').innerHTML=`FILTER: ${FILTERS[filter]} <span style="opacity:.6">(F)</span><br>Foes: ${enemies.length}<br>Inventory: ${inv.length}/60<br>${boss&&!boss.dead?'<span style="color:#ff2b6b">The Warden lives</span>':'<span style="color:#ffb347">Stairs open</span>'}`;
+  const key=[Math.ceil(P.hp),Math.round(P.maxHp),Math.ceil(P.sh),Math.round(P.maxSh),Math.floor(P.xp),P.xpNext,P.lvl,stardust,P.points,floor,filter,enemies.length,inv.length,boss&&!boss.dead,boss&&Math.ceil(boss.hp)].join();
+  if(key===hudCache)return;hudCache=key;
+  $('hudName').textContent=`THE KNIGHT · LEVEL ${P.lvl}`;
+  $('hpTxt').textContent=`HULL ${Math.ceil(P.hp)}/${Math.round(P.maxHp)}`;
+  $('shTxt').textContent=P.maxSh?`WARD ${Math.ceil(P.sh)}/${Math.round(P.maxSh)}`:'WARD —';
+  $('xpTxt').textContent=`XP ${Math.floor(P.xp)}/${P.xpNext}`;
+  $('hudSub').innerHTML=`★ <b>${stardust}</b> STARDUST · ${P.points?`<b style="color:#ffe14f">${P.points} PASSIVE POINT${P.points>1?'S':''} (T)</b>`:'NO POINTS'}`;
+  $('circle').textContent=`Circle ${floor} · ${circleName()}`;
+  $('tr').innerHTML=`FILTER: ${FILTERS[filter]}<br>FOES: ${enemies.length}<br>RELICS: ${inv.length}/60<br>${boss&&!boss.dead?'<span style="color:#ff6a5a">THE WARDEN LIVES</span>':'<span style="color:#e0bf68">STAIRS OPEN</span>'}`;
+  const showBoss=boss&&!boss.dead&&boss.hp<boss.max;
+  $('bossbar').style.display=showBoss?'block':'none';
+  if(showBoss){$('bossb').style.width=(boss.hp/boss.max*100)+'%';$('bossName').textContent=`The Warden of ${CIRCLES[(floor-1)%CIRCLES.length]}`}
 }
 function openChest(){
   let best=null,bd=44;
@@ -1125,26 +1663,42 @@ function openChest(){
 }
 addEventListener('keydown',e=>{
   const k=e.key.toLowerCase();
-  if(k===' ')e.preventDefault();
+  if(k===' '||k.startsWith('arrow'))e.preventDefault();
+  if(scene==='title'){
+    if($('controls').classList.contains('open')){if(k==='escape'||k==='enter'||k===' ')closeControls();return}
+    if(k==='arrowup'||k==='w')selectMenu(menuSel-1);
+    if(k==='arrowdown'||k==='s')selectMenu(menuSel+1);
+    if(k==='enter'||k===' '){e.preventDefault();document.querySelectorAll('#menu .gbtn')[menuSel].click()}
+    return;
+  }
   keys[k]=true;
+  if(k==='escape'){
+    if($('controls').classList.contains('open'))closeControls();
+    else if(invOpen)toggleInv(false);
+    else if(treeOpen)toggleTree(false);
+    else togglePause();
+    return;
+  }
+  if(paused)return;
   if(k==='i')toggleInv();
   if(k==='t')toggleTree();
-  if(k==='escape'){if(invOpen)toggleInv();if(treeOpen)toggleTree()}
   if(k==='e'&&!invOpen&&!treeOpen&&!dead)openChest();
-  if(k==='f'){filter=(filter+1)%FILTERS.length;log(`Loot filter: ${FILTERS[filter]}`,'#ffb347')}
+  if(k==='f'){filter=(filter+1)%FILTERS.length;log(`Loot filter: ${FILTERS[filter]}`,'#ffb347');renderInv()}
   if(k==='r'&&dead)newGame();
 });
 addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false});
+addEventListener('blur',()=>{for(const k in keys)keys[k]=false;mouse.down=false});
 // Convert screen mouse position to logical (640x360) pixels, so aim matches the scaled canvas
 addEventListener('mousemove',e=>{const r=cv.getBoundingClientRect();mouse.x=(e.clientX-r.left)/SCALE;mouse.y=(e.clientY-r.top)/SCALE});
-addEventListener('mousedown',e=>{if(e.button===0&&!invOpen&&!treeOpen)mouse.down=true});
+// Only clicks on the game itself swing the blade (not clicks on menus or panels)
+addEventListener('mousedown',e=>{if(e.button===0&&scene==='game'&&!anyPanelOpen()&&e.target===cv)mouse.down=true});
 addEventListener('mouseup',e=>{if(e.button===0)mouse.down=false});
 addEventListener('contextmenu',e=>e.preventDefault());
 
 /* =====================================================================
    12. MAIN LOOP AND START
-   Assets load first, then the game starts. The loop runs at the
-   browser's frame rate and uses dt (seconds since last frame).
+   Assets and fonts load first, then the title screen shows. The loop runs
+   at the browser's frame rate and uses dt (seconds since last frame).
    ===================================================================== */
 let last=0;
 function frame(now){
@@ -1154,9 +1708,12 @@ function frame(now){
   updateHUD();
   requestAnimationFrame(frame);
 }
-loadAssets().then(()=>{
-  newGame();
+const fontsReady=Promise.race([
+  Promise.all(['8px Silkscreen','16px Silkscreen','20px "Pirata One"','12px Cinzel'].map(f=>document.fonts?document.fonts.load(f):0)).catch(()=>0),
+  new Promise(r=>setTimeout(r,2500))]);
+Promise.all([loadAssets(),fontsReady]).then(()=>{
   ready=true;
+  selectMenu(0);
   last=performance.now();
   requestAnimationFrame(frame);
 });
