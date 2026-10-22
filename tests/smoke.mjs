@@ -1,13 +1,13 @@
 // Smoke test for HELLBOUND. Runs on GitHub (see .github/workflows/check.yml).
 // Opens index.html in a headless browser and fails if the game crashes or
 // the main controls stop working.
-import { chromium } from 'playwright';
+import { chromium } from 'playwright-core';
 
 const URL = process.env.GAME_URL || 'http://127.0.0.1:8000/index.html';
 const errors = [];
 const fail = msg => { console.error('FAIL: ' + msg); process.exitCode = 1; };
 
-const browser = await chromium.launch();
+const browser = await chromium.launch({ channel: 'chrome' });
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 
 page.on('pageerror', e => errors.push('Script error: ' + e.message));
