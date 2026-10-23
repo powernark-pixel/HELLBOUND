@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Black Market: Zero</title>
+<script>addEventListener('error',e=>{const d=document.getElementById('err');if(d){d.style.display='block';d.textContent='Black Market: Zero hit an error:\n'+e.message+'\n'+(e.filename||'')+' line '+e.lineno+'\n\nSend this text to the developer.'}});</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Bebas+Neue&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body class="title">
+<canvas id="view"></canvas>
+
+<div id="ui">
+  <!-- world-anchored layers -->
+  <div id="worldLayer"></div>
+  <div id="prompt" class="prompt"><span class="key">E</span><span class="ptext"></span><i class="pbar"><b></b></i></div>
+  <div id="waypoint"><i></i></div>
+
+  <!-- status block -->
+  <section id="status" class="panel hud" style="--acc:var(--lime)">
+    <div class="rivets"></div>
+    <div class="st-top">
+      <div class="st-name"><small id="rank">STREET RAT</small><strong>NOBODY</strong></div>
+      <div class="st-cash"><small>CASH</small><strong id="cash">$0</strong></div>
+    </div>
+    <div class="hpbar"><div id="hpFill"></div><div id="hpGhost"></div><span id="hpText">40 / 40</span></div>
+    <div class="gear">
+      <div class="gslot" id="slotWeapon" title="Weapon"></div>
+      <div class="gslot" id="slotBody" title="Body"></div>
+      <div class="gslot" id="slotLab" title="Lab"></div>
+      <div class="gtext"><span id="gearText">Bare hands · Rags</span><span id="labText">No lab</span></div>
+    </div>
+  </section>
+
+  <!-- objective -->
+  <section id="objective" class="panel hud">
+    <div class="rivets"></div>
+    <header class="sec-head" style="--acc:var(--amber)"><span>THE CROSSING</span><em id="objCount">0/7</em></header>
+    <div id="objNow"></div>
+    <ol id="objList"></ol>
+  </section>
+
+  <!-- belt -->
+  <section id="belt" class="panel hud">
+    <div class="rivets"></div>
+    <div class="belt-sec" style="--acc:var(--amber)"><header>SCAVENGE</header><div id="beltIng" class="belt-row"></div></div>
+    <div class="belt-sec" style="--acc:var(--magenta)"><header>STASH</header><div id="beltProd" class="belt-row"></div></div>
+  </section>
+
+  <div id="toasts"></div>
+  <div id="banner"><h1></h1><p></p></div>
+  <div id="hint">WASD move · Mouse aim · <b>LMB</b>/<b>Space</b> attack · <b>Shift</b> dodge · <b>E</b> interact · <b>M</b> mute</div>
+  <div id="hurt"></div>
+  <div id="fade"></div>
+
+  <!-- LAB -->
+  <section id="labPanel" class="panel modal" style="--acc:var(--lime)">
+    <div class="rivets"></div>
+    <header class="modal-head"><div><small id="labTier">TIER 1</small><h2>MAKESHIFT LAB</h2></div><button class="x" data-close>✕</button></header>
+    <div class="lab-grid">
+      <div class="col">
+        <header class="sec-head" style="--acc:var(--amber)"><span>INGREDIENTS</span><em>click to load</em></header>
+        <div id="labIngs" class="inglist"></div>
+      </div>
+      <div class="col mid">
+        <div class="flaskwrap"><canvas id="flask" width="560" height="380"></canvas><div id="labResult"></div></div>
+        <div class="ratio">
+          <span id="ratioA" class="rlab">A</span>
+          <input id="ratio" type="range" min="5" max="95" value="50">
+          <span id="ratioB" class="rlab">B</span>
+        </div>
+        <div class="lab-actions">
+          <button class="btn ghost" id="labClear">Empty</button>
+          <button class="btn hot" id="labCook">COOK</button>
+        </div>
+      </div>
+      <div class="col">
+        <header class="sec-head" style="--acc:var(--cyan)"><span>READOUT</span><em id="readAcc">± rough</em></header>
+        <div id="meters"></div>
+        <div id="effects" class="tags"></div>
+        <header class="sec-head" style="--acc:var(--cyan)"><span>NOTEBOOK</span></header>
+        <div id="notebook" class="notebook"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MARKET -->
+  <section id="marketPanel" class="panel modal" style="--acc:var(--magenta)">
+    <div class="rivets"></div>
+    <header class="modal-head"><div><small>BUYER CONTACT</small><h2>THE FENCE</h2></div><button class="x" data-close>✕</button></header>
+    <p id="fenceLine" class="quote"></p>
+    <div class="mk-grid">
+      <div class="col">
+        <header class="sec-head" style="--acc:var(--magenta)"><span>SELL PRODUCT</span><button class="btn small" id="sellAll">Sell all</button></header>
+        <div id="sellList" class="list"></div>
+      </div>
+      <div class="col">
+        <header class="sec-head" style="--acc:var(--amber)"><span>BUY</span><em>gear &amp; kit</em></header>
+        <div id="buyList" class="list"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- END CARD -->
+  <section id="endPanel" class="panel modal small" style="--acc:var(--lime)">
+    <div class="rivets"></div>
+    <small class="kicker">THE CROSSING · CLAIMED</small>
+    <h2 class="big">FROM STREET RAT<br>TO LOCAL THREAT</h2>
+    <div id="endStats" class="stats"></div>
+    <p class="muted">That's the slice. The corner pays tribute now. Keep cooking, keep selling.</p>
+    <button class="btn hot" id="endContinue">Keep playing</button>
+  </section>
+
+  <!-- TITLE -->
+  <section id="title">
+    <div class="t-inner">
+      <small class="kicker">A VERTICAL SLICE</small>
+      <h1>BLACK MARKET<span>ZERO</span></h1>
+      <p class="tag">You have nothing. Not even a name.</p>
+      <div class="t-btns">
+        <button class="btn hot" id="btnStart">Start in The Crossing</button>
+      </div>
+      <p class="t-help">WASD move · Mouse aim · LMB / Space attack · Shift dodge · E interact</p>
+      <p id="loading" class="t-help">Building the district…</p>
+    </div>
+  </section>
+</div>
+
+<div id="tip"></div>
+<pre id="err"></pre>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
