@@ -42,6 +42,10 @@ def main():
     for k, im in items_ui.ui_images().items():
         im.save(A('ui', k + '.png'))
     title.title_bg().save(A('ui', 'title_bg.png'))
+    # browser tab icon: the knight's helm, doubled to 32x32
+    helm = Img(16, 16)
+    helm.blit(items_ui.item_icons(), 0, 0)
+    helm.scaled(2).save(A('ui', 'icon.png'))
     if preview:
         items_ui.item_icons().scaled(6).save(os.path.join(preview, 'prev_items.png'))
         items_ui.effects().scaled(6).save(os.path.join(preview, 'prev_effects.png'))
