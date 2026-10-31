@@ -21,7 +21,12 @@ jobs:
       # Uses the Google Chrome that GitHub's machines already have, so no browser download.
       - name: Install browser driver
         run: npm install --no-save --no-package-lock playwright-core@1.48.2
+      # Serve the folder above the repo so the game lives at /HELLBOUND/, exactly like GitHub Pages
       - name: Serve the game
-        run: python3 -m http.server 8000 --bind 127.0.0.1 &
+        run: |
+          mkdir -p /tmp/site && ln -s "$GITHUB_WORKSPACE" /tmp/site/HELLBOUND
+          cd /tmp/site && python3 -m http.server 8000 --bind 127.0.0.1 &
+      - name: Check the art builder still runs
+        run: python3 tools/art/build_art.py && git diff --stat -- assets
       - name: Play it
         run: node tests/smoke.mjs
