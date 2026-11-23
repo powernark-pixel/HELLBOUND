@@ -124,6 +124,25 @@ as its own focused piece of work.
 
 ---
 
+## Decisions (2026-11-23)
+
+### 18. Camera: isometric (decided)
+- Move from top-down to an **isometric, diagonal view like Path of Exile / Diablo**, for a more 3D, realistic look.
+- Game logic stays the same; the world is drawn on a diamond grid, walls and props get height.
+- Decide this before the Gardens are built, so the Gardens are made isometric from the start.
+
+### 19. The Gardens: hedge walls and filling the world outside the path
+- The Gardens' walls are **bushes and hedges** instead of stone.
+- The level stays **linear: always moving forwards**.
+- The space outside the path is filled in layers, by distance from the path:
+  1. **Hedge wall** right next to the path (what you bump into).
+  2. **Garden dressing** just beyond it: flower beds, statues, fountains, iron railings, dead trees, a gazebo.
+  3. **Tree canopy and dark foliage** further out, which fades into **fog and darkness**.
+  4. **The mansion on the horizon**, getting closer as you go, so you always know which way is forward.
+- **Gates close behind you** (wrought-iron gates that slam shut) so there's no backtracking.
+
+---
+
 ## Questions to answer before building any of this
 - **The mansion:** is it a hub you return to between descents, or the first level of the descent?
 - **Coming back up:** new levels on the way up, or the same levels changed (harder, corrupted, reversed)?
