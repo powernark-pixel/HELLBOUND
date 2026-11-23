@@ -46,12 +46,41 @@ as its own focused piece of work.
 
 ---
 
+## Worlds, bosses and progression (logged 2026-11-23)
+
+### 7. A big, expansive progression system
+- Progression is a core pillar: lots to unlock and grow over the life of a character.
+
+### 8. The route: gardens, then the mansion, room by room
+- Start in **the Gardens**, then enter **the Mansion**: **corridor → stairs → kitchen → bedroom → toilet**.
+- **Keep each new level fresh**: every area has **its own set of enemies** themed to the room.
+- Enemy examples:
+  - **Toilets** that jump around and splash water
+  - **Sinks** that send out waves
+  - **Big baths** that drop from the sky
+- Boss example: **fight the giant turd** (the bathroom's boss).
+
+### 9. Boss concept: the floating eye octopus
+- A **big floating eye octopus**, with **eyes on its tentacles**.
+- The tentacles **fizz with electricity** and **stab down into 4 areas** at a time
+  (so the player reads the marked zones and dodges).
+
+### 10. A multiplayer quest line for high-tier rewards
+- A **multiplayer quest line** that leads to **certain high-tier items**.
+- Fits with the Void (idea 3): co-operative content for the best loot.
+
+---
+
 ## Questions to answer before building any of this
 - **The mansion:** is it a hub you return to between descents, or the first level of the descent?
 - **Coming back up:** new levels on the way up, or the same levels changed (harder, corrupted, reversed)?
 - **Side levels:** what do they reward (loot, a class skill, lore, a shortcut)?
 - **The Void:** real online play needs servers and accounts, which is a much bigger project than the
   game so far. A first step could be the Void against computer-controlled "echoes" of other builds.
+- **Tone:** the gardens and mansion with killer toilets and a giant turd are darkly funny, while the Blood Altar
+  is grim gothic. Do both live in one game (horror-comedy, like The Binding of Isaac), with the mansion above and
+  hell below? Or does one tone win?
+- **Where hell fits:** is the descent gardens → mansion → down into hell (the Blood Altar and the circles)?
 - **Classes:** which ones to start with (for example a knight for melee, and a gunslinger for guns),
   and does the current passive tree become the first class's tree?
 
