@@ -95,6 +95,35 @@ as its own focused piece of work.
 
 ---
 
+## Story, the mind, and the next level (logged 2026-11-23)
+
+### 13. The opening: shipwrecked
+- The very first step: the knight has **crashed on a boat, washed up on a beach**.
+- Comes with a **weird perk** (to be decided).
+- The beach leads into the Gardens (idea 8).
+
+### 14. The mind: madness and visions
+- Themes of **schizophrenia and mental health**, with **DMT-induced visions** that unfold as the game goes on.
+- Not decided yet; to come back to. A note for later: handle these themes with care, as part of the story
+  and atmosphere, so they don't become a gimmick.
+
+### 15. Next level to rework: the Gardens
+- **Rework the first level into the Garden level**, the start of the gardens → mansion route (idea 8).
+
+### 16. The void blade: a "zip zip zip" dash weapon
+- The purple hologram void blade (idea 11) works like **Noita's teleporting bolt ("Z" spell)**: you **zip
+  from enemy to enemy**, slashing as you blink through them, like **Pyke** in League of Legends.
+- Target: **at least Noita-level weapon art**: bright, animated, readable weapon effects.
+
+### 17. Engine question: stay in HTML or move to Unreal Engine 5?
+- Asked: is HTML still viable, or do we need Unreal Engine 5 for Noita-level weapon art?
+- Short answer recorded here: **HTML can carry this game**. Noita-quality weapon art is about the art and effects,
+  not the engine. UE5 is built for 3D and is a poor fit for a 2D pixel-art game. If HELLBOUND outgrows the browser
+  (a Steam release, heavy physics, online play), **Godot** is the better move: free, excellent at 2D pixel art,
+  and it can still export to the web.
+
+---
+
 ## Questions to answer before building any of this
 - **The mansion:** is it a hub you return to between descents, or the first level of the descent?
 - **Coming back up:** new levels on the way up, or the same levels changed (harder, corrupted, reversed)?
