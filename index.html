@@ -269,6 +269,7 @@ h3{font-size:calc(var(--u)*10);margin:calc(var(--u)*3) 0 calc(var(--u)*2)}
   </div>
 </div>
 
+<script src="levels/blood_altar.js"></script>
 <script>
 /* =====================================================================
    0. CORE SETUP AND PIXEL PIPELINE
@@ -323,7 +324,8 @@ const ASSET_PATHS={
   tiles:'assets/tiles/dungeon_tiles.png',
   items:'assets/items/item_icons.png',
   effects:'assets/effects/effects.png',
-  title:'assets/ui/title_bg.png'
+  title:'assets/ui/title_bg.png',
+  altar:'assets/tiles/altar.png'
 };
 // SHEETS: how each PNG sprite sheet is cut up.
 // fw/fh = frame size. ax/ay = the point in the frame placed on the entity's position.
@@ -360,10 +362,12 @@ const FALLBACK_SHEETS={
 const TILE_NAMES=['floor0','floor1','floor2','floorBlood','floorCrack',
   'wallTop','wallFace','wallCross','wallWindow','wallSconce','wallChains','wallOssuary','wallBlood',
   'lava0','lava1','lava2','stairs','stairsSealed','chestShut','chestOpen',
-  'decoSkulls','decoBones','decoCandles','decoPool','decoPillar','decoCrucifix'];
+  'decoSkulls','decoBones','decoCandles','decoPool','decoPillar','decoCrucifix',
+  'blood0','blood1','blood2','carpetH','carpetV','floorSigil'];
 // Fallback tile sheet (16px code art): which old tile stands in for each name
 const FALLBACK_TILE={floor0:0,floor1:1,floor2:0,floorBlood:1,floorCrack:0,wallTop:2,wallFace:3,wallCross:3,wallWindow:3,
-  wallSconce:3,wallChains:3,wallOssuary:3,wallBlood:3,lava0:4,lava1:5,lava2:4,stairs:6,stairsSealed:6,chestShut:7,chestOpen:8};
+  wallSconce:3,wallChains:3,wallOssuary:3,wallBlood:3,lava0:4,lava1:5,lava2:4,stairs:6,stairsSealed:6,chestShut:7,chestOpen:8,
+  blood0:4,blood1:5,blood2:4,carpetH:1,carpetV:1,floorSigil:1};
 // Candle wick positions inside the decor/sconce tiles (for animated flames + light)
 const FLAMES={decoCandles:[[9,15],[15,11],[21,16],[12,18]],wallSconce:[[16,9]]};
 const IMG={}, SD={}, TS={img:null,size:32,idx:{}};
@@ -717,6 +721,7 @@ function calc(){
 function tileAt(x,y){
   const tx=Math.floor(x/T),ty=Math.floor(y/T);
   if(tx<0||ty<0||tx>=MW||ty>=MH)return 0;
+  if(level&&level.solid[ty*MW+tx])return 0;   // e.g. the altar slab
   return map[ty][tx];
 }
 function freeAt(x,y,r){return tileAt(x-r,y-r)&&tileAt(x+r,y-r)&&tileAt(x-r,y+r)&&tileAt(x+r,y+r)}
@@ -740,16 +745,68 @@ function pickType(){
   if(floor<3)return pick(['imp','hound','archer']);
   return pick(['hound','archer','demon','imp']);
 }
+// o.hpMul / o.dmgMul / o.spdMul scale an enemy (used by handcrafted levels for tougher areas and elites)
 function spawnEnemy(type,o={}){
   const Tt=ET[type],mult=1+(floor-1)*0.3;
-  const hp=(o.boss?900:Tt.hp)*mult;
-  const e={type,x:o.x,y:o.y,hp,max:hp,r:o.boss?34:Tt.r,spd:Tt.spd,fire:0,touch:0,flash:0,
+  const hp=(o.boss?900:Tt.hp)*mult*(o.hpMul||1);
+  const e={type,x:o.x,y:o.y,hp,max:hp,r:o.boss?34:Tt.r,spd:Tt.spd*(o.spdMul||1),fire:0,touch:0,flash:0,
     boss:!!o.boss,c:o.boss?'#ff2b6b':Tt.c,shape:Tt.shape,wt:0,wa:0,shot:2.4,phase:0,
-    anim:'idle',animT:Math.random(),face:1};
+    anim:'idle',animT:Math.random(),face:1,dmgMul:o.dmgMul||1,elite:!!o.elite,dormant:!!o.dormant};
   enemies.push(e);
   return e;
 }
+
+/* ----- HANDCRAFTED LEVELS -----
+   Circle 1 is The Blood Altar (levels/blood_altar.js): one long path, seven areas,
+   each harder than the last. Deeper circles are still generated at random. */
+let level=null;
+const FACE_CH={'+':'wallCross',w:'wallWindow',o:'wallOssuary',s:'wallSconce',n:'wallChains',r:'wallBlood'};
+const DECO_CH={c:'decoCandles',k:'decoSkulls',b:'decoBones',p:'decoPillar',x:'decoCrucifix',u:'decoPool'};
+const ENEMY_CH={i:['imp'],h:['hound'],a:['archer'],d:['demon'],I:['imp',1],H:['hound',1],R:['archer',1],D:['demon',1]};
+function buildLevel(L){
+  map=Array.from({length:MH},()=>new Uint8Array(MW));
+  seen=Array.from({length:MH},()=>new Uint8Array(MW));
+  rooms=[];chests=[];enemies=[];bullets=[];ebullets=[];ground=[];corpses=[];decor=[];decals=[];
+  const faces={},floors={},solid=new Uint8Array(MW*MH),areas=[],foes=[];
+  let start=null,altarAt=null,warden=null;
+  L.map.forEach((row,y)=>{for(let x=0;x<row.length;x++){
+    const ch=row[x],k=x+','+y,px=x*T+T/2,py=y*T+T/2;
+    if(ch==='#'||FACE_CH[ch]){if(FACE_CH[ch])faces[k]=FACE_CH[ch];continue}   // walls stay 0
+    map[y][x]=ch==='~'?2:ch==='X'?3:1;
+    if(ch==='=')floors[k]='carpet';
+    if(ch==='g')floors[k]='floorSigil';
+    if(ch==='S')start={x:px,y:py};
+    if(ch==='X')stairsT={x,y};
+    if(ch==='A')altarAt={x:px,y:py,tx:x,ty:y};
+    if(ch==='C')chests.push({x:px,y:py,open:false});
+    if(DECO_CH[ch])decor.push({tx:x,ty:y,kind:DECO_CH[ch],seed:hash(x,y)});
+    if(ch>='2'&&ch<='7')areas.push({x:px,y:py,tx:x,ty:y,n:+ch,done:false});
+    if(ENEMY_CH[ch])foes.push({x:px,y:py,tx:x,ty:y,type:ENEMY_CH[ch][0],elite:!!ENEMY_CH[ch][1]});
+    if(ch==='W')warden={x:px,y:py};
+  }});
+  // The altar slab blocks movement (its tiles are still drawn as floor)
+  if(altarAt)for(let dx=-1;dx<=1;dx++)solid[altarAt.ty*MW+altarAt.tx+dx]=1;
+  // Walk the path from the start (used to check every part of the level can be reached)
+  const steps=new Int32Array(MW*MH).fill(-1),q=[];
+  const sx=Math.floor(start.x/T),sy=Math.floor(start.y/T);steps[sy*MW+sx]=0;q.push(sx,sy);
+  for(let i=0;i<q.length;i+=2){const x=q[i],y=q[i+1],s=steps[y*MW+x];
+    for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy;
+      if(nx<0||ny<0||nx>=MW||ny>=MH||!map[ny][nx]||steps[ny*MW+nx]>=0)continue;
+      steps[ny*MW+nx]=s+1;q.push(nx,ny)}}
+  // Each enemy takes the toughness of the area it stands in: area 1 is the gentlest, area 7 the hardest
+  const tierAt=(tx,ty)=>{for(const [n,x0,y0,x1,y1] of L.zones||[])if(tx>=x0&&tx<=x1&&ty>=y0&&ty<=y1)return n;return 1};
+  for(const f of foes){
+    const t=tierAt(f.tx,f.ty);
+    spawnEnemy(f.type,{x:f.x,y:f.y,hpMul:(1+0.22*(t-1))*(f.elite?1.8:1),dmgMul:(1+0.12*(t-1))*(f.elite?1.35:1),
+      spdMul:f.elite?1.15:1,elite:f.elite});
+  }
+  boss=spawnEnemy('demon',{x:warden.x,y:warden.y,boss:true,dormant:true});
+  P.x=start.x;P.y=start.y;P.vx=0;P.vy=0;
+  level={name:L.name,areaNames:L.areas,hints:L.hints,faces,floors,solid,areas,altarAt,steps};
+}
 function genFloor(){
+  level=null;
+  if(floor===1&&window.LEVEL_BLOOD_ALTAR){buildLevel(window.LEVEL_BLOOD_ALTAR);return}
   map=Array.from({length:MH},()=>new Uint8Array(MW));
   seen=Array.from({length:MH},()=>new Uint8Array(MW));
   rooms=[];chests=[];enemies=[];bullets=[];ebullets=[];ground=[];corpses=[];
@@ -810,6 +867,7 @@ function decorate(){
   });
 }
 function circleName(){
+  if(level)return level.name;
   const i=(floor-1)%CIRCLES.length;
   return CIRCLES[i]+(floor>CIRCLES.length?` (depth ${floor})`:'');
 }
@@ -824,7 +882,7 @@ function newGame(){
   genFloor();calc();P.hp=P.maxHp;P.sh=P.maxSh;
   $('log').innerHTML='';
   log('You descend into hell. Your blade is all you have.','#ffb347');
-  announce(`CIRCLE 1: ${circleName()}`,'#ff7a2b',2.4);
+  announce(`CIRCLE 1: ${circleName()}`,'#ff7a2b',3,level?level.hints[1]:'');
 }
 function descend(){
   floor++;
@@ -1295,6 +1353,18 @@ function update(dt){
     if(dx*dx+dy*dy<=64&&x>=0&&y>=0&&x<MW&&y<MH)seen[y][x]=1;
   }
 
+  // Handcrafted level: announce each area as you reach it; the Warden wakes at the altar
+  if(level){
+    for(const a of level.areas){
+      if(a.done||Math.hypot(P.x-a.x,P.y-a.y)>T*2.4)continue;
+      a.done=true;
+      announce(level.areaNames[a.n].toUpperCase(),a.n===7?'#ff3a2a':'#d9a066',2.8,level.hints[a.n]||'');
+      log(`${level.areaNames[a.n]}: ${level.hints[a.n]||''}`,'#d9a066');
+      if(a.n===7&&boss&&boss.dormant){boss.dormant=false;shake=0.6;log('The Warden rises from the altar.','#ff4f6e')}
+    }
+    if(boss&&boss.dormant&&dist(boss,P)<260){boss.dormant=false}
+  }
+
   // enemies
   for(const e of enemies){
     if(e.dead)continue;
@@ -1303,13 +1373,13 @@ function update(dt){
     const nx=dx/d,ny=dy/d;
     e.touch-=dt;e.flash-=dt;e.animT+=dt;
     let vx=0,vy=0;
-    if(d<Tt.aggro||e.boss){
+    if((d<Tt.aggro||e.boss)&&!e.dormant){
       if(e.type==='archer'){
         if(d>170){vx=nx*e.spd;vy=ny*e.spd}
         else if(d<120){vx=-nx*e.spd;vy=-ny*e.spd}
         e.fire-=dt;
         if(e.fire<=0&&d<620){
-          ebullets.push({x:e.x,y:e.y,vx:nx*190,vy:ny*190,life:3.5,dmg:9+floor*2,r:4,c:'#ffe6b0'});
+          ebullets.push({x:e.x,y:e.y,vx:nx*190,vy:ny*190,life:3.5,dmg:(9+floor*2)*e.dmgMul,r:4,c:'#ffe6b0'});
           e.fire=Tt.shoot;e.shotAnim=0.3;
         }
       }else if(e.boss){
@@ -1319,7 +1389,7 @@ function update(dt){
           e.shot=2.4;e.shotAnim=0.35;
           for(let k=0;k<14;k++){
             const a=k/14*TAU+e.phase;
-            ebullets.push({x:e.x,y:e.y,vx:Math.cos(a)*170,vy:Math.sin(a)*170,life:4,dmg:12+floor*2,r:6,c:'#ff2b6b'});
+            ebullets.push({x:e.x,y:e.y,vx:Math.cos(a)*170,vy:Math.sin(a)*170,life:4,dmg:(12+floor*2)*e.dmgMul,r:6,c:'#ff2b6b'});
           }
           e.phase+=0.2;
         }
@@ -1346,7 +1416,7 @@ function update(dt){
     }
     if(d<e.r+10&&e.touch<=0){
       const mult=(1+(floor-1)*0.15)*(e.boss?1.2:1);
-      hurt(Tt.dmg*mult);
+      hurt(Tt.dmg*mult*e.dmgMul);
       e.touch=0.7;
       burst(e.x,e.y,'#ff4f2b',6);
     }
@@ -1431,22 +1501,37 @@ function draw(){
     if(t===0){
       // Wall: a front face (with decor) when open floor lies below, otherwise the dark top
       if(y+1<MH&&map[y+1][x]!==0){
-        const f=wallFace(x,y);
+        // handcrafted levels choose their wall decor; random floors pick it by position
+        const f=level?(level.faces[x+','+y]||(hash(x,y)<0.08?'wallBlood':'wallFace')):wallFace(x,y);
         if(!drawTile(f,px,py))drawTile('wallFace',px,py);
         if(f==='wallSconce'){flames.push([px+16,py+9,x+y]);addLight(px+16,py+12,85,0.85)}
         if(f==='wallWindow')addLight(px+16,py+18,40,0.35);
       }else drawTile('wallTop',px,py);
     }else if(t===2){
       // Lava: three animated frames, plus light
-      const fr=Math.floor(time*3+hash(x,y)*3)%3;
-      drawTile('lava'+fr,px,py);
-      addLight(px+16,py+16,46,0.55);
+      if(level){
+        // The Blood Altar's rivers run with blood instead of lava (same danger)
+        const fr=Math.floor(time*2+y*0.35)%3;
+        drawTile('blood'+fr,px,py);
+        if((x+y)%2===0)addLight(px+16,py+16,34,0.22);
+      }else{
+        const fr=Math.floor(time*3+hash(x,y)*3)%3;
+        drawTile('lava'+fr,px,py);
+        addLight(px+16,py+16,46,0.55);
+      }
     }else if(t===3){
       const sealed=boss&&!boss.dead;
       drawTile(sealed?'stairsSealed':'stairs',px,py);
       addLight(px+16,py+16,60,0.7);
     }else{
-      drawTile(floorTile(x,y),px,py);
+      const lf=level&&level.floors[x+','+y];
+      if(lf==='carpet'){
+        // the carpet runs along whichever way its neighbours continue
+        const h=level.floors[(x-1)+','+y]==='carpet'||level.floors[(x+1)+','+y]==='carpet';
+        drawTile(h?'carpetH':'carpetV',px,py);
+      }else if(lf)drawTile(lf,px,py);
+      else drawTile(floorTile(x,y),px,py);
+      if(lf==='floorSigil')addLight(px+16,py+16,40,0.3);
     }
   }
 
@@ -1460,6 +1545,14 @@ function draw(){
   for(const b of decals){
     if(Math.abs(b.x-P.x)>LW/2+16||Math.abs(b.y-P.y)>LH/2+16)continue;
     ctx.drawImage(IMG.effects,b.cell*16,0,16,16,Math.round(b.x-8),Math.round(b.y-8),16,16);
+  }
+  // --- THE BLOOD ALTAR (a large prop: its slab sits on the altar tile, the cross rises behind) ---
+  if(level&&level.altarAt&&IMG.altar&&seen[level.altarAt.ty][level.altarAt.tx]){
+    const a=level.altarAt,ax=Math.round(a.x-48),ay=Math.round(a.y+T/2+6-80);
+    ctx.drawImage(IMG.altar,ax,ay);
+    const pulse=0.55+0.25*Math.sin(time*2.2);
+    addLight(a.x,a.y-38,110,pulse);addLight(a.x,a.y,70,0.5);
+    flames.push([a.x-36,a.y-14,1],[a.x+36,a.y-14,2]);
   }
 
   // --- CHESTS ---
@@ -1502,6 +1595,12 @@ function draw(){
     const tx=Math.floor(e.x/T),ty=Math.floor(e.y/T);
     if(!seen[ty]||!seen[ty][tx])continue;
     pxShadow(e.x,e.y+e.r*0.75,e.r*1.9);
+    if(e.elite){
+      // elites stand in a pulsing ring of blood and give off a red glow
+      pxRing(e.x,e.y+e.r*0.6,e.r+3+Math.sin(time*5)*1.5,'rgba(196,48,44,0.85)',0.25);
+      addLight(e.x,e.y,40,0.35);
+      if(Math.random()<0.15)parts.push({x:e.x+rnd(-e.r,e.r),y:e.y+rnd(-4,6),vx:0,vy:rnd(-30,-12),life:0.6,max:0.6,c:'#c4302c',s:1});
+    }
     if(!drawSprite(spriteKey(e),e.anim,e.animT,e.x,e.y,e.face<0)){
       // Shape fallback (only if a sprite sheet failed to load)
       const c=e.flash>0?'#ffffff':e.c;
@@ -1651,7 +1750,7 @@ function updateHUD(){
   $('tr').innerHTML=`FILTER: ${FILTERS[filter]}<br>FOES: ${enemies.length}<br>RELICS: ${inv.length}/60<br>${boss&&!boss.dead?'<span style="color:#ff6a5a">THE WARDEN LIVES</span>':'<span style="color:#e0bf68">STAIRS OPEN</span>'}`;
   const showBoss=boss&&!boss.dead&&boss.hp<boss.max;
   $('bossbar').style.display=showBoss?'block':'none';
-  if(showBoss){$('bossb').style.width=(boss.hp/boss.max*100)+'%';$('bossName').textContent=`The Warden of ${CIRCLES[(floor-1)%CIRCLES.length]}`}
+  if(showBoss){$('bossb').style.width=(boss.hp/boss.max*100)+'%';$('bossName').textContent=level?`The Warden of ${level.name.replace(/^The /,'the ')}`:`The Warden of ${CIRCLES[(floor-1)%CIRCLES.length]}`}
 }
 function openChest(){
   let best=null,bd=44;
