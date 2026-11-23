@@ -39,6 +39,23 @@ await page.waitForTimeout(300);
 const errBoxShown = await page.evaluate(() => getComputedStyle(document.getElementById('err')).display !== 'none');
 if (errBoxShown) fail('error box is showing: ' + await page.textContent('#err'));
 
+// 2a. the shack: every run starts in the hideout; the stash works; the trapdoor leads down
+const shack = await page.evaluate(() => ({
+  inShack: !!level && level.safe === true && circleName() === 'The Shack',
+  noEnemies: enemies.length === 0,
+  hasStashBedTrapdoor: !!level.stash && !!level.bed && !!stairsT,
+}));
+shack.inShack ? ok('New Game starts in the shack') : fail('New Game did not start in the shack');
+shack.noEnemies && shack.hasStashBedTrapdoor ? ok('the shack is safe and has a stash, bed and trapdoor') : fail('shack is missing pieces: ' + JSON.stringify(shack));
+const stashOk = await page.evaluate(() => {
+  const it = makeItem('ring', 1, 0); inv.push(it); storeId(it.id);
+  const stored = stash.some(i => i.id === it.id) && !inv.some(i => i.id === it.id);
+  takeId(it.id); return stored && inv.some(i => i.id === it.id);
+});
+stashOk ? ok('items can be stored in and taken from the stash') : fail('the stash did not store/take an item');
+await page.evaluate(() => { P.x = (stairsT.x + .5) * T; P.y = (stairsT.y + .5) * T; });
+await page.waitForTimeout(400);
+
 // 2b. the Blood Altar: handcrafted first level is loaded and every part of it can be reached
 const lv = await page.evaluate(() => {
   const reach = (tx, ty) => level && level.steps[ty * MW + tx] >= 0;

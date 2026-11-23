@@ -235,7 +235,7 @@ h3{font-size:calc(var(--u)*10);margin:calc(var(--u)*3) 0 calc(var(--u)*2)}
   <!-- Inventory / Reliquary -->
   <div id="inv" class="overlay shade">
     <div class="panel frame" id="invPanel">
-      <div id="invHead"><h2>Reliquary</h2><span id="invtitle" class="muted"></span>
+      <div id="invHead"><h2>Reliquary</h2><span id="modeTabs"></span><span id="invtitle" class="muted"></span>
         <button class="gbtn small xbtn" data-close="inv" title="Close (I or Esc)">✕</button></div>
       <div id="invBody">
         <div id="equip"></div>
@@ -273,6 +273,7 @@ h3{font-size:calc(var(--u)*10);margin:calc(var(--u)*3) 0 calc(var(--u)*2)}
 </div>
 
 <script src="levels/blood_altar.js"></script>
+<script src="levels/shack.js"></script>
 <script src="audio/sfx.js"></script>
 <script>
 /* =====================================================================
@@ -330,6 +331,7 @@ const ASSET_PATHS={
   effects:'assets/effects/effects.png',
   title:'assets/ui/title_bg.png',
   altar:'assets/tiles/altar.png',
+  hearth:'assets/tiles/hearth.png',
   rat:'assets/sprites/enemies/rat_sheet.png',      // Dark Enemies Pack by WilliamQM (see CREDITS.md)
   bloodfx:'assets/fx/blood_fx.png'                 // Blood FX by jasontomlee (see CREDITS.md)
 };
@@ -387,11 +389,13 @@ const TILE_NAMES=['floor0','floor1','floor2','floorBlood','floorCrack',
   'wallTop','wallFace','wallCross','wallWindow','wallSconce','wallChains','wallOssuary','wallBlood',
   'lava0','lava1','lava2','stairs','stairsSealed','chestShut','chestOpen',
   'decoSkulls','decoBones','decoCandles','decoPool','decoPillar','decoCrucifix',
-  'blood0','blood1','blood2','carpetH','carpetV','floorSigil'];
+  'blood0','blood1','blood2','carpetH','carpetV','floorSigil',
+  'woodFloor0','woodFloor1','woodWallFace','woodWallTop','woodWindow','trapdoor','stash','decoBed','decoRug'];
 // Fallback tile sheet (16px code art): which old tile stands in for each name
 const FALLBACK_TILE={floor0:0,floor1:1,floor2:0,floorBlood:1,floorCrack:0,wallTop:2,wallFace:3,wallCross:3,wallWindow:3,
   wallSconce:3,wallChains:3,wallOssuary:3,wallBlood:3,lava0:4,lava1:5,lava2:4,stairs:6,stairsSealed:6,chestShut:7,chestOpen:8,
-  blood0:4,blood1:5,blood2:4,carpetH:1,carpetV:1,floorSigil:1};
+  blood0:4,blood1:5,blood2:4,carpetH:1,carpetV:1,floorSigil:1,
+  woodFloor0:0,woodFloor1:1,woodWallFace:3,woodWallTop:2,woodWindow:3,trapdoor:6,stash:7};
 // Candle wick positions inside the decor/sconce tiles (for animated flames + light)
 const FLAMES={decoCandles:[[9,15],[15,11],[21,16],[12,18]],wallSconce:[[16,9]]};
 const IMG={}, SD={}, TS={img:null,size:32,idx:{}};
@@ -786,14 +790,14 @@ function spawnEnemy(type,o={}){
    each harder than the last. Deeper circles are still generated at random. */
 let level=null;
 const FACE_CH={'+':'wallCross',w:'wallWindow',o:'wallOssuary',s:'wallSconce',n:'wallChains',r:'wallBlood'};
-const DECO_CH={c:'decoCandles',k:'decoSkulls',b:'decoBones',p:'decoPillar',x:'decoCrucifix',u:'decoPool'};
+const DECO_CH={E:'decoBed',Q:'decoRug',c:'decoCandles',k:'decoSkulls',b:'decoBones',p:'decoPillar',x:'decoCrucifix',u:'decoPool'};
 const ENEMY_CH={m:['rat'],i:['imp'],h:['hound'],a:['archer'],d:['demon'],I:['imp',1],H:['hound',1],R:['archer',1],D:['demon',1]};
 function buildLevel(L){
   map=Array.from({length:MH},()=>new Uint8Array(MW));
   seen=Array.from({length:MH},()=>new Uint8Array(MW));
   rooms=[];chests=[];enemies=[];bullets=[];ebullets=[];ground=[];corpses=[];decor=[];decals=[];fxs=[];
   const faces={},floors={},solid=new Uint8Array(MW*MH),areas=[],foes=[];
-  let start=null,altarAt=null,warden=null;
+  let start=null,altarAt=null,warden=null,hearth=null,stashAt=null,bedAt=null;
   L.map.forEach((row,y)=>{for(let x=0;x<row.length;x++){
     const ch=row[x],k=x+','+y,px=x*T+T/2,py=y*T+T/2;
     if(ch==='#'||FACE_CH[ch]){if(FACE_CH[ch])faces[k]=FACE_CH[ch];continue}   // walls stay 0
@@ -808,9 +812,15 @@ function buildLevel(L){
     if(ch>='2'&&ch<='7')areas.push({x:px,y:py,tx:x,ty:y,n:+ch,done:false});
     if(ENEMY_CH[ch])foes.push({x:px,y:py,tx:x,ty:y,type:ENEMY_CH[ch][0],elite:!!ENEMY_CH[ch][1]});
     if(ch==='W')warden={x:px,y:py};
+    if(ch==='F')hearth={tx:x,ty:y};
+    if(ch==='Z')stashAt={x:px,y:py,tx:x,ty:y};
+    if(ch==='E')bedAt={x:px,y:py};
   }});
   // The altar slab blocks movement (its tiles are still drawn as floor)
   if(altarAt)for(let dx=-1;dx<=1;dx++)solid[altarAt.ty*MW+altarAt.tx+dx]=1;
+  // The hearth (2x2 tiles) and the stash chest block movement too
+  if(hearth)for(let dy=0;dy<2;dy++)for(let dx=0;dx<2;dx++)solid[(hearth.ty+dy)*MW+hearth.tx+dx]=1;
+  if(stashAt)solid[stashAt.ty*MW+stashAt.tx]=1;
   // Walk the path from the start (used to check every part of the level can be reached)
   const steps=new Int32Array(MW*MH).fill(-1),q=[];
   const sx=Math.floor(start.x/T),sy=Math.floor(start.y/T);steps[sy*MW+sx]=0;q.push(sx,sy);
@@ -825,9 +835,11 @@ function buildLevel(L){
     spawnEnemy(f.type,{x:f.x,y:f.y,hpMul:(1+0.22*(t-1))*(f.elite?1.8:1),dmgMul:(1+0.12*(t-1))*(f.elite?1.35:1),
       spdMul:f.elite?1.15:1,elite:f.elite});
   }
-  boss=spawnEnemy('demon',{x:warden.x,y:warden.y,boss:true,dormant:true});
+  boss=warden?spawnEnemy('demon',{x:warden.x,y:warden.y,boss:true,dormant:true}):null;
   P.x=start.x;P.y=start.y;P.vx=0;P.vy=0;
-  level={name:L.name,areaNames:L.areas,hints:L.hints,faces,floors,solid,areas,altarAt,steps};
+  level={name:L.name,areaNames:L.areas||{},hints:L.hints||{},faces,floors,solid,areas,altarAt,steps,
+    safe:!!L.safe,style:L.style||'stone',hearth,stash:stashAt,bed:bedAt};
+  if(level.safe)for(let y=0;y<MH;y++)seen[y].fill(1);   // a safe room is fully visible
 }
 function genFloor(){
   level=null;
@@ -904,13 +916,40 @@ function newGame(){
   eq={blade:makeItem('blade',1,0),helm:null,plate:null,gloves:null,greaves:null,boots:null,ring:null,sigil:null};
   inv=[];stardust=0;filter=0;dead=false;shake=0;parts=[];texts=[];swings=[];invOpen=false;treeOpen=false;pickupSeq=0;
   closeAllOverlays();
-  genFloor();calc();P.hp=P.maxHp;P.sh=P.maxSh;
   $('log').innerHTML='';
+  if(window.LEVEL_SHACK){enterShack(true);return}
+  genFloor();calc();P.hp=P.maxHp;P.sh=P.maxSh;
   log('You descend into hell. Your blade is all you have.','#ffb347');
   announce(`CIRCLE 1: ${circleName()}`,'#ff7a2b',3,level?level.hints[1]:'');
 }
+/* ----- THE SHACK: the hideout between levels -----
+   Every run starts here, and the stairs at the end of each level bring you back.
+   Rest at the bed, keep items safe in the stash, then take the trapdoor down. */
+function enterShack(first){
+  buildLevel(window.LEVEL_SHACK);calc();
+  P.hp=P.maxHp;P.sh=P.maxSh;P.warned=false;invMode='bag';
+  if(first){
+    log('Your shack. Sort your loot, stash what you want to keep, then take the trapdoor down.','#ffb347');
+    announce('THE SHACK','#e0bf68',3.2,'Stash your best gear. It survives death');
+  }else{
+    log(`Circle ${floor-1} survived. Your wounds close by the fire.`,'#ffb347');
+    announce('THE SHACK','#e0bf68',2.6,`Rest, sort your loot, then descend to Circle ${floor}`);
+  }
+}
+function leaveShack(){
+  closeAllOverlays();
+  genFloor();calc();P.warned=false;SFX.play('descend');
+  announce(`CIRCLE ${floor}: ${circleName()}`,floor===1?'#ff7a2b':'#b46bff',3,level&&level.hints?level.hints[1]||'':'');
+  log(floor===1?'You descend into hell. Your blade is all you have.':`Descended to Circle ${floor}`,'#b46bff');
+}
+function restAtBed(){
+  P.hp=P.maxHp;P.sh=P.maxSh;SFX.play('node');
+  log('You rest by the fire. Your wounds close.','#e0bf68');
+  addText(P.x,P.y-24,'RESTED','#e0bf68',1);
+}
 function descend(){
   floor++;SFX.play('descend');
+  if(window.LEVEL_SHACK){enterShack(false);return}
   genFloor();calc();
   P.hp=Math.min(P.maxHp,P.hp+P.maxHp*0.3);
   P.warned=false;
@@ -1036,6 +1075,45 @@ function salvageIdx(i){
 const idxOfId=id=>inv.findIndex(it=>it.id===id);
 function equipId(id){const i=idxOfId(id);if(i>=0){hideTip();equipIdx(i)}}
 function salvageId(id){const i=idxOfId(id);if(i>=0){hideTip();salvageIdx(i)}}
+
+/* ----- THE STASH: a chest in the shack that keeps items safe between runs -----
+   It survives death and is saved in this browser (localStorage). */
+const STASH_MAX=120;
+let stash=[],invMode='bag';
+try{stash=JSON.parse(localStorage.getItem('hb_stash')||'[]');if(!Array.isArray(stash))stash=[]}catch(e){stash=[]}
+for(const it of stash)uid=Math.max(uid,(it.id||0)+1);
+function saveStash(){try{localStorage.setItem('hb_stash',JSON.stringify(stash.map(({x,y,age,bob,dead,...it})=>it)))}catch(e){}}
+const inShack=()=>!!(level&&level.safe);
+function openStash(){invMode='stash';toggleInv(true)}
+function storeId(id){
+  const i=idxOfId(id);if(i<0)return;
+  if(stash.length>=STASH_MAX){log('The stash is full.','#ff4f6e');return}
+  const [it]=inv.splice(i,1);stash.push(it);saveStash();hideTip();SFX.play('equip');renderInv();
+}
+function takeId(id){
+  const i=stash.findIndex(it=>it.id===id);if(i<0)return;
+  if(inv.length>=60){log('Your bag is full.','#ff4f6e');return}
+  const [it]=stash.splice(i,1);it.got=++pickupSeq;inv.push(it);saveStash();hideTip();SFX.play('equip');renderInv();
+}
+function equipFromStash(id){
+  const i=stash.findIndex(it=>it.id===id);if(i<0)return;
+  const [it]=stash.splice(i,1),old=eq[it.slot];eq[it.slot]=it;
+  if(old){if(inv.length<60)inv.push(old);else stash.push(old)}
+  saveStash();calc();hideTip();log(`Equipped ${it.name}`,colorOf(it));SFX.play('equip');renderInv();
+}
+function salvageFromStash(id){
+  const i=stash.findIndex(it=>it.id===id);if(i<0)return;
+  const [it]=stash.splice(i,1),gain=Math.ceil(it.bv/2)+it.r*3;stardust+=gain;saveStash();hideTip();
+  log(`Salvaged ${it.name} for +${gain} ★`,'#ffe14f');SFX.play('salvage');renderInv();
+}
+// Salvage every Common item in the list you're looking at (equipped gear is never touched)
+function salvageCommons(){
+  const list=invMode==='stash'?stash:inv;let n=0,gain=0;
+  for(let i=list.length-1;i>=0;i--)if(list[i].r===0){gain+=Math.ceil(list[i].bv/2);list.splice(i,1);n++}
+  if(!n)return;
+  stardust+=gain;if(invMode==='stash')saveStash();
+  log(`Salvaged ${n} Common item${n>1?'s':''} for +${gain} ★`,'#ffe14f');SFX.play('salvage');renderInv();
+}
 function rerollSlot(slot){
   const it=eq[slot];if(!it)return;
   if(stardust<25){log('Need 25 ★ Stardust to reroll.','#ff4f6e');return}
@@ -1050,7 +1128,8 @@ const SORTS=[['new','Newest'],['rarity','Rarity'],['level','Level'],['type','Typ
 const GROUPS=[['all','All'],['weapon','Weapons'],['armour','Armour'],['jewel','Jewellery']];
 let sortMode='new',groupMode='all';
 function bagView(){
-  let v=inv.filter(it=>groupMode==='all'||SLOTGROUP[it.slot]===groupMode);
+  const list=invMode==='stash'?stash:inv;
+  let v=list.filter(it=>groupMode==='all'||SLOTGROUP[it.slot]===groupMode);
   const by={
     new:(a,b)=>(b.got||0)-(a.got||0)||b.id-a.id,
     rarity:(a,b)=>b.r-a.r||b.ilvl-a.ilvl||b.id-a.id,
@@ -1084,6 +1163,10 @@ function itemBlock(it){
 }
 function renderInv(){
   if(!invOpen)return;
+  if(!inShack())invMode='bag';
+  const list=invMode==='stash'?stash:inv;
+  $('modeTabs').innerHTML=inShack()?`<button class="mini ${invMode==='bag'?'on':''}" data-mode="bag">Bag ${inv.length}/60</button> `+
+    `<button class="mini ${invMode==='stash'?'on':''}" data-mode="stash">Stash ${stash.length}/${STASH_MAX}</button>`:'';
   $('invtitle').textContent=`${inv.length} / 60 relics · ★ ${stardust} Stardust`;
   // equipped slots
   $('equip').innerHTML=SLOTS.map(slot=>{
@@ -1095,8 +1178,10 @@ function renderInv(){
   }).join('');
   // filter + sort tabs
   $('filterTabs').innerHTML=GROUPS.map(([k,l])=>{
-    const n=k==='all'?inv.length:inv.filter(it=>SLOTGROUP[it.slot]===k).length;
+    const n=k==='all'?list.length:list.filter(it=>SLOTGROUP[it.slot]===k).length;
     return `<button class="mini ${groupMode===k?'on':''}" data-group="${k}">${l} ${n}</button>`}).join(' ');
+  const commons=list.filter(it=>it.r===0).length;
+  if(commons)$('filterTabs').innerHTML+=` <button class="mini" data-commons title="Salvage every Common item here">Salvage ${commons} common</button>`;
   $('sortTabs').innerHTML=SORTS.map(([k,l])=>`<button class="mini ${sortMode===k?'on':''}" data-sort="${k}">${l}</button>`).join(' ');
   // bag
   const view=bagView();
@@ -1108,9 +1193,10 @@ function renderInv(){
       `<div class="ico" style="${iconStyle(it.slot)}"></div>`+
       `<span class="nm" style="color:${c}">${esc(it.name)}</span><span class="meta">${RAR[it.r].n} ${SLOTNAME[it.slot]} · iLvl ${it.ilvl}</span>`+
       `<div class="delta">${deltas}</div>`+
-      `<div class="acts"><button class="mini" data-equip="${it.id}">Equip</button>`+
+      `<div class="acts">`+(invMode==='stash'?`<button class="mini" data-take="${it.id}">Take</button><button class="mini" data-sequip="${it.id}">Equip</button>`:
+        `<button class="mini" data-equip="${it.id}">Equip</button>`+(inShack()?`<button class="mini" data-store="${it.id}" title="Keep it safe in the stash">Store</button>`:''))+
       `<button class="mini" data-salvage="${it.id}" title="Salvage for ★${Math.ceil(it.bv/2)+it.r*3}">Salvage ★${Math.ceil(it.bv/2)+it.r*3}</button></div></div>`;
-  }).join('') || `<span class="muted">${inv.length?'Nothing of that kind.':'No relics yet. Go kill something.'}</span>`;
+  }).join('') || `<span class="muted">${invMode==='stash'?(stash.length?'Nothing of that kind.':'Your stash is empty. Store items here to keep them safe, even if you die.'):inv.length?'Nothing of that kind.':'No relics yet. Go kill something.'}</span>`;
   // totals
   const row=(l,v)=>`<div class="row"><span>${l}</span><b>${v}</b></div>`;
   $('stats').innerHTML=`<h3>Totals</h3>`+
@@ -1142,22 +1228,31 @@ function tipForItem(it){
   h+='<div class="cmp delta">'+(cmp.rows.length?cmp.rows.map(r=>`<span>${r.label}</span><span class="${r.better?'up':'down'}">${fmtDiff(r)}</span>`).join(''):'<span class="same">No stat change</span><span></span>')+'</div>';
   cmp.gained.forEach(t=>h+=`<div class="up small">+ ${TR[t]}</div>`);
   cmp.lost.forEach(t=>h+=`<div class="down small">− loses ${TR[t]}</div>`);
-  return h+'<hr><span class="muted small">Click: equip · Right-click: salvage</span>';
+  return h+`<hr><span class="muted small">${invMode==='stash'?'Click: take into your bag':'Click: equip'} · Right-click: salvage</span>`;
 }
 $('grid').onclick=e=>{
-  const eb=e.target.closest('[data-equip]');if(eb){equipId(+eb.dataset.equip);return}
-  const sb=e.target.closest('[data-salvage]');if(sb){salvageId(+sb.dataset.salvage);return}
-  const c=e.target.closest('.card');if(c)equipId(+c.dataset.id);
+  const b=e.target.closest('button');
+  if(b){
+    if(b.dataset.equip)equipId(+b.dataset.equip);
+    else if(b.dataset.store)storeId(+b.dataset.store);
+    else if(b.dataset.take)takeId(+b.dataset.take);
+    else if(b.dataset.sequip)equipFromStash(+b.dataset.sequip);
+    else if(b.dataset.salvage)(invMode==='stash'?salvageFromStash:salvageId)(+b.dataset.salvage);
+    return;
+  }
+  const c=e.target.closest('.card');if(c)(invMode==='stash'?takeId:equipId)(+c.dataset.id);
 };
-$('grid').oncontextmenu=e=>{e.preventDefault();const c=e.target.closest('.card');if(c)salvageId(+c.dataset.id)};
+$('grid').oncontextmenu=e=>{e.preventDefault();const c=e.target.closest('.card');if(c)(invMode==='stash'?salvageFromStash:salvageId)(+c.dataset.id)};
+$('modeTabs').onclick=e=>{const b=e.target.closest('[data-mode]');if(b){invMode=b.dataset.mode;hideTip();renderInv()}};
 $('equip').onclick=e=>{const b=e.target.closest('[data-reroll]');if(b)rerollSlot(b.dataset.reroll)};
 $('bagTools').onclick=e=>{
+  if(e.target.closest('[data-commons]')){salvageCommons();return}
   const g=e.target.closest('[data-group]');if(g){groupMode=g.dataset.group;renderInv();return}
   const s=e.target.closest('[data-sort]');if(s){sortMode=s.dataset.sort;renderInv()}
 };
 $('inv').addEventListener('mouseover',e=>{
   const c=e.target.closest('.card');
-  if(c){const it=inv[idxOfId(+c.dataset.id)];if(it){showTip(tipForItem(it),e);return}}
+  if(c){const id=+c.dataset.id,it=inv.find(i=>i.id===id)||stash.find(i=>i.id===id);if(it){showTip(tipForItem(it),e);return}}
   const s=e.target.closest('.eslot');
   if(s&&eq[s.dataset.slot]){showTip(itemBlock(eq[s.dataset.slot])+'<hr><span class="muted small">Equipped</span>',e);return}
   hideTip();
@@ -1168,6 +1263,7 @@ function toggleInv(on){
   if(scene!=='game'||paused)return;
   if(treeOpen&&on!==false)toggleTree(false);
   invOpen=on??!invOpen;
+  if(!invOpen)invMode='bag';
   setOverlay('inv',invOpen);mouse.down=false;hideTip();
   if(invOpen)renderInv();
 }
@@ -1385,6 +1481,7 @@ function update(dt){
 
   if(tileAt(P.x,P.y)===2){hurt(16*dt,true);SFX.play('sizzle')}
 
+  if(tileAt(P.x,P.y)===3&&level&&level.safe){leaveShack();return}
   if(tileAt(P.x,P.y)===3){
     if(boss&&!boss.dead){
       if(!P.warned){log('The Warden seals the stairs. Slay him!','#ff4f6e');P.warned=true}
@@ -1550,11 +1647,12 @@ function draw(){
       // Wall: a front face (with decor) when open floor lies below, otherwise the dark top
       if(y+1<MH&&map[y+1][x]!==0){
         // handcrafted levels choose their wall decor; random floors pick it by position
-        const f=level?(level.faces[x+','+y]||(hash(x,y)<0.08?'wallBlood':'wallFace')):wallFace(x,y);
+        let f=level?(level.faces[x+','+y]||(hash(x,y)<0.08?'wallBlood':'wallFace')):wallFace(x,y);
+        if(level&&level.style==='wood')f=f==='wallWindow'?'woodWindow':'woodWallFace';
         if(!drawTile(f,px,py))drawTile('wallFace',px,py);
         if(f==='wallSconce'){flames.push([px+16,py+9,x+y]);addLight(px+16,py+12,85,0.85)}
         if(f==='wallWindow')addLight(px+16,py+18,40,0.35);
-      }else drawTile('wallTop',px,py);
+      }else drawTile(level&&level.style==='wood'?'woodWallTop':'wallTop',px,py);
     }else if(t===2){
       // Lava: three animated frames, plus light
       if(level){
@@ -1569,7 +1667,8 @@ function draw(){
       }
     }else if(t===3){
       const sealed=boss&&!boss.dead;
-      drawTile(sealed?'stairsSealed':'stairs',px,py);
+      if(level&&level.safe)drawTile('trapdoor',px,py);
+      else drawTile(sealed?'stairsSealed':'stairs',px,py);
       addLight(px+16,py+16,60,0.7);
     }else{
       const lf=level&&level.floors[x+','+y];
@@ -1578,7 +1677,7 @@ function draw(){
         const h=level.floors[(x-1)+','+y]==='carpet'||level.floors[(x+1)+','+y]==='carpet';
         drawTile(h?'carpetH':'carpetV',px,py);
       }else if(lf)drawTile(lf,px,py);
-      else drawTile(floorTile(x,y),px,py);
+      else drawTile(level&&level.style==='wood'?(hash(x,y)<0.5?'woodFloor0':'woodFloor1'):floorTile(x,y),px,py);
       if(lf==='floorSigil')addLight(px+16,py+16,40,0.3);
     }
   }
@@ -1594,6 +1693,15 @@ function draw(){
     if(Math.abs(b.x-P.x)>LW/2+16||Math.abs(b.y-P.y)>LH/2+16)continue;
     ctx.drawImage(IMG.effects,b.cell*16,0,16,16,Math.round(b.x-8),Math.round(b.y-8),16,16);
   }
+  // --- THE SHACK: hearth with a live fire, and the stash chest ---
+  if(level&&level.hearth){
+    const hx=level.hearth.tx*T,hy=level.hearth.ty*T;
+    if(IMG.hearth)ctx.drawImage(IMG.hearth,hx,hy);
+    for(let i=0;i<7;i++)flames.push([hx+20+i*4,hy+50-(i%3),i*3+7],[hx+22+i*4,hy+46-(i%2)*3,i*5+2]);
+    addLight(hx+32,hy+44,260*(0.95+Math.sin(time*7)*0.04),1);
+  }
+  if(level&&level.stash){drawTile('stash',level.stash.x-16,level.stash.y-16);addLight(level.stash.x,level.stash.y,40,0.3)}
+  if(level&&level.safe&&stairsT)addLight((stairsT.x+.5)*T,(stairsT.y+.5)*T,50,0.5);
   // --- THE BLOOD ALTAR (a large prop: its slab sits on the altar tile, the cross rises behind) ---
   if(level&&level.altarAt&&IMG.altar&&seen[level.altarAt.ty][level.altarAt.tx]){
     const a=level.altarAt,ax=Math.round(a.x-48),ay=Math.round(a.y+T/2+6-80);
@@ -1716,7 +1824,9 @@ function draw(){
 
   // --- LIGHTING (screen space, half resolution so it stays chunky and pixel-like) ---
   lctx.globalCompositeOperation='source-over';
-  lctx.fillStyle='rgba(4,1,4,0.9)';lctx.fillRect(0,0,lc.width,lc.height);
+  lctx.clearRect(0,0,lc.width,lc.height);   // start each frame fresh (darkness used to pile up into pure black)
+  // the shack is warm and safe: much less darkness than the dungeon
+  lctx.fillStyle=level&&level.safe?'rgba(4,1,4,0.5)':'rgba(4,1,4,0.9)';lctx.fillRect(0,0,lc.width,lc.height);
   lctx.globalCompositeOperation='destination-out';
   for(let i=0;i<lights.length;i+=4){
     const lx=(lights[i]+camX)/2,ly=(lights[i+1]+camY)/2,lr=lights[i+2]/2,li=lights[i+3];
@@ -1739,6 +1849,13 @@ function draw(){
     ctx.font=`${t.s>1?16:8}px ${PXFONT}`;
     ctx.fillStyle='#000';ctx.fillText(t.t,Math.round(t.x)+1,Math.round(t.y)+1);
     ctx.fillStyle=t.c;ctx.fillText(t.t,Math.round(t.x),Math.round(t.y));
+  }
+  // prompts for the shack's interactive things
+  if(level&&level.safe){
+    ctx.font=`8px ${PXFONT}`;ctx.globalAlpha=1;
+    const tip=(o,txt)=>{if(!o||dist(o,P)>70)return;ctx.fillStyle='#000';ctx.fillText(txt,Math.round(o.x)+1,Math.round(o.y)-23);ctx.fillStyle='#e0bf68';ctx.fillText(txt,Math.round(o.x),Math.round(o.y)-24)};
+    tip(level.stash,'[E] STASH');tip(level.bed,'[E] REST');
+    if(stairsT)tip({x:(stairsT.x+.5)*T,y:(stairsT.y+.5)*T},'STEP ON THE TRAPDOOR TO DESCEND');
   }
   ctx.restore();
   ctx.globalAlpha=1;
@@ -1801,13 +1918,17 @@ function updateHUD(){
   $('shTxt').textContent=P.maxSh?`WARD ${Math.ceil(P.sh)}/${Math.round(P.maxSh)}`:'WARD —';
   $('xpTxt').textContent=`XP ${Math.floor(P.xp)}/${P.xpNext}`;
   $('hudSub').innerHTML=`★ <b>${stardust}</b> STARDUST · ${P.points?`<b style="color:#ffe14f">${P.points} PASSIVE POINT${P.points>1?'S':''} (T)</b>`:'NO POINTS'}`;
-  $('circle').textContent=`Circle ${floor} · ${circleName()}`;
-  $('tr').innerHTML=`FILTER: ${FILTERS[filter]}<br>FOES: ${enemies.length}<br>RELICS: ${inv.length}/60<br>${boss&&!boss.dead?'<span style="color:#ff6a5a">THE WARDEN LIVES</span>':'<span style="color:#e0bf68">STAIRS OPEN</span>'}`;
+  $('circle').textContent=level&&level.safe?`The Shack · next: Circle ${floor}`:`Circle ${floor} · ${circleName()}`;
+  $('tr').innerHTML=`FILTER: ${FILTERS[filter]}<br>FOES: ${enemies.length}<br>RELICS: ${inv.length}/60<br>${level&&level.safe?'<span style="color:#8fe07a">SAFE</span>':boss&&!boss.dead?'<span style="color:#ff6a5a">THE WARDEN LIVES</span>':'<span style="color:#e0bf68">STAIRS OPEN</span>'}`;
   const showBoss=boss&&!boss.dead&&boss.hp<boss.max;
   $('bossbar').style.display=showBoss?'block':'none';
   if(showBoss){$('bossb').style.width=(boss.hp/boss.max*100)+'%';$('bossName').textContent=level?`The Warden of ${level.name.replace(/^The /,'the ')}`:`The Warden of ${CIRCLES[(floor-1)%CIRCLES.length]}`}
 }
 function openChest(){
+  if(level&&level.safe){
+    if(level.stash&&dist(level.stash,P)<52){openStash();return}
+    if(level.bed&&dist(level.bed,P)<44){restAtBed();return}
+  }
   let best=null,bd=44;
   for(const c of chests){const d=dist(c,P);if(!c.open&&d<bd){bd=d;best=c}}
   if(!best)return;
