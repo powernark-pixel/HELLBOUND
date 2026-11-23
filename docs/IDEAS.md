@@ -141,6 +141,15 @@ as its own focused piece of work.
   4. **The mansion on the horizon**, getting closer as you go, so you always know which way is forward.
 - **Gates close behind you** (wrought-iron gates that slam shut) so there's no backtracking.
 
+### 20. Loot flow: rewards in the shack, not in the maps
+- **No chests during maps.** Levels are for fighting; all chests are removed from the levels.
+- **The shack always has a reward chest** with a **random drop** each time you arrive.
+- **Monsters drop loot**, plus occasional **orbs that power the slot machines** (idea 11's currency).
+- **Shops open at the end of a stage**, so spending happens between levels, alongside the stash
+  and the slots, never in the middle of a fight.
+- The rhythm: fight through a level → collect drops and orbs → back to the shack → open the chest,
+  shop, spin the slots, sort gear → descend.
+
 ---
 
 ## Questions to answer before building any of this
