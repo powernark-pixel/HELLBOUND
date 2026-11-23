@@ -10,7 +10,8 @@ TILE_NAMES = ['floor0', 'floor1', 'floor2', 'floorBlood', 'floorCrack',
               'wallTop', 'wallFace', 'wallCross', 'wallWindow', 'wallSconce', 'wallChains', 'wallOssuary', 'wallBlood',
               'lava0', 'lava1', 'lava2', 'stairs', 'stairsSealed', 'chestShut', 'chestOpen',
               'decoSkulls', 'decoBones', 'decoCandles', 'decoPool', 'decoPillar', 'decoCrucifix',
-              'blood0', 'blood1', 'blood2', 'carpetH', 'carpetV', 'floorSigil']
+              'blood0', 'blood1', 'blood2', 'carpetH', 'carpetV', 'floorSigil',
+              'woodFloor0', 'woodFloor1', 'woodWallFace', 'woodWallTop', 'woodWindow', 'trapdoor', 'stash', 'decoBed', 'decoRug']
 
 LAYOUTS = [
     [(0, 0, 18, 14), (18, 0, 14, 14), (0, 14, 11, 18), (11, 14, 21, 18)],
@@ -546,6 +547,16 @@ def tiles():
     out['carpetH'] = carpet(floor_tile(1, 0), horizontal=True)
     out['carpetV'] = carpet(floor_tile(2, 1), horizontal=False)
     out['floorSigil'] = sigil(floor_tile(3, 2))
+    import shack
+    out['woodFloor0'] = shack.planks(61)
+    out['woodFloor1'] = shack.planks(62)
+    out['woodWallFace'] = shack.wood_wall_face()
+    out['woodWallTop'] = shack.wood_wall_top()
+    out['woodWindow'] = shack.wood_wall_face(window=True)
+    out['trapdoor'] = shack.trapdoor()
+    out['stash'] = shack.stash()
+    out['decoBed'] = shack.bed()
+    out['decoRug'] = shack.rug()
     sheet = Img(32 * len(TILE_NAMES), 32)
     for i, n in enumerate(TILE_NAMES):
         sheet.blit(out[n], i * 32, 0)

@@ -14,6 +14,8 @@ A gothic dark-fantasy dungeon crawler for the browser. Play it at https://powern
   per tile) with a legend at the top, so it can be edited by hand. Deeper circles are still random.
 - `assets/fx/blood_fx.png` and `assets/sprites/enemies/rat_sheet.png` are licensed third-party art; see `CREDITS.md`.
 - `audio/sfx.js` makes every sound live (no audio files needed). To swap in your own sounds, see `audio/README.md`.
+- `levels/shack.js` is **The Shack**, the hideout where every run starts and where you return after each level:
+  rest, sort loot, and keep items in the stash (saved in your browser, survives death).
 - `V1`.txt` is an older copy, kept for reference.
 - `tests/smoke.mjs` and `.github/workflows/check.yml` are the automatic game check.
 
