@@ -13,6 +13,7 @@ A gothic dark-fantasy dungeon crawler for the browser. Play it at https://powern
   areas that get harder as you go, ending at the altar and its Warden. The map is plain text (one character
   per tile) with a legend at the top, so it can be edited by hand. Deeper circles are still random.
 - `assets/fx/blood_fx.png` and `assets/sprites/enemies/rat_sheet.png` are licensed third-party art; see `CREDITS.md`.
+- `audio/sfx.js` makes every sound live (no audio files needed). To swap in your own sounds, see `audio/README.md`.
 - `V1`.txt` is an older copy, kept for reference.
 - `tests/smoke.mjs` and `.github/workflows/check.yml` are the automatic game check.
 
