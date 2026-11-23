@@ -82,6 +82,19 @@ as its own focused piece of work.
 
 ---
 
+## Hideouts (logged 2026-11-23)
+
+### 12. A rest area between levels: the hideout
+- **The problem today:** there's no incentive or time to process loot, swap weapons or change gear,
+  because the action never stops.
+- **The fix:** a **hideout** between levels, a safe place to sort loot, change weapons and gear, and so on.
+- The first hideout is **a shack** at the start.
+- **More hideouts can be bought** later, unlocked at certain times or places or through **side quests**.
+- Ties in with the slot machines (idea 11) and the big progression system (idea 7): the hideout is a natural
+  home for them.
+
+---
+
 ## Questions to answer before building any of this
 - **The mansion:** is it a hub you return to between descents, or the first level of the descent?
 - **Coming back up:** new levels on the way up, or the same levels changed (harder, corrupted, reversed)?
