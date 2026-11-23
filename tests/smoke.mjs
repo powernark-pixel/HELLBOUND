@@ -39,23 +39,6 @@ await page.waitForTimeout(300);
 const errBoxShown = await page.evaluate(() => getComputedStyle(document.getElementById('err')).display !== 'none');
 if (errBoxShown) fail('error box is showing: ' + await page.textContent('#err'));
 
-// 2a. the shack: every run starts in the hideout; the stash works; the trapdoor leads down
-const shack = await page.evaluate(() => ({
-  inShack: !!level && level.safe === true && circleName() === 'The Shack',
-  noEnemies: enemies.length === 0,
-  hasStashBedTrapdoor: !!level.stash && !!level.bed && !!stairsT,
-}));
-shack.inShack ? ok('New Game starts in the shack') : fail('New Game did not start in the shack');
-shack.noEnemies && shack.hasStashBedTrapdoor ? ok('the shack is safe and has a stash, bed and trapdoor') : fail('shack is missing pieces: ' + JSON.stringify(shack));
-const stashOk = await page.evaluate(() => {
-  const it = makeItem('ring', 1, 0); inv.push(it); storeId(it.id);
-  const stored = stash.some(i => i.id === it.id) && !inv.some(i => i.id === it.id);
-  takeId(it.id); return stored && inv.some(i => i.id === it.id);
-});
-stashOk ? ok('items can be stored in and taken from the stash') : fail('the stash did not store/take an item');
-await page.evaluate(() => { P.x = (stairsT.x + .5) * T; P.y = (stairsT.y + .5) * T; });
-await page.waitForTimeout(400);
-
 // 2b. the Blood Altar: handcrafted first level is loaded and every part of it can be reached
 const lv = await page.evaluate(() => {
   const reach = (tx, ty) => level && level.steps[ty * MW + tx] >= 0;
@@ -70,7 +53,7 @@ const lv = await page.evaluate(() => {
     harderLater: (() => { const imps = enemies.filter(e => e.type === 'imp' && !e.elite); return Math.max(...imps.map(e => e.max)) > Math.min(...imps.map(e => e.max)); })()
   };
 });
-lv.loaded ? ok('Circle 1 is The Blood Altar') : fail('the Blood Altar level did not load');
+lv.loaded ? ok('New Game starts in Circle 1, The Blood Altar') : fail('the Blood Altar level did not load');
 lv.areas === '234567' ? ok('all six area entrances are in the map') : fail('area entrances missing: got ' + lv.areas);
 lv.stairs && lv.allAreas && lv.allEnemies && lv.allChests ? ok('stairs, areas, enemies and chests are all reachable from the start') : fail('part of the Blood Altar cannot be reached: ' + JSON.stringify(lv));
 lv.wardenWaits ? ok('the Warden waits at the altar until you arrive') : fail('the Warden is not waiting at the altar');
@@ -113,13 +96,28 @@ await page.hover('#grid .card');
 await page.click('#invPanel [data-close=inv]');
 (await page.isVisible('#invPanel')) ? fail('close button did not close the inventory') : ok('close button closes the inventory');
 
-// 5. passive tree
-await page.evaluate(() => { P.points = 2; });
-await page.keyboard.press('t');
-(await page.isVisible('#treePanel')) ? ok('T opens the passive tree') : fail('T did not open the tree');
-await page.click('.tn[data-id="Fury0"]');
-(await page.evaluate(() => !!P.alloc.Fury0 && P.points === 1)) ? ok('taking a node spends a point') : fail('could not take a passive node');
-await page.keyboard.press('Escape');
+// 5. finishing the level: the stairs lead to the shack, which gives +10 max health and has a stash and reward chest
+const before = await page.evaluate(() => Math.round(P.maxHp));
+await page.evaluate(() => { killEnemy(boss); P.x = (stairsT.x + .5) * T; P.y = (stairsT.y + .5) * T; });
+await page.waitForTimeout(500);
+const shack = await page.evaluate(() => ({
+  inShack: !!level && level.safe === true && circleName() === 'The Shack',
+  noEnemies: enemies.length === 0,
+  pieces: !!level.stash && !!level.bed && !!stairsT && chests.some(c => c.reward && !c.open),
+  maxHp: Math.round(P.maxHp), next: floor,
+}));
+shack.inShack ? ok('finishing the Blood Altar leads to the shack') : fail('the stairs did not lead to the shack');
+shack.maxHp === before + 10 ? ok('completing a level gives +10 max health') : fail(`max health went ${before} -> ${shack.maxHp}, expected +10`);
+shack.noEnemies && shack.pieces ? ok('the shack is safe and has a stash, bed, reward chest and trapdoor') : fail('shack is missing pieces: ' + JSON.stringify(shack));
+const stashOk = await page.evaluate(() => {
+  const it = makeItem('ring', 1, 0); inv.push(it); storeId(it.id);
+  const stored = stash.some(i => i.id === it.id) && !inv.some(i => i.id === it.id);
+  takeId(it.id); return stored && inv.some(i => i.id === it.id);
+});
+stashOk ? ok('items can be stored in and taken from the stash') : fail('the stash did not store/take an item');
+await page.evaluate(() => { P.x = (stairsT.x + .5) * T; P.y = (stairsT.y + .5) * T; });
+await page.waitForTimeout(400);
+(await page.evaluate(() => floor === 2 && !level)) ? ok('the trapdoor leads down to Circle 2') : fail('the trapdoor did not lead to Circle 2');
 
 // 6. pause menu
 await page.keyboard.press('Escape');
