@@ -1527,7 +1527,7 @@ function update(dt){
   setAnim(P, dead?'death': P.hurtT>0?'hurt': P.atkAnim>0?'attack': moving?'walk':'idle');
   if(moving&&!(P.dash&&P.dash.t>0)){
     P.stepT-=dt;
-    if(P.stepT<=0){P.stepT=0.26;SFX.play('step');
+    if(P.stepT<=0){P.stepT=0.26;SFX.play(level&&level.style==='wood'?'stepWood':'step');
       for(let i=0;i<3;i++)parts.push({x:P.x+rnd(-4,4),y:P.y+rnd(-2,2),vx:rnd(-22,22),vy:rnd(-22,22),life:0.45,max:0.45,c:pick(['#4a3f48','#5d5059','#3a313b']),s:rnd(1,2),ground:1})}
   }
   if(P.hp<P.maxHp*0.3){P.hbT-=dt;if(P.hbT<=0){P.hbT=0.85;SFX.play('heart')}}
