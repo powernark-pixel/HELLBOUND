@@ -7,13 +7,13 @@
    .  floor             =  crimson carpet       ~  blood river (hurts)
    S  start             X  stairs down          A  the altar        C  chest
    c  candles  k  skulls  b  bones  p  pillar  x  fallen crucifix  u  blood pool  g  blood sigil
-   i imp  h hound  a archer  d demon   (CAPITALS = elite: tougher, faster, hit harder)
+   m rat  i imp  h hound  a archer  d demon   (CAPITALS = elite: tougher, faster, hit harder)
    W  the Warden of the altar (boss)
    2-7  area entrances: the area's name is announced when you reach it */
 window.LEVEL_BLOOD_ALTAR={
   name:'The Blood Altar',
   areas:{1:'The Narthex',2:'The Bone Corridor',3:'The Blood Nave',4:'The Ossuary Gallery',5:'The Chapel of Chains',6:"The Penitent's Gauntlet",7:'The Blood Altar'},
-  hints:{1:'Follow the carpet. There is only one way: down.',2:'Imps nest in the bones',3:'Cross by the bridge. The blood burns',4:'Archers on the ledge. Cross the moat at the gaps',5:'A brute in chains guards the chapel',6:'Elite hounds. Roll through them',7:'The Warden waits at the altar'},
+  hints:{1:'Rats gnaw at the dead. Follow the carpet down.',2:'Imps and rats nest in the bones',3:'Cross by the bridge. The blood burns',4:'Archers on the ledge. Cross the moat at the gaps',5:'A brute in chains guards the chapel',6:'Elite hounds. Roll through them',7:'The Warden waits at the altar'},
   // area boundaries in tiles [area, left, top, right, bottom]: enemies inside get that area's toughness
   zones:[[1,3,43,14,52],[2,15,47,27,49],[3,28,31,51,53],[4,20,15,22,22],[4,20,23,57,30],[5,6,3,23,14],[6,24,5,40,10],[7,41,1,60,19]],
   map:[
@@ -59,15 +59,15 @@ window.LEVEL_BLOOD_ALTAR={
     "##############################wr#w######w#rw#####...##########",
     "############################c......~~~.......c#s#...##########",
     "############################.......~~~..............##########",
-    "#####w##++##w###############...i...~~~..............##########",
+    "#####w##++##w###############...i.m.~~~..............##########",
     "###............#############.......~~~..h...........##########",
-    "###.c........c.#############..p..p.~~~.p...p..################",
+    "###.c.....m..c.#############..p..p.~~~.p...p..################",
     "###...p....p...#############.......~~~........################",
-    "###............#s#o#s#o#s#o#.3.u...~~~.....i..################",
+    "###.........m..#s#o#s#o#s#o#.3.u...~~~.....i..################",
     "###.b................i.b.k.........===........################",
-    "###..S.========.2.........i.==========........################",
-    "###...............k.b...i..C.......~~~...u....################",
-    "###............#############.......~~~........################",
+    "###..S.========.2..m......i.==========........################",
+    "###..........m....k.b.m.i..C.......~~~...u....################",
+    "###............#############..m....~~~........################",
     "###.c.p....p.c.#############..p..p.~~~.p..hp..################",
     "###......b.....#############....i..~~~......C.################",
     "############################.......~~~........################",

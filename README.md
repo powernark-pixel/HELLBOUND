@@ -12,6 +12,7 @@ A gothic dark-fantasy dungeon crawler for the browser. Play it at https://powern
 - `levels/blood_altar.js` is **The Blood Altar**, the handcrafted first circle: one long path through seven
   areas that get harder as you go, ending at the altar and its Warden. The map is plain text (one character
   per tile) with a legend at the top, so it can be edited by hand. Deeper circles are still random.
+- `assets/fx/blood_fx.png` and `assets/sprites/enemies/rat_sheet.png` are licensed third-party art; see `CREDITS.md`.
 - `V1`.txt` is an older copy, kept for reference.
 - `tests/smoke.mjs` and `.github/workflows/check.yml` are the automatic game check.
 
