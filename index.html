@@ -214,6 +214,7 @@ h3{font-size:calc(var(--u)*10);margin:calc(var(--u)*3) 0 calc(var(--u)*2)}
         <span class="kbd">R</span><span>Rise again after death</span>
       </div>
       <div class="small muted">Slay the Warden of each circle to unseal the stairs, then step onto them to descend.</div>
+      <div class="small muted" style="margin-top:calc(var(--u)*3)">Art credits: Blood FX by jasontomlee · Rat by WilliamQM (Dark Enemies Pack)</div>
       <div style="text-align:center;margin-top:calc(var(--u)*4)"><button class="gbtn" data-close="controls">Back</button></div>
     </div>
   </div>
@@ -325,7 +326,9 @@ const ASSET_PATHS={
   items:'assets/items/item_icons.png',
   effects:'assets/effects/effects.png',
   title:'assets/ui/title_bg.png',
-  altar:'assets/tiles/altar.png'
+  altar:'assets/tiles/altar.png',
+  rat:'assets/sprites/enemies/rat_sheet.png',      // Dark Enemies Pack by WilliamQM (see CREDITS.md)
+  bloodfx:'assets/fx/blood_fx.png'                 // Blood FX by jasontomlee (see CREDITS.md)
 };
 // SHEETS: how each PNG sprite sheet is cut up.
 // fw/fh = frame size. ax/ay = the point in the frame placed on the entity's position.
@@ -347,8 +350,26 @@ const SHEETS={
   hound: {fw:32,fh:32,ax:16,ay:20,anims:MON_ANIMS},
   archer:{fw:32,fh:32,ax:15,ay:20,anims:MON_ANIMS},
   demon: {fw:40,fh:40,ax:20,ay:26,anims:MON_ANIMS},
-  warden:{fw:56,fh:56,ax:28,ay:36,anims:MON_ANIMS}
+  warden:{fw:56,fh:56,ax:28,ay:36,anims:MON_ANIMS},
+  rat:{fw:32,fh:32,ax:16,ay:26,anims:{
+    idle:  {row:0,n:6,fps:8, loop:true},
+    walk:  {row:1,n:6,fps:16,loop:true},
+    attack:{row:2,n:6,fps:16,loop:false},
+    hurt:  {row:3,n:1,fps:10,loop:false},
+    death: {row:4,n:6,fps:12,loop:false}}}
 };
+// BLOOD_FX: the 9 effects in assets/fx/blood_fx.png (110x93 cells, one effect per row).
+// from = first frame, n = frames, ox/oy = where the blood starts inside the cell.
+const BLOOD_FX=[{row:0,from:1,n:7,ox:56,oy:81},{row:1,from:0,n:9,ox:49,oy:62},{row:2,from:0,n:5,ox:42,oy:61},
+  {row:3,from:0,n:10,ox:38,oy:77},{row:4,from:0,n:8,ox:36,oy:57},{row:5,from:0,n:8,ox:41,oy:58},
+  {row:6,from:0,n:14,ox:32,oy:57},{row:7,from:0,n:7,ox:56,oy:75},{row:8,from:0,n:10,ox:18,oy:73}];
+const BLOOD_SETS={hit:[2,7],kill:[1,3,4,5,8],big:[6,0]};   // small sprays for hits, bigger for kills and the Warden
+let fxs=[];
+// Spawn a blood effect at x,y. flip mirrors it so the blood sprays away from the knight.
+function bloodFx(x,y,set,flip){
+  if(!IMG.bloodfx||fxs.length>40)return;
+  fxs.push({d:BLOOD_FX[pick(BLOOD_SETS[set])],x:Math.round(x),y:Math.round(y),t:0,flip});
+}
 // Code-drawn fallbacks (old 16px placeholders, drawn at 2x)
 const FALLBACK_SHEETS={
   player:{fw:16,fh:16,ax:8,ay:8,scale:SPR,anims:{
@@ -592,7 +613,8 @@ const ET={
  imp:{r:10,hp:20,spd:90,xp:4,drop:.15,c:'#ff9a3c',shape:'circle',dmg:6,aggro:330,sprite:true},
  hound:{r:13,hp:40,spd:125,xp:8,drop:.3,c:'#ff3e3e',shape:'diamond',dmg:9,aggro:400,sprite:true},
  archer:{r:13,hp:34,spd:50,xp:9,drop:.4,c:'#e8e0d0',shape:'hex',dmg:5,aggro:460,shoot:2,sprite:true},
- demon:{r:22,hp:170,spd:55,xp:25,drop:.9,c:'#9b3cff',shape:'hex',dmg:14,aggro:380,sprite:true}
+ demon:{r:22,hp:170,spd:55,xp:25,drop:.9,c:'#9b3cff',shape:'hex',dmg:14,aggro:380,sprite:true},
+ rat:{r:7,hp:10,spd:150,xp:2,drop:.05,c:'#6a5a70',shape:'circle',dmg:3,aggro:300,sprite:true}
 };
 const spriteKey=e=>e.boss?'warden':e.type;
 
@@ -762,11 +784,11 @@ function spawnEnemy(type,o={}){
 let level=null;
 const FACE_CH={'+':'wallCross',w:'wallWindow',o:'wallOssuary',s:'wallSconce',n:'wallChains',r:'wallBlood'};
 const DECO_CH={c:'decoCandles',k:'decoSkulls',b:'decoBones',p:'decoPillar',x:'decoCrucifix',u:'decoPool'};
-const ENEMY_CH={i:['imp'],h:['hound'],a:['archer'],d:['demon'],I:['imp',1],H:['hound',1],R:['archer',1],D:['demon',1]};
+const ENEMY_CH={m:['rat'],i:['imp'],h:['hound'],a:['archer'],d:['demon'],I:['imp',1],H:['hound',1],R:['archer',1],D:['demon',1]};
 function buildLevel(L){
   map=Array.from({length:MH},()=>new Uint8Array(MW));
   seen=Array.from({length:MH},()=>new Uint8Array(MW));
-  rooms=[];chests=[];enemies=[];bullets=[];ebullets=[];ground=[];corpses=[];decor=[];decals=[];
+  rooms=[];chests=[];enemies=[];bullets=[];ebullets=[];ground=[];corpses=[];decor=[];decals=[];fxs=[];
   const faces={},floors={},solid=new Uint8Array(MW*MH),areas=[],foes=[];
   let start=null,altarAt=null,warden=null;
   L.map.forEach((row,y)=>{for(let x=0;x<row.length;x++){
@@ -809,7 +831,7 @@ function genFloor(){
   if(floor===1&&window.LEVEL_BLOOD_ALTAR){buildLevel(window.LEVEL_BLOOD_ALTAR);return}
   map=Array.from({length:MH},()=>new Uint8Array(MW));
   seen=Array.from({length:MH},()=>new Uint8Array(MW));
-  rooms=[];chests=[];enemies=[];bullets=[];ebullets=[];ground=[];corpses=[];
+  rooms=[];chests=[];enemies=[];bullets=[];ebullets=[];ground=[];corpses=[];fxs=[];
   for(let i=0;i<80&&rooms.length<11;i++){
     const w=ri(5,11),h=ri(5,10),x=ri(2,MW-w-3),y=ri(2,MH-h-3);
     if(rooms.some(r=>x<r.x+r.w+2&&x+w+2>r.x&&y<r.y+r.h+2&&y+h+2>r.y))continue;
@@ -919,6 +941,8 @@ function burst(x,y,c,n){
   }
 }
 function updateFX(dt){
+  for(const f of fxs)f.t+=dt;
+  fxs=fxs.filter(f=>Math.floor(f.t*20)<f.d.n);
   for(const p of parts){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=0.94;p.vy*=0.94;p.life-=dt}
   parts=parts.filter(p=>p.life>0);
   for(const t of texts){t.y-=30*dt;t.life-=dt}
@@ -1209,6 +1233,7 @@ function dealDamage(e,base){
   if(S.leech)P.hp=Math.min(P.maxHp,P.hp+dmg*S.leech/100);
   if(hasTrait('siphon'))P.sh=Math.min(P.maxSh,P.sh+dmg*0.15);
   burst(e.x,e.y,'#8f1a1f',3);
+  bloodFx(e.x,e.y-e.r*0.3,'hit',e.x<P.x);
   if(e.hp<=0)killEnemy(e);
 }
 function killEnemy(e){
@@ -1231,7 +1256,8 @@ function killEnemy(e){
     log(`Level up! +${P.lvl-before} passive point (press T)`,'#d9b3ff');
   }
   stardust+=ri(1,3);
-  burst(e.x,e.y,'#8f1a1f',14);burst(e.x,e.y,'#5e0c13',8);
+  burst(e.x,e.y,'#8f1a1f',8);
+  bloodFx(e.x,e.y,e.boss?'big':e.r<9?'hit':'kill',e.x<P.x);   // small foes get a small spray
   if(hasTrait('inferno')){
     burst(e.x,e.y,'#ff7a2b',24);
     for(const o of enemies){
@@ -1239,7 +1265,8 @@ function killEnemy(e){
     }
   }
   if(e.boss){
-    burst(e.x,e.y,'#ff2b6b',80);
+    burst(e.x,e.y,'#ff2b6b',40);
+    bloodFx(e.x-14,e.y,'big',true);bloodFx(e.x+14,e.y,'big',false);bloodFx(e.x,e.y-10,'kill',Math.random()<.5);
     shake=1;
     for(let k=0;k<3;k++)dropItem(e.x,e.y,3,floor+3);
     announce('THE WARDEN FALLS','#ffe14f',2.5,'The stairs are unsealed');
@@ -1257,6 +1284,7 @@ function hurt(d,noIF){
   if(P.sh>0){const a=Math.min(P.sh,rem);P.sh-=a;rem-=a}
   P.hp-=rem;shake=Math.max(shake,0.25);
   addText(P.x,P.y-24,'-'+Math.round(d),'#ff4f6e',1);
+  if(d>=4)bloodFx(P.x,P.y-6,'hit',Math.random()<.5);
   if(P.hp<=0){
     P.hp=0;dead=true;setAnim(P,'death');
     announce('THE KNIGHT FALLS','#c4302c',99,'Press R to rise again · Esc for the menu');
@@ -1617,6 +1645,13 @@ function draw(){
       pxRect(bx-1,by-1,w+2,4,'#0a0608');pxRect(bx,by,w,2,'#33050a');
       pxRect(bx,by,Math.round(w*Math.max(0,e.hp/e.max)),2,'#c4302c');pxRect(bx,by,Math.round(w*Math.max(0,e.hp/e.max)),1,'#e8564a');
     }
+  }
+
+  // --- BLOOD FX (hand-animated sprays; mirrored so they fly away from the knight) ---
+  for(const f of fxs){
+    const fr=f.d.from+Math.min(f.d.n-1,Math.floor(f.t*20)),sx=fr*110,sy=f.d.row*93;
+    if(f.flip){ctx.save();ctx.translate(f.x,0);ctx.scale(-1,1);ctx.drawImage(IMG.bloodfx,sx,sy,110,93,-f.d.ox,f.y-f.d.oy,110,93);ctx.restore()}
+    else ctx.drawImage(IMG.bloodfx,sx,sy,110,93,f.x-f.d.ox,f.y-f.d.oy,110,93);
   }
 
   // --- PROJECTILES ---
