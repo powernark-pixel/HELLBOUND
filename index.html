@@ -80,6 +80,8 @@ h3{font-size:calc(var(--u)*10);margin:calc(var(--u)*3) 0 calc(var(--u)*2)}
 #bossbar{position:absolute;left:50%;top:calc(var(--u)*22);width:calc(var(--u)*220);margin-left:calc(var(--u)*-110);display:none;text-align:center}
 #bossbar .name{font-family:var(--f-title);font-size:calc(var(--u)*9);color:#ff8a6a;text-shadow:0 0 calc(var(--u)*3) #000}
 #bossb{background-image:url(assets/ui/fillBoss.png);background-color:#7d1218}
+#vatb{background-image:url(assets/ui/fillBoss.png);background-color:#7d1218}
+#vatb.full{background-image:url(assets/ui/fillHp.png);filter:brightness(1.25)}
 #log{position:absolute;left:calc(var(--u)*8);bottom:calc(var(--u)*8);width:calc(var(--u)*260);font-size:calc(var(--u)*6);text-shadow:0 calc(var(--u)*1) 0 #000,0 0 calc(var(--u)*3) #000}
 #log div{transition:opacity 1s}
 #hint{position:absolute;right:calc(var(--u)*8);bottom:calc(var(--u)*8);font-family:var(--f-pixel);font-size:calc(var(--u)*5);opacity:.65;text-align:right;text-shadow:0 calc(var(--u)*1) 0 #000}
@@ -175,6 +177,7 @@ h3{font-size:calc(var(--u)*10);margin:calc(var(--u)*3) 0 calc(var(--u)*2)}
       <div id="hudName"></div>
       <div class="barrow"><div class="bar"><i id="hpLag"></i><i id="hpb"></i></div><span class="barlbl" id="hpTxt"></span></div>
       <div class="barrow"><div class="bar"><i id="shb"></i></div><span class="barlbl" id="shTxt"></span></div>
+      <div class="barrow" id="vatRow"><div class="bar thin"><i id="vatb"></i></div><span class="barlbl" id="vatTxt"></span></div>
       <div id="hudSub"></div>
     </div>
     <div id="circle"></div>
@@ -842,6 +845,7 @@ function buildLevel(L){
   P.x=start.x;P.y=start.y;P.vx=0;P.vy=0;
   level={name:L.name,areaNames:L.areas||{},hints:L.hints||{},faces,floors,solid,areas,altarAt,steps,
     safe:!!L.safe,style:L.style||'stone',hearth,stash:stashAt,bed:bedAt};
+  fillVatNeed();
   if(level.safe)for(let y=0;y<MH;y++)seen[y].fill(1);   // a safe room is fully visible
 }
 function genFloor(){
@@ -885,6 +889,7 @@ function genFloor(){
   const s0=rooms[0];
   P.x=(s0.x+s0.w/2)*T;P.y=(s0.y+s0.h/2)*T;P.vx=0;P.vy=0;
   decorate();
+  fillVatNeed();
 }
 // Scatter bones, candles, blood and broken pillars on room floors (visual only).
 function decorate(){
@@ -920,6 +925,25 @@ function newGame(){
   log('You descend into hell. Your blade is all you have.','#ffb347');
   announce(`CIRCLE 1: ${circleName()}`,'#ff7a2b',3,level?level.hints[1]:'');
 }
+/* ----- THE BLOOD VAT -----
+   Every kill pours blood into the vat (tougher foes give more). The stairs stay sealed until
+   the vat is full AND the Warden is dead, so you can't rush past a level. The vat needs
+   VAT_SHARE of all the blood in the level: most of it, but not every last rat. */
+const VAT_SHARE=0.65;
+let vat=0,vatNeed=0;
+const bloodOf=e=>e.boss?40:(ET[e.type].xp*(e.elite?2:1));
+function fillVatNeed(){vat=0;vatNeed=Math.round(enemies.reduce((t,e)=>t+bloodOf(e),0)*VAT_SHARE)}
+const vatFull=()=>vat>=vatNeed;
+const stairsLocked=()=>!(level&&level.safe)&&((boss&&!boss.dead)||!vatFull());
+function pourBlood(e){
+  const was=vatFull();vat=Math.min(vatNeed,vat+bloodOf(e));
+  if(!was&&vatFull()){
+    SFX.play('toll');
+    if(boss&&!boss.dead){announce('THE VAT IS FULL','#c4302c',2.6,'Slay the Warden to open the way down');log('The blood vat is full. Only the Warden bars the way.','#c4302c')}
+    else{announce('THE VAT IS FULL','#ffe14f',2.6,'The stairs are open. Follow the light');log('The blood vat is full. The stairs are open.','#ffe14f')}
+  }
+}
+
 /* ----- THE SHACK: the hideout after every level -----
    The stairs at the end of each level lead here. Finishing a level earns a reward:
    +10 max health every time, and every third level a permanent MYTHIC trait (a boon).
@@ -1365,6 +1389,7 @@ function killEnemy(e){
   const Tt=ET[e.type];
   // Sprite enemies leave a death animation and a blood stain behind
   corpses.push({key:spriteKey(e),x:e.x,y:e.y,animT:0,life:0.9,flip:e.face<0});
+  pourBlood(e);
   decals.push({x:e.x+rnd(-4,4),y:e.y+rnd(2,8),cell:ri(2,5)});
   if(decals.length>160)decals.shift();
   stardust+=ri(1,3);
@@ -1382,8 +1407,8 @@ function killEnemy(e){
     bloodFx(e.x-14,e.y,'big',true);bloodFx(e.x+14,e.y,'big',false);bloodFx(e.x,e.y-10,'kill',Math.random()<.5);
     shake=1;
     for(let k=0;k<3;k++)dropItem(e.x,e.y,3,floor+3);
-    announce('THE WARDEN FALLS','#ffe14f',2.5,'The stairs are unsealed. Follow the light');
-    log('The stairs are unsealed. Follow the golden light.','#ffe14f');
+    if(vatFull()){announce('THE WARDEN FALLS','#ffe14f',2.5,'The stairs are unsealed. Follow the light');log('The stairs are unsealed. Follow the golden light.','#ffe14f')}
+    else{announce('THE WARDEN FALLS','#ffe14f',2.8,'Fill the blood vat to open the stairs');log(`The Warden is dead, but the vat is only ${Math.floor(vat/vatNeed*100)}% full. Kill more.`,'#c4302c')}
   }else if(Math.random()<Tt.drop*1.3){
     dropItem(e.x,e.y,e.type==='demon'?2:0,floor+ri(0,3));
   }
@@ -1491,8 +1516,8 @@ function update(dt){
 
   if(tileAt(P.x,P.y)===3&&level&&level.safe){leaveShack();return}
   if(tileAt(P.x,P.y)===3){
-    if(boss&&!boss.dead){
-      if(!P.warned){log('The Warden seals the stairs. Slay him!','#ff4f6e');P.warned=true}
+    if(stairsLocked()){
+      if(!P.warned){log(boss&&!boss.dead?'The Warden seals the stairs. Slay him!':`The stairs are sealed until the blood vat is full (${Math.floor(vat/vatNeed*100)}%). Kill more.`,'#ff4f6e');P.warned=true}
     }else{
       descend();return;
     }
@@ -1675,7 +1700,7 @@ function draw(){
         addLight(px+16,py+16,46,0.55);
       }
     }else if(t===3){
-      const sealed=boss&&!boss.dead;
+      const sealed=stairsLocked();
       if(level&&level.safe)drawTile('trapdoor',px,py);
       else drawTile(sealed?'stairsSealed':'stairs',px,py);
       addLight(px+16,py+16,60,0.7);
@@ -1961,7 +1986,7 @@ function drawIso(){
       if(level){const fr=Math.floor(time*2+ty*0.35)%3;isoFlat('blood'+fr,cx,cy);if((tx+ty)%2===0)light((tx+.5)*T,(ty+.5)*T,34,0.22)}
       else{const fr=Math.floor(time*3+hash(tx,ty)*3)%3;isoFlat('lava'+fr,cx,cy);light((tx+.5)*T,(ty+.5)*T,46,0.55)}
     }else if(t===3){
-      isoFlat(level&&level.safe?'trapdoor':(boss&&!boss.dead?'stairsSealed':'stairs'),cx,cy);
+      isoFlat(level&&level.safe?'trapdoor':(stairsLocked()?'stairsSealed':'stairs'),cx,cy);
       light((tx+.5)*T,(ty+.5)*T,60,0.7);
     }else{
       const lf=level&&level.floors[tx+','+ty];
@@ -2072,7 +2097,7 @@ function drawIso(){
   }
   ctx.globalAlpha=1;
   for(const [fx,fy,s] of flames)drawFlame(fx,fy,s);
-  const stairsOpen=stairsT&&!(level&&level.safe)&&!(boss&&!boss.dead);
+  const stairsOpen=stairsT&&!(level&&level.safe)&&!stairsLocked();
   if(stairsOpen){
     const [bx,by]=S_((stairsT.x+.5)*T,(stairsT.y+.5)*T),pulse=0.25+0.12*Math.sin(time*4);
     ctx.save();ctx.globalAlpha=pulse;ctx.fillStyle='#ffe14f';
@@ -2176,6 +2201,9 @@ function drawTitle(){
 let hudCache='';
 function updateHUD(){
   if(scene!=='game')return;
+  const safe=level&&level.safe;$('vatRow').style.display=safe?'none':'';
+  if(!safe){const pct=vatNeed?Math.min(1,vat/vatNeed):1;$('vatb').style.width=(pct*100)+'%';$('vatb').classList.toggle('full',pct>=1);
+    $('vatTxt').textContent=pct>=1?'BLOOD VAT FULL':`BLOOD VAT ${Math.floor(pct*100)}%`}
   $('sndHint').style.display=SFX.on&&SFX.vol>0&&!SFX.running?'block':'none';
   const hp=P.hp/P.maxHp*100;
   $('hpb').style.width=hp+'%';$('hpLag').style.width=hp+'%';
@@ -2187,7 +2215,7 @@ function updateHUD(){
   $('shTxt').textContent=P.maxSh?`WARD ${Math.ceil(P.sh)}/${Math.round(P.maxSh)}`:'WARD —';
   $('hudSub').innerHTML=`★ <b>${stardust}</b> STARDUST · <b>+${P.bonusHp||0}</b> HEALTH FROM ${Math.round((P.bonusHp||0)/10)>0?'COMPLETED LEVELS':'LEVELS (FINISH ONE!)'}`+((P.boons||[]).length?` · <b style="color:#ff8ad8">${P.boons.length} BOON${P.boons.length>1?'S':''}</b>`:'');
   $('circle').textContent=level&&level.safe?`The Shack · next: Circle ${floor}`:`Circle ${floor} · ${circleName()}`;
-  $('tr').innerHTML=`FILTER: ${FILTERS[filter]}<br>FOES: ${enemies.length}<br>RELICS: ${inv.length}/60<br>${level&&level.safe?'<span style="color:#8fe07a">SAFE</span>':boss&&!boss.dead?'<span style="color:#ff6a5a">THE WARDEN LIVES</span>':'<span style="color:#e0bf68">STAIRS OPEN</span>'}`;
+  $('tr').innerHTML=`FILTER: ${FILTERS[filter]}<br>FOES: ${enemies.length}<br>RELICS: ${inv.length}/60<br>${level&&level.safe?'<span style="color:#8fe07a">SAFE</span>':boss&&!boss.dead?'<span style="color:#ff6a5a">THE WARDEN LIVES</span>':!vatFull()?'<span style="color:#ff6a5a">FILL THE VAT</span>':'<span style="color:#e0bf68">STAIRS OPEN</span>'}`;
   const showBoss=boss&&!boss.dead&&boss.hp<boss.max;
   $('bossbar').style.display=showBoss?'block':'none';
   if(showBoss){$('bossb').style.width=(boss.hp/boss.max*100)+'%';$('bossName').textContent=level?`The Warden of ${level.name.replace(/^The /,'the ')}`:`The Warden of ${CIRCLES[(floor-1)%CIRCLES.length]}`}

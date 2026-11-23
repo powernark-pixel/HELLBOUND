@@ -98,7 +98,14 @@ await page.click('#invPanel [data-close=inv]');
 
 // 5. finishing the level: the stairs lead to the shack, which gives +10 max health and has a stash and reward chest
 const before = await page.evaluate(() => Math.round(P.maxHp));
+// the blood vat: with only the Warden dead the stairs stay sealed; killing enough fills the vat and opens them
 await page.evaluate(() => { killEnemy(boss); P.x = (stairsT.x + .5) * T; P.y = (stairsT.y + .5) * T; });
+await page.waitForTimeout(400);
+(await page.evaluate(() => !!level && circleName() === 'The Blood Altar' && !vatFull())) ? ok('the stairs stay sealed until the blood vat is full') : fail('the stairs opened without filling the blood vat');
+await page.evaluate(() => { for (const e of enemies.slice()) killEnemy(e); P.x = (stairsT.x - 1.5) * T; P.y = (stairsT.y + .5) * T; });
+await page.waitForTimeout(200);
+(await page.evaluate(() => vatFull())) ? ok('killing fills the blood vat') : fail('the blood vat did not fill');
+await page.evaluate(() => { P.x = (stairsT.x + .5) * T; P.y = (stairsT.y + .5) * T; });
 await page.waitForTimeout(500);
 const shack = await page.evaluate(() => ({
   inShack: !!level && level.safe === true && circleName() === 'The Shack',
