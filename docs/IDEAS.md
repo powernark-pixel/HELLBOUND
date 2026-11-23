@@ -71,6 +71,17 @@ as its own focused piece of work.
 
 ---
 
+## Weapon slots (logged 2026-11-23)
+
+### 11. Themed weapon slot machines
+- **Different themed slot machines** that **pay out weapons** from their theme.
+- You **farm a theme's currency** to spin its slot. For example:
+  - Farm **space rocks** → spin the **Galaxy slot** → win **galaxy weapons** that are a bit broken.
+- Example jackpot: a **purple-shaded hologram blade** that does **insane void damage**.
+- Ties in with idea 6 (weapons with drop rates for rare, overpowered items) and the Void (idea 3).
+
+---
+
 ## Questions to answer before building any of this
 - **The mansion:** is it a hub you return to between descents, or the first level of the descent?
 - **Coming back up:** new levels on the way up, or the same levels changed (harder, corrupted, reversed)?
@@ -81,6 +92,9 @@ as its own focused piece of work.
   is grim gothic. Do both live in one game (horror-comedy, like The Binding of Isaac), with the mansion above and
   hell below? Or does one tone win?
 - **Where hell fits:** is the descent gardens → mansion → down into hell (the Blood Altar and the circles)?
+- **Slots:** where do the machines live (a hub, the mansion, the Void)? What other themes and currencies
+  (for example an inferno slot paid in brimstone)? How rare is a jackpot, and is there a guarantee after
+  many spins so farming never feels hopeless?
 - **Classes:** which ones to start with (for example a knight for melee, and a gunslinger for guns),
   and does the current passive tree become the first class's tree?
 
