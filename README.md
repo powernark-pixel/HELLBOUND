@@ -16,6 +16,7 @@ A gothic dark-fantasy dungeon crawler for the browser. Play it at https://powern
 - `audio/sfx.js` makes every sound live (no audio files needed). To swap in your own sounds, see `audio/README.md`.
 - `levels/shack.js` is **The Shack**, the hideout where every run starts and where you return after each level:
   rest, sort loot, and keep items in the stash (saved in your browser, survives death).
+- The game is drawn **isometric** (diagonal, like Path of Exile). Press **V** in game to switch to the old top-down view.
 - `V1`.txt` is an older copy, kept for reference.
 - `tests/smoke.mjs` and `.github/workflows/check.yml` are the automatic game check.
 
