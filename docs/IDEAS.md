@@ -32,6 +32,20 @@ as its own focused piece of work.
 
 ---
 
+## New direction: style and spells (logged 2026-11-23)
+
+### 5. A major art and style rework
+- Look and feel closer to **Death Must Die**, **early Path of Exile**, and **Noita** (for the weapons).
+- The current script-drawn pixel art is a stand-in. This rework is about the overall style, not
+  touching up individual sprites.
+
+### 6. Spells through weapons
+- Combat moves towards **spells** ("a spell arc").
+- **Weapons carry spells**, and have **drop rates for extra-powerful items and rare spells**.
+- Noita-like: the weapon you find shapes how you fight, and lucky drops can be wildly overpowered.
+
+---
+
 ## Questions to answer before building any of this
 - **The mansion:** is it a hub you return to between descents, or the first level of the descent?
 - **Coming back up:** new levels on the way up, or the same levels changed (harder, corrupted, reversed)?
