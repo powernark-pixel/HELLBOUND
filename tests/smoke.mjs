@@ -39,6 +39,26 @@ await page.waitForTimeout(300);
 const errBoxShown = await page.evaluate(() => getComputedStyle(document.getElementById('err')).display !== 'none');
 if (errBoxShown) fail('error box is showing: ' + await page.textContent('#err'));
 
+// 2b. the Blood Altar: handcrafted first level is loaded and every part of it can be reached
+const lv = await page.evaluate(() => {
+  const reach = (tx, ty) => level && level.steps[ty * MW + tx] >= 0;
+  return {
+    loaded: !!level && circleName() === 'The Blood Altar',
+    areas: level ? level.areas.map(a => a.n).sort().join('') : '',
+    stairs: reach(stairsT.x, stairsT.y),
+    allAreas: level && level.areas.every(a => reach(a.tx, a.ty)),
+    allEnemies: enemies.every(e => reach(Math.floor(e.x / T), Math.floor(e.y / T))),
+    allChests: chests.every(c => reach(Math.floor(c.x / T), Math.floor(c.y / T))),
+    wardenWaits: !!boss && boss.dormant === true,
+    harderLater: (() => { const imps = enemies.filter(e => e.type === 'imp' && !e.elite); return Math.max(...imps.map(e => e.max)) > Math.min(...imps.map(e => e.max)); })()
+  };
+});
+lv.loaded ? ok('Circle 1 is The Blood Altar') : fail('the Blood Altar level did not load');
+lv.areas === '234567' ? ok('all six area entrances are in the map') : fail('area entrances missing: got ' + lv.areas);
+lv.stairs && lv.allAreas && lv.allEnemies && lv.allChests ? ok('stairs, areas, enemies and chests are all reachable from the start') : fail('part of the Blood Altar cannot be reached: ' + JSON.stringify(lv));
+lv.wardenWaits ? ok('the Warden waits at the altar until you arrive') : fail('the Warden is not waiting at the altar');
+lv.harderLater ? ok('enemies get tougher further along the path') : fail('enemy toughness does not rise along the path');
+
 // 3. movement
 const x0 = await page.evaluate(() => P.x);
 await page.keyboard.down('d'); await page.waitForTimeout(600); await page.keyboard.up('d');

@@ -37,6 +37,7 @@ def main():
             contact(rows, s, s, k=4 if s < 50 else 3).save(os.path.join(preview, 'prev_' + name))
     tiles, _ = environment.tiles()
     tiles.save(A('tiles', 'dungeon_tiles.png'))
+    environment.altar().save(A('tiles', 'altar.png'))
     items_ui.item_icons().save(A('items', 'item_icons.png'))
     items_ui.effects().save(A('effects', 'effects.png'))
     for k, im in items_ui.ui_images().items():

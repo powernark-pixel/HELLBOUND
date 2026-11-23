@@ -9,7 +9,8 @@ ST = RAMP['stone']
 TILE_NAMES = ['floor0', 'floor1', 'floor2', 'floorBlood', 'floorCrack',
               'wallTop', 'wallFace', 'wallCross', 'wallWindow', 'wallSconce', 'wallChains', 'wallOssuary', 'wallBlood',
               'lava0', 'lava1', 'lava2', 'stairs', 'stairsSealed', 'chestShut', 'chestOpen',
-              'decoSkulls', 'decoBones', 'decoCandles', 'decoPool', 'decoPillar', 'decoCrucifix']
+              'decoSkulls', 'decoBones', 'decoCandles', 'decoPool', 'decoPillar', 'decoCrucifix',
+              'blood0', 'blood1', 'blood2', 'carpetH', 'carpetV', 'floorSigil']
 
 LAYOUTS = [
     [(0, 0, 18, 14), (18, 0, 14, 14), (0, 14, 11, 18), (11, 14, 21, 18)],
@@ -374,6 +375,149 @@ def decor(kind, seed):
         im.outline(C['K'])
     return im
 
+def blood_tile(frame):
+    """A slow river of blood: dark, glossy, with drifting clots and pale highlights."""
+    im = Img(32, 32)
+    t = frame / 3 * math.tau
+    tau = math.tau
+    deep = [rgb('#1a0205'), C['r'], C['R'], C['C'], C['c']]
+    for y in range(32):
+        for x in range(32):
+            v = (math.sin(tau * (x / 32 + y / 32) + t) * 0.6 +
+                 math.sin(tau * (2 * x / 32 - y / 32) - t) * 0.5 +
+                 math.sin(tau * (y / 32 * 2) + t * 2) * 0.35)
+            v = (v + 1.45) / 2.9
+            im.set(x, y, ramp_pick(deep, 0.15 + v * 0.62, x, y))
+    # glossy ripples drifting down the river
+    for k in range(3):
+        y0 = (k * 11 + frame * 4) % 32
+        for x in range(32):
+            yy = int(y0 + 1.5 * math.sin(x * 0.4 + k))
+            if (x + k) % 9 < 4:
+                im.set(x, yy % 32, C['p'] if (x + k) % 9 == 1 else C['c'])
+    # clots
+    r = random.Random(70 + frame)
+    for _ in range(4):
+        x, y = r.randint(2, 29), r.randint(2, 29)
+        im.set(x, y, rgb('#140104')); im.set(x + 1, y, rgb('#140104'))
+    return im
+
+def carpet(base, horizontal=True):
+    """A worn crimson runner with tarnished-gold borders, laid over the flagstones."""
+    im = base.copy()
+    nz = tile_noise(31, 32, 8)
+    for y in range(32):
+        for x in range(32):
+            a = y if horizontal else x
+            if 6 <= a <= 25:
+                if a in (6, 25):
+                    c = C['K']
+                elif a in (7, 24):
+                    c = C['G'] if (x + y) % 4 else C['Y']
+                elif a in (9, 22):
+                    c = C['g']
+                else:
+                    v = 0.35 + (nz(x, y) - 0.5) * 0.5 + (0.12 if a < 12 else 0)
+                    c = ramp_pick([C['r'], C['R'], C['C']], v, x, y)
+                    b = (x if horizontal else y) % 8
+                    if a in (15, 16) and b in (3, 4):
+                        c = C['G']
+                im.set(x, y, c)
+    r = random.Random(32 if horizontal else 33)
+    for _ in range(5):
+        x, y = r.randint(2, 29), r.randint(10, 21)
+        if not horizontal:
+            x, y = y, x
+        im.set(x, y, C['r'])
+    return im
+
+def sigil(base):
+    """A ritual circle drawn in blood on the flagstones."""
+    im = base.copy()
+    cx = cy = 15.5
+    for y in range(32):
+        for x in range(32):
+            d = math.hypot(x - cx, y - cy)
+            if (12.4 < d < 13.6 or 8.6 < d < 9.4) and bayer(x, y) < 0.85:
+                im.set(x, y, C['C'] if d > 11 else C['R'])
+    pts = [(cx + 12.5 * math.cos(-math.pi / 2 + i * 2 * math.tau / 5),
+            cy + 12.5 * math.sin(-math.pi / 2 + i * 2 * math.tau / 5)) for i in range(6)]
+    for i in range(5):
+        line(im, pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], C['R'])
+    for a in range(0, 360, 45):
+        im.set(cx + 11 * math.cos(math.radians(a)), cy + 11 * math.sin(math.radians(a)), C['c'])
+    im.set(15, 15, C['p']); im.set(16, 16, C['c'])
+    return im
+
+def altar():
+    """The Blood Altar: a blood-soaked stone slab under a tall tarnished-gold cross. 96x80."""
+    im = Img(96, 80)
+    st = RAMP['stone']
+    # tall gold cross behind the altar
+    for y in range(2, 52):
+        for x in range(44, 52):
+            im.set(x, y, ramp_pick(RAMP['gold'], 0.75 - (x - 44) * 0.07 - y * 0.004, x, y))
+    for y in range(12, 20):
+        for x in range(28, 68):
+            im.set(x, y, ramp_pick(RAMP['gold'], 0.7 - (y - 12) * 0.05, x, y))
+    for (x, y) in ((47, 1), (48, 1), (27, 15), (27, 16), (68, 15), (68, 16)):
+        im.set(x, y, C['y'])
+    # crimson cloth draped over the arms
+    poly(im, [(30, 19), (66, 19), (62, 30), (56, 24), (48, 34), (40, 24), (34, 30)], None,
+         lambda x, y: ramp_pick([C['r'], C['R'], C['C'], C['c']], 0.55 - (y - 19) * 0.025 + ((x // 3) % 2) * 0.12, x, y))
+    # a burning heart where the beams cross
+    ellipse(im, 48, 16, 4, 3.5, [C['a'], C['e'], C['E'], C['f']], bias=0.1)
+    # stone steps
+    for i, (y0, x0, x1) in enumerate(((70, 6, 90), (74, 2, 94))):
+        for y in range(y0, min(80, y0 + 4 + i * 2)):
+            for x in range(x0, x1):
+                lvl = 4.6 if y == y0 else 3.0 - (y - y0) * 0.25
+                im.set(x, y, ramp_pick(st, lvl / 6, x, y))
+    # the altar block
+    for y in range(44, 70):
+        for x in range(14, 82):
+            if y < 50:
+                lvl = 5.2 if y == 44 else 4.3
+            else:
+                lvl = 2.6 + (0.6 if x < 30 else 0) - (0.7 if x > 70 else 0) - (y - 50) * 0.03
+            im.set(x, y, ramp_pick(st, max(0, lvl) / 6, x, y))
+    # carved front: gothic arches with gold trim
+    for k in range(5):
+        ax = 20 + k * 12
+        for y in range(54, 67):
+            for x in range(ax, ax + 8):
+                if y < 57 and abs(x - (ax + 3.5)) > (y - 53) * 1.4:
+                    continue
+                im.set(x, y, st[0] if (x + y) % 5 else st[1])
+        for x in range(ax - 1, ax + 9):
+            im.set(x, 67, C['G'])
+    for x in range(14, 82):
+        im.set(x, 50, C['Y'] if x % 4 else C['y']); im.set(x, 51, C['g'])
+    # blood pooled on the slab and running down the front
+    for x in range(22, 76):
+        if (x * 7) % 11 < 8:
+            im.set(x, 45, C['C']); im.set(x, 46, C['R'])
+    r = random.Random(9)
+    for _ in range(14):
+        x = r.randint(16, 79)
+        ln = r.randint(4, 20)
+        for y in range(46, 46 + ln):
+            im.set(x, y, C['C'] if y < 46 + ln - 2 else C['R'])
+        im.set(x, 46 + ln, C['c'])
+    for x in range(10, 88):
+        if r.random() < 0.6:
+            im.set(x, 70 + r.randint(0, 1), C['R'])
+    # a golden chalice of blood
+    for y in range(37, 44):
+        w = 3 if y < 41 else 1
+        for x in range(40 - w, 41 + w):
+            im.set(x, y, C['Y'] if x < 40 else C['G'])
+    for x in range(37, 44):
+        im.set(x, 37, C['y']); im.set(x, 44, C['G'])
+    im.set(39, 38, C['c']); im.set(40, 38, C['C'])
+    im.outline(C['K'])
+    return im
+
 def tiles():
     out = {}
     out['floor0'] = floor_tile(1, 0)
@@ -397,6 +541,11 @@ def tiles():
     out['chestOpen'] = chest(True)
     for k, s in (('Skulls', 20), ('Bones', 21), ('Candles', 22), ('Pool', 23), ('Pillar', 24), ('Crucifix', 25)):
         out['deco' + k] = decor(k.lower(), s)
+    for f in range(3):
+        out[f'blood{f}'] = blood_tile(f)
+    out['carpetH'] = carpet(floor_tile(1, 0), horizontal=True)
+    out['carpetV'] = carpet(floor_tile(2, 1), horizontal=False)
+    out['floorSigil'] = sigil(floor_tile(3, 2))
     sheet = Img(32 * len(TILE_NAMES), 32)
     for i, n in enumerate(TILE_NAMES):
         sheet.blit(out[n], i * 32, 0)
