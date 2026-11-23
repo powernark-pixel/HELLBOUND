@@ -59,6 +59,10 @@ lv.stairs && lv.allAreas && lv.allEnemies && lv.allChests ? ok('stairs, areas, e
 lv.wardenWaits ? ok('the Warden waits at the altar until you arrive') : fail('the Warden is not waiting at the altar');
 lv.harderLater ? ok('enemies get tougher further along the path') : fail('enemy toughness does not rise along the path');
 
+// 2c. sound engine is loaded and has every sound
+const snd = await page.evaluate(() => typeof SFX === 'object' ? SFX.names.length : 0);
+snd >= 20 ? ok(`sound engine loaded (${snd} sounds)`) : fail('sound engine missing');
+
 // 3. movement
 const x0 = await page.evaluate(() => P.x);
 await page.keyboard.down('d'); await page.waitForTimeout(600); await page.keyboard.up('d');

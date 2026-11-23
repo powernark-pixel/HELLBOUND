@@ -212,6 +212,7 @@ h3{font-size:calc(var(--u)*10);margin:calc(var(--u)*3) 0 calc(var(--u)*2)}
         <span class="kbd">F</span><span>Cycle the loot filter</span>
         <span class="kbd">ESC</span><span>Close a window, or open the menu</span>
         <span class="kbd">R</span><span>Rise again after death</span>
+        <span class="kbd">M</span><span>Mute or unmute sound</span>
       </div>
       <div class="small muted">Slay the Warden of each circle to unseal the stairs, then step onto them to descend.</div>
       <div class="small muted" style="margin-top:calc(var(--u)*3)">Art credits: Blood FX by jasontomlee · Rat by WilliamQM (Dark Enemies Pack)</div>
@@ -226,6 +227,7 @@ h3{font-size:calc(var(--u)*10);margin:calc(var(--u)*3) 0 calc(var(--u)*2)}
       <div class="divider"></div>
       <button class="gbtn" id="btnResume">Resume</button>
       <button class="gbtn" id="btnPauseControls">Controls</button>
+      <button class="gbtn" id="btnSound">Sound: 70%</button>
       <button class="gbtn" id="btnQuit">Abandon Run</button>
     </div>
   </div>
@@ -271,6 +273,7 @@ h3{font-size:calc(var(--u)*10);margin:calc(var(--u)*3) 0 calc(var(--u)*2)}
 </div>
 
 <script src="levels/blood_altar.js"></script>
+<script src="audio/sfx.js"></script>
 <script>
 /* =====================================================================
    0. CORE SETUP AND PIXEL PIPELINE
@@ -907,7 +910,7 @@ function newGame(){
   announce(`CIRCLE 1: ${circleName()}`,'#ff7a2b',3,level?level.hints[1]:'');
 }
 function descend(){
-  floor++;
+  floor++;SFX.play('descend');
   genFloor();calc();
   P.hp=Math.min(P.maxHp,P.hp+P.maxHp*0.3);
   P.warned=false;
@@ -975,12 +978,23 @@ function togglePause(on){
 let menuSel=0,quitArmed=false;
 function selectMenu(i){
   const b=[...document.querySelectorAll('#menu .gbtn')];
-  menuSel=(i+b.length)%b.length;b.forEach((x,k)=>x.classList.toggle('sel',k===menuSel));
+  const prevSel=menuSel;menuSel=(i+b.length)%b.length;if(menuSel!==prevSel)SFX.play('hover');b.forEach((x,k)=>x.classList.toggle('sel',k===menuSel));
 }
 $('btnNew').onclick=()=>startGame();
 $('btnControls').onclick=()=>openControls();
 document.querySelectorAll('#menu .gbtn').forEach(b=>b.onmouseenter=()=>selectMenu(+b.dataset.menu));
 $('btnResume').onclick=()=>togglePause(false);
+/* Sound: browsers only allow audio after the player clicks or presses a key */
+addEventListener('pointerdown',()=>SFX.resume(),true);
+addEventListener('keydown',()=>SFX.resume(),true);
+document.addEventListener('click',e=>{if(e.target.closest('.gbtn,.mini'))SFX.play('ui')},true);
+const VOLS=[0,0.3,0.5,0.7,1];
+function soundLabel(){$('btnSound').textContent=!SFX.on||SFX.vol===0?'Sound: Off':`Sound: ${Math.round(SFX.vol*100)}%`}
+$('btnSound').onclick=()=>{
+  if(!SFX.on)SFX.toggle();
+  const i=VOLS.findIndex(v=>Math.abs(v-SFX.vol)<0.01);SFX.setVol(VOLS[(i+1)%VOLS.length]);soundLabel();
+};
+soundLabel();
 $('btnPauseControls').onclick=()=>openControls();
 $('btnQuit').onclick=()=>{
   if(!quitArmed){quitArmed=true;$('btnQuit').textContent='Click again to abandon';
@@ -1008,14 +1022,14 @@ function equipIdx(i){
   const old=eq[it.slot];
   inv.splice(i,1);eq[it.slot]=it;
   if(old)inv.push(old);
-  calc();log(`Equipped ${it.name}`,colorOf(it));renderInv();
+  calc();log(`Equipped ${it.name}`,colorOf(it));SFX.play('equip');renderInv();
 }
 function salvageIdx(i){
   const it=inv[i];if(!it)return;
   inv.splice(i,1);
   const gain=Math.ceil(it.bv/2)+it.r*3;
   stardust+=gain;
-  log(`Salvaged ${it.name} for +${gain} ★`,'#ffe14f');
+  log(`Salvaged ${it.name} for +${gain} ★`,'#ffe14f');SFX.play('salvage');
   renderInv();
 }
 // The bag can be sorted and filtered, so cards refer to items by id, never by position.
@@ -1028,7 +1042,7 @@ function rerollSlot(slot){
   stardust-=25;
   it.aff=genAffixes(it.r,it.ilvl);
   if(it.r===5)it.trait=pick(TKEYS);
-  calc();log(`Rerolled ${it.name}`,colorOf(it));renderInv();
+  calc();log(`Rerolled ${it.name}`,colorOf(it));SFX.play('node');renderInv();
 }
 
 /* ----- sorting, filtering and stat comparison ----- */
@@ -1214,7 +1228,7 @@ $('treeNodes').onclick=e=>{
   const b=e.target.closest('[data-id]');if(!b)return;
   const n=TBY[b.dataset.id];
   if(canAlloc(n)){
-    P.alloc[n.id]=1;P.points--;calc();
+    P.alloc[n.id]=1;P.points--;calc();SFX.play('node');
     log(`Passive: ${n.name} (${n.desc})`,'#d9b3ff');
     renderTree();$('treeInfo').innerHTML=treeNodeInfo(n);
   }
@@ -1230,6 +1244,7 @@ function dealDamage(e,base){
   if(Math.random()*100<S.critC){dmg*=S.critM/100;crit=true}
   e.hp-=dmg;e.flash=0.08;
   addText(e.x,e.y-e.r-6,Math.round(dmg),crit?'#ffe14f':'#ffffff',crit?1.5:1);
+  SFX.play(crit?'crit':'hit');
   if(S.leech)P.hp=Math.min(P.maxHp,P.hp+dmg*S.leech/100);
   if(hasTrait('siphon'))P.sh=Math.min(P.maxSh,P.sh+dmg*0.15);
   burst(e.x,e.y,'#8f1a1f',3);
@@ -1252,12 +1267,14 @@ function killEnemy(e){
     calc();P.hp=P.maxHp;P.sh=P.maxSh;
   }
   if(P.lvl>before){
+    SFX.play('levelup');
     announce(`LEVEL ${P.lvl}`,'#d9b3ff',1.6,'Passive point gained · press T');
     log(`Level up! +${P.lvl-before} passive point (press T)`,'#d9b3ff');
   }
   stardust+=ri(1,3);
   burst(e.x,e.y,'#8f1a1f',8);
   bloodFx(e.x,e.y,e.boss?'big':e.r<9?'hit':'kill',e.x<P.x);   // small foes get a small spray
+  SFX.play(e.boss?'bigkill':'kill');
   if(hasTrait('inferno')){
     burst(e.x,e.y,'#ff7a2b',24);
     for(const o of enemies){
@@ -1284,9 +1301,10 @@ function hurt(d,noIF){
   if(P.sh>0){const a=Math.min(P.sh,rem);P.sh-=a;rem-=a}
   P.hp-=rem;shake=Math.max(shake,0.25);
   addText(P.x,P.y-24,'-'+Math.round(d),'#ff4f6e',1);
+  if(!noIF)SFX.play('hurt');
   if(d>=4)bloodFx(P.x,P.y-6,'hit',Math.random()<.5);
   if(P.hp<=0){
-    P.hp=0;dead=true;setAnim(P,'death');
+    P.hp=0;dead=true;setAnim(P,'death');SFX.play('death');
     announce('THE KNIGHT FALLS','#c4302c',99,'Press R to rise again · Esc for the menu');
     log('Press R to begin again','#ff4f6e');
   }
@@ -1294,6 +1312,7 @@ function hurt(d,noIF){
 function swing(){
   P.atk=1/S.atkRate;P.swings++;
   P.atkAnim=0.25;              // triggers the player's attack animation
+  SFX.play('swing');
   setAnim(P,'attack');P.animT=0;
   const oath=hasTrait('oath')&&P.swings%5===0;
   swings.push({x:P.x,y:P.y,a:P.aim,life:.18,r:S.range,arc:S.arcDeg*Math.PI/180,oath});
@@ -1351,7 +1370,7 @@ function update(dt){
     let dx=ux,dy=uy;
     if(!mx&&!my){dx=Math.cos(P.aim);dy=Math.sin(P.aim)}
     slide(P,dx*130,dy*130,10);
-    P.roll=S.rollCD;P.inv=0.3;
+    P.roll=S.rollCD;P.inv=0.3;SFX.play('roll');
     burst(P.x,P.y,'#5d5059',16);burst(P.x,P.y,'#ffb347',6);
     keys[' ']=false;
   }
@@ -1364,7 +1383,7 @@ function update(dt){
   if(P.sinceHit>3)P.sh=Math.min(P.maxSh,P.sh+P.maxSh*0.2*dt);
   if(P.sinceHit>4)P.hp=Math.min(P.maxHp,P.hp+S.regen*dt);
 
-  if(tileAt(P.x,P.y)===2)hurt(16*dt,true);
+  if(tileAt(P.x,P.y)===2){hurt(16*dt,true);SFX.play('sizzle')}
 
   if(tileAt(P.x,P.y)===3){
     if(boss&&!boss.dead){
@@ -1388,9 +1407,10 @@ function update(dt){
       a.done=true;
       announce(level.areaNames[a.n].toUpperCase(),a.n===7?'#ff3a2a':'#d9a066',2.8,level.hints[a.n]||'');
       log(`${level.areaNames[a.n]}: ${level.hints[a.n]||''}`,'#d9a066');
-      if(a.n===7&&boss&&boss.dormant){boss.dormant=false;shake=0.6;log('The Warden rises from the altar.','#ff4f6e')}
+      if(a.n===7&&boss&&boss.dormant){boss.dormant=false;shake=0.6;log('The Warden rises from the altar.','#ff4f6e');SFX.play('roar')}
+      else SFX.play('area');
     }
-    if(boss&&boss.dormant&&dist(boss,P)<260){boss.dormant=false}
+    if(boss&&boss.dormant&&dist(boss,P)<260){boss.dormant=false;SFX.play('roar')}
   }
 
   // enemies
@@ -1408,13 +1428,13 @@ function update(dt){
         e.fire-=dt;
         if(e.fire<=0&&d<620){
           ebullets.push({x:e.x,y:e.y,vx:nx*190,vy:ny*190,life:3.5,dmg:(9+floor*2)*e.dmgMul,r:4,c:'#ffe6b0'});
-          e.fire=Tt.shoot;e.shotAnim=0.3;
+          e.fire=Tt.shoot;e.shotAnim=0.3;if(d<420)SFX.play('arrow');
         }
       }else if(e.boss){
         vx=nx*e.spd;vy=ny*e.spd;
         e.shot-=dt;
         if(e.shot<=0){
-          e.shot=2.4;e.shotAnim=0.35;
+          e.shot=2.4;e.shotAnim=0.35;SFX.play('bolt');
           for(let k=0;k<14;k++){
             const a=k/14*TAU+e.phase;
             ebullets.push({x:e.x,y:e.y,vx:Math.cos(a)*170,vy:Math.sin(a)*170,life:4,dmg:(12+floor*2)*e.dmgMul,r:6,c:'#ff2b6b'});
@@ -1477,7 +1497,7 @@ function update(dt){
     const d=dist(g,P);
     if(d<S.mag){g.x+=(P.x-g.x)*Math.min(1,dt*10);g.y+=(P.y-g.y)*Math.min(1,dt*10)}
     if(d<18&&inv.length<60){
-      inv.push(g);g.dead=true;g.got=++pickupSeq;
+      inv.push(g);g.dead=true;g.got=++pickupSeq;SFX.play('pickup',{r:g.r});
       log(`Picked up ${g.name}`,colorOf(g));
       if(g.r>=4)announce(RAR[g.r].n.toUpperCase(),colorOf(g),1.4);
       if(invOpen)renderInv();
@@ -1791,7 +1811,7 @@ function openChest(){
   let best=null,bd=44;
   for(const c of chests){const d=dist(c,P);if(!c.open&&d<bd){bd=d;best=c}}
   if(!best)return;
-  best.open=true;
+  best.open=true;SFX.play('chest');
   for(let k=0;k<ri(2,3);k++)dropItem(best.x,best.y,1,floor+2);
   burst(best.x,best.y,'#ffe14f',30);
   log('Chest opened.','#ffe14f');
@@ -1820,6 +1840,7 @@ addEventListener('keydown',e=>{
   if(k==='e'&&!invOpen&&!treeOpen&&!dead)openChest();
   if(k==='f'){filter=(filter+1)%FILTERS.length;log(`Loot filter: ${FILTERS[filter]}`,'#ffb347');renderInv()}
   if(k==='r'&&dead)newGame();
+  if(k==='m'){const on=SFX.toggle();log(on?'Sound on':'Sound muted (M)','#c9a99a');soundLabel()}
 });
 addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false});
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false;mouse.down=false});
