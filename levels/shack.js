@@ -5,7 +5,8 @@
    #  timber wall          w  timber wall with a window
    .  plank floor          S  where you arrive       X  trapdoor down to the next level
    F  stone hearth (2x2 tiles; put F at its top-left)
-   E  bed (rest)           Z  stash chest            Q  rug        c  candles */
+   E  bed (rest)           Z  stash chest            Q  rug        c  candles
+   Y  reward chest: refilled with a random drop every time you arrive */
 window.LEVEL_SHACK={
   name:'The Shack',
   safe:true,
@@ -17,7 +18,7 @@ window.LEVEL_SHACK={
     "#..............#",
     "#......S.......#",
     "#......Q.......#",
-    "#.............Z#",
+    "#..Y..........Z#",
     "#..............#",
     "#.......X......#",
     "################",

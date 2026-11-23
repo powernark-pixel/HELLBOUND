@@ -183,6 +183,7 @@ h3{font-size:calc(var(--u)*10);margin:calc(var(--u)*3) 0 calc(var(--u)*2)}
     <div id="bossbar"><div class="name" id="bossName">The Warden</div><div class="bar"><i id="bossb"></i></div></div>
     <div id="log"></div>
     <div id="hint">ESC menu · I reliquary · T passives · F filter</div>
+    <div id="sndHint" style="position:absolute;left:0;right:0;bottom:calc(var(--u)*22);text-align:center;font-family:var(--f-pixel);font-size:calc(var(--u)*5);color:#e0bf68;text-shadow:0 calc(var(--u)*1) 0 #000;display:none">♪ CLICK THE GAME TO TURN ON SOUND</div>
     <div id="banner"></div>
   </div>
 
@@ -810,6 +811,7 @@ function buildLevel(L){
     if(ch==='X')stairsT={x,y};
     if(ch==='A')altarAt={x:px,y:py,tx:x,ty:y};
     if(ch==='C')chests.push({x:px,y:py,open:false});
+    if(ch==='Y')chests.push({x:px,y:py,open:false,reward:true});
     if(DECO_CH[ch])decor.push({tx:x,ty:y,kind:DECO_CH[ch],seed:hash(x,y)});
     if(ch>='2'&&ch<='7')areas.push({x:px,y:py,tx:x,ty:y,n:+ch,done:false});
     if(ENEMY_CH[ch])foes.push({x:px,y:py,tx:x,ty:y,type:ENEMY_CH[ch][0],elite:!!ENEMY_CH[ch][1]});
@@ -874,10 +876,6 @@ function genFloor(){
   stairsT={x:L.x+L.w-2,y:L.y+L.h-2};
   map[stairsT.y][stairsT.x]=3;
   for(let i=1;i<last;i++){
-    if(Math.random()<0.5){
-      const p=roomPos(rooms[i]);
-      chests.push({x:p.x,y:p.y,open:false});
-    }
     const n=ri(2,3+Math.floor(floor/2));
     for(let k=0;k<n;k++){
       const p=roomPos(rooms[i]);
@@ -1026,11 +1024,11 @@ $('btnControls').onclick=()=>openControls();
 document.querySelectorAll('#menu .gbtn').forEach(b=>b.onmouseenter=()=>selectMenu(+b.dataset.menu));
 $('btnResume').onclick=()=>togglePause(false);
 /* Sound: browsers only allow audio after the player clicks or presses a key */
-addEventListener('pointerdown',()=>SFX.resume(),true);
-addEventListener('keydown',()=>SFX.resume(),true);
+for(const ev of ['pointerdown','pointerup','mousedown','mouseup','click','keydown','keyup','touchend'])
+  addEventListener(ev,()=>{if(!SFX.running)SFX.resume()},true);
 document.addEventListener('click',e=>{if(e.target.closest('.gbtn,.mini'))SFX.play('ui')},true);
 const VOLS=[0,0.3,0.5,0.7,1];
-function soundLabel(){$('btnSound').textContent=!SFX.on||SFX.vol===0?'Sound: Off':`Sound: ${Math.round(SFX.vol*100)}%`}
+function soundLabel(){$('btnSound').textContent=!SFX.on||SFX.vol===0?'Sound: Off':!SFX.running?'Sound: blocked (click)':`Sound: ${Math.round(SFX.vol*100)}%`}
 $('btnSound').onclick=()=>{
   if(!SFX.on)SFX.toggle();
   const i=VOLS.findIndex(v=>Math.abs(v-SFX.vol)<0.01);SFX.setVol(VOLS[(i+1)%VOLS.length]);soundLabel();
@@ -1384,9 +1382,9 @@ function killEnemy(e){
     bloodFx(e.x-14,e.y,'big',true);bloodFx(e.x+14,e.y,'big',false);bloodFx(e.x,e.y-10,'kill',Math.random()<.5);
     shake=1;
     for(let k=0;k<3;k++)dropItem(e.x,e.y,3,floor+3);
-    announce('THE WARDEN FALLS','#ffe14f',2.5,'The stairs are unsealed');
-    log('The stairs are unsealed.','#ffe14f');
-  }else if(Math.random()<Tt.drop){
+    announce('THE WARDEN FALLS','#ffe14f',2.5,'The stairs are unsealed. Follow the light');
+    log('The stairs are unsealed. Follow the golden light.','#ffe14f');
+  }else if(Math.random()<Tt.drop*1.3){
     dropItem(e.x,e.y,e.type==='demon'?2:0,floor+ri(0,3));
   }
 }
@@ -2074,6 +2072,13 @@ function drawIso(){
   }
   ctx.globalAlpha=1;
   for(const [fx,fy,s] of flames)drawFlame(fx,fy,s);
+  const stairsOpen=stairsT&&!(level&&level.safe)&&!(boss&&!boss.dead);
+  if(stairsOpen){
+    const [bx,by]=S_((stairsT.x+.5)*T,(stairsT.y+.5)*T),pulse=0.25+0.12*Math.sin(time*4);
+    ctx.save();ctx.globalAlpha=pulse;ctx.fillStyle='#ffe14f';
+    ctx.fillRect(bx-3,by-90,6,90);ctx.globalAlpha=pulse*0.6;ctx.fillRect(bx-7,by-60,14,60);ctx.restore();
+    light((stairsT.x+.5)*T,(stairsT.y+.5)*T,110,0.8);
+  }
 
   // ---- 5. LIGHTING: ellipses lying on the ground ----
   lctx.globalCompositeOperation='source-over';
@@ -2105,12 +2110,26 @@ function drawIso(){
     ctx.font=`8px ${PXFONT}`;ctx.globalAlpha=1;
     const tip=(o,txt)=>{if(!o||dist(o,P)>70)return;const [sx,sy]=S_(o.x,o.y);ctx.fillStyle='#000';ctx.fillText(txt,sx+1,sy-33);ctx.fillStyle='#e0bf68';ctx.fillText(txt,sx,sy-34)};
     tip(level.stash,'[E] STASH');tip(level.bed,'[E] REST');
+    for(const c of chests)if(c.reward&&!c.open)tip(c,'[E] REWARD CHEST');
     if(stairsT)tip({x:(stairsT.x+.5)*T,y:(stairsT.y+.5)*T},'STEP ON THE TRAPDOOR TO DESCEND');
   }
   ctx.restore();ctx.globalAlpha=1;
   const v=ctx.createRadialGradient(LW/2,LH/2,LH*0.32,LW/2,LH/2,LW*0.66);
   v.addColorStop(0,'rgba(0,0,0,0)');v.addColorStop(1,'rgba(0,0,0,0.75)');
   ctx.fillStyle=v;ctx.fillRect(0,0,LW,LH);
+  if(stairsOpen){
+    // off-screen stairs: a golden arrow on the screen edge points the way
+    const [bx,by]=S_((stairsT.x+.5)*T,(stairsT.y+.5)*T);
+    if(bx<24||bx>LW-24||by<34||by>LH-24){
+      const ang=Math.atan2(by-LH/2,bx-LW/2),k=Math.min((LW/2-34)/Math.abs(Math.cos(ang)||1e-6),(LH/2-34)/Math.abs(Math.sin(ang)||1e-6));
+      const ax=LW/2+Math.cos(ang)*k,ay=LH/2+Math.sin(ang)*k,bob=Math.sin(time*6)*2;
+      ctx.save();ctx.translate(ax+Math.cos(ang)*bob,ay+Math.sin(ang)*bob);ctx.rotate(ang);
+      ctx.fillStyle='#000';ctx.beginPath();ctx.moveTo(10,0);ctx.lineTo(-6,-8);ctx.lineTo(-6,8);ctx.closePath();ctx.fill();
+      ctx.fillStyle='#ffe14f';ctx.beginPath();ctx.moveTo(8,0);ctx.lineTo(-4,-6);ctx.lineTo(-4,6);ctx.closePath();ctx.fill();
+      ctx.restore();
+      ctx.font=`8px ${PXFONT}`;ctx.textAlign='center';ctx.fillStyle='#000';ctx.fillText('STAIRS',ax+1,ay+17);ctx.fillStyle='#ffe14f';ctx.fillText('STAIRS',ax,ay+16);
+    }
+  }
   addLight=topAddLight;
 }
 const isoLights=[];
@@ -2157,6 +2176,7 @@ function drawTitle(){
 let hudCache='';
 function updateHUD(){
   if(scene!=='game')return;
+  $('sndHint').style.display=SFX.on&&SFX.vol>0&&!SFX.running?'block':'none';
   const hp=P.hp/P.maxHp*100;
   $('hpb').style.width=hp+'%';$('hpLag').style.width=hp+'%';
   $('shb').style.width=(P.maxSh?P.sh/P.maxSh*100:0)+'%';
@@ -2183,7 +2203,12 @@ function openChest(){
   for(const c of chests){const d=dist(c,P);if(!c.open&&d<bd){bd=d;best=c}}
   if(!best)return;
   best.open=true;SFX.play('chest');
-  for(let k=0;k<ri(2,3);k++)dropItem(best.x,best.y,1,floor+2);
+  if(best.reward){
+    // the shack's reward chest: one guaranteed Magic+ item, sometimes better, sometimes a second
+    const roll=Math.random(),minR=roll<0.1?3:roll<0.4?2:1;
+    dropItem(best.x,best.y+20,minR,floor+2);
+    if(Math.random()<0.3)dropItem(best.x,best.y+20,1,floor+1);
+  }else for(let k=0;k<ri(2,3);k++)dropItem(best.x,best.y,1,floor+2);
   burst(best.x,best.y,'#ffe14f',30);
   log('Chest opened.','#ffe14f');
 }
