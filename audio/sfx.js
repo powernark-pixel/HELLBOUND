@@ -112,10 +112,15 @@ const SFX=(()=>{
       out(chain(osc(ctx,'sine',f,f,tt,.25),env(ctx,tt,.001,.2,.22)),o,.4)})},
     node(o,t){const{ctx}=o;[392,587.3,784].forEach((f,i)=>{const tt=t+i*.05;
       out(chain(osc(ctx,'sine',f,f*1.01,tt,.9),env(ctx,tt,.01,.8,.18)),o,.6)})},
+    step(o,t){const{ctx}=o;
+      out(chain(noise(ctx,t,.07),filt(ctx,'lowpass',900*R(.8,1.2),350,t,.07),env(ctx,t,.002,.07,.55)),o,.05)},
+    heart(o,t){const{ctx}=o;
+      for(const [dt,a] of [[0,.55],[.17,.4]]){const tt=t+dt;
+        out(chain(osc(ctx,'sine',62,42,tt,.16),env(ctx,tt,.004,.16,a)),o,.1)}},
     ui(o,t){const{ctx}=o;out(chain(osc(ctx,'triangle',880,820,t,.06),env(ctx,t,.001,.05,.14)),o,.05)},
     hover(o,t){const{ctx}=o;out(chain(osc(ctx,'sine',1400,1400,t,.04),env(ctx,t,.001,.03,.05)),o,0)}
   };
-  const GAP={hit:.035,crit:.035,kill:.04,hurt:.12,sizzle:.22,pickup:.05,swing:.05,arrow:.06,bolt:.2,hover:.04};
+  const GAP={step:.15,heart:.5,hit:.035,crit:.035,kill:.04,hurt:.12,sizzle:.22,pickup:.05,swing:.05,arrow:.06,bolt:.2,hover:.04};
 
   /* ---------- the mixer: master -> sfx + ambience, with a cathedral reverb ---------- */
   function makeVerb(ctx){
