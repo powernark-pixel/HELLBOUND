@@ -3,16 +3,35 @@
    Every sound is synthesised live with the Web Audio API, so the game
    has sound with no audio files at all.
 
-   YOUR OWN SOUNDS (e.g. made in Reason): export a file, put it in
-   audio/sfx/, and list it in SOUND_FILES below with the sound's name.
-   A listed file always replaces the synthesised version.
-     e.g.  swing:'audio/sfx/swing.ogg',
+   RECORDED SOUNDS: list files in SOUND_FILES below under the sound's name.
+   A listed file always replaces the synthesised version. Give several files
+   and one is picked at random each time (with a slight pitch change), so
+   repeated hits never sound robotic. vol sets how loud that sound plays.
+   If a file can't be loaded (or the browser can't play it), the synthesised
+   version is used instead, so the game is never silent.
+   Your own sounds (e.g. from Reason) go in exactly the same way.
    See audio/README.md for every sound name and export settings.
    ===================================================================== */
+const K='audio/sfx/kenney/';   // Kenney RPG Audio + Impact Sounds (CC0, see CREDITS.md)
+const n5=(base,n=5)=>Array.from({length:n},(_,i)=>K+base+String(i).padStart(3,'0')+'.ogg');
 const SOUND_FILES={
-  // name:'audio/sfx/file.ogg',
-  // ambience:'audio/music/ambience.ogg',   (loops underneath the game)
+  swing:  {files:[K+'drawKnife1.ogg',K+'drawKnife2.ogg',K+'drawKnife3.ogg'],vol:0.45},
+  hit:    {files:n5('impactPunch_medium_'),vol:0.8},
+  crit:   {files:n5('impactPunch_heavy_',4),vol:1},
+  kill:   {files:[K+'knifeSlice.ogg',K+'knifeSlice2.ogg',K+'chop.ogg',...n5('impactSoft_heavy_',3)],vol:0.85},
+  hurt:   {files:n5('impactPlate_medium_',4),vol:0.7},
+  roll:   {files:[K+'cloth1.ogg',K+'cloth2.ogg',K+'cloth3.ogg',K+'cloth4.ogg'],vol:0.8},
+  step:   {files:n5('footstep_concrete_'),vol:0.35},
+  stepWood:{files:n5('footstep_wood_'),vol:0.4},
+  chest:  {files:[K+'creak1.ogg',K+'creak2.ogg',K+'creak3.ogg'],vol:0.8},
+  equip:  {files:[K+'metalLatch.ogg',K+'beltHandle1.ogg',K+'beltHandle2.ogg'],vol:0.7},
+  salvage:{files:[K+'handleCoins.ogg',K+'handleCoins2.ogg'],vol:0.7},
+  area:   {files:n5('impactBell_heavy_',3),vol:0.55,wet:0.6},
+  descend:{files:[K+'doorClose_1.ogg',K+'doorClose_2.ogg'],vol:0.8,wet:0.4},
+  ui:     {files:[K+'metalClick.ogg'],vol:0.5},
+  // ambience:{files:['audio/music/ambience.ogg'],vol:0.6},   (loops underneath the game)
 };
+const SOUND_ALIAS={stepWood:'step'};   // if a sound has no file and no synth, use this one instead
 
 const SFX=(()=>{
   let ac=null,master,sfxBus,ambBus,verbIn,amb=null,ambTimer=null,started=false;
@@ -112,10 +131,15 @@ const SFX=(()=>{
       out(chain(osc(ctx,'sine',f,f,tt,.25),env(ctx,tt,.001,.2,.22)),o,.4)})},
     node(o,t){const{ctx}=o;[392,587.3,784].forEach((f,i)=>{const tt=t+i*.05;
       out(chain(osc(ctx,'sine',f,f*1.01,tt,.9),env(ctx,tt,.01,.8,.18)),o,.6)})},
+    step(o,t){const{ctx}=o;
+      out(chain(noise(ctx,t,.07),filt(ctx,'lowpass',900*R(.8,1.2),350,t,.07),env(ctx,t,.002,.07,.55)),o,.05)},
+    heart(o,t){const{ctx}=o;
+      for(const [dt,a] of [[0,.55],[.17,.4]]){const tt=t+dt;
+        out(chain(osc(ctx,'sine',62,42,tt,.16),env(ctx,tt,.004,.16,a)),o,.1)}},
     ui(o,t){const{ctx}=o;out(chain(osc(ctx,'triangle',880,820,t,.06),env(ctx,t,.001,.05,.14)),o,.05)},
     hover(o,t){const{ctx}=o;out(chain(osc(ctx,'sine',1400,1400,t,.04),env(ctx,t,.001,.03,.05)),o,0)}
   };
-  const GAP={hit:.035,crit:.035,kill:.04,hurt:.12,sizzle:.22,pickup:.05,swing:.05,arrow:.06,bolt:.2,hover:.04};
+  const GAP={step:.15,stepWood:.15,heart:.5,hit:.035,crit:.035,kill:.04,hurt:.12,sizzle:.22,pickup:.05,swing:.05,arrow:.06,bolt:.2,hover:.04};
 
   /* ---------- the mixer: master -> sfx + ambience, with a cathedral reverb ---------- */
   function makeVerb(ctx){
@@ -132,8 +156,12 @@ const SFX=(()=>{
     sfxBus=ac.createGain();sfxBus.connect(comp);
     ambBus=ac.createGain();ambBus.gain.value=.55;ambBus.connect(comp);
     const verb=makeVerb(ac);verbIn=ac.createGain();verbIn.connect(verb);verb.connect(comp);
-    for(const [k,url] of Object.entries(SOUND_FILES))
-      fetch(url).then(r=>r.arrayBuffer()).then(b=>ac.decodeAudioData(b)).then(buf=>{files[k]=buf;if(k==='ambience'&&started)startAmbience()}).catch(()=>{});
+    for(const [k,spec] of Object.entries(SOUND_FILES)){
+      const list=typeof spec==='string'?[spec]:spec.files;
+      for(const url of list)
+        fetch(url).then(r=>{if(!r.ok)throw 0;return r.arrayBuffer()}).then(b=>ac.decodeAudioData(b)).then(buf=>{
+          (files[k]||(files[k]=[])).push(buf);if(k==='ambience'&&started)startAmbience()}).catch(()=>{});
+    }
     return true;
   }
   function resume(){
@@ -144,8 +172,12 @@ const SFX=(()=>{
   function play(name,a){
     if(!ac||!on||ac.state!=='running')return;
     const t=ac.currentTime;if(last[name]&&t-last[name]<(GAP[name]||.02))return;last[name]=t;
-    if(files[name]){const s=ac.createBufferSource();s.buffer=files[name];s.playbackRate.value=R(.95,1.05);
-      const g=ac.createGain();g.gain.value=.9;s.connect(g);g.connect(sfxBus);const w=ac.createGain();w.gain.value=.15;g.connect(w);w.connect(verbIn);s.start(t);return}
+    if(files[name]&&files[name].length){
+      const spec=SOUND_FILES[name]||{},list=files[name],s=ac.createBufferSource();
+      s.buffer=list[Math.floor(Math.random()*list.length)];s.playbackRate.value=R(.92,1.08);
+      const g=ac.createGain();g.gain.value=spec.vol??0.9;s.connect(g);g.connect(sfxBus);
+      const w=ac.createGain();w.gain.value=spec.wet??0.15;g.connect(w);w.connect(verbIn);s.start(t);return}
+    if(!S[name]&&SOUND_ALIAS[name]){play(SOUND_ALIAS[name],a);return}
     const f=S[name];if(!f)return;
     try{f({ctx:ac,dry:sfxBus,wet:verbIn},t+.005,a||{})}catch(e){}
   }
@@ -154,7 +186,7 @@ const SFX=(()=>{
     if(!ac)return;
     if(amb){try{amb.stop()}catch(e){}amb=null}
     clearTimeout(ambTimer);
-    if(files.ambience){const s=ac.createBufferSource();s.buffer=files.ambience;s.loop=true;s.connect(ambBus);s.start();amb=s;return}
+    if(files.ambience&&files.ambience.length){const s=ac.createBufferSource();s.buffer=files.ambience[0];s.loop=true;s.connect(ambBus);s.start();amb=s;return}
     const t=ac.currentTime,lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.value=240;lp.Q.value=2;
     const lfo=ac.createOscillator(),lg=ac.createGain();lfo.frequency.value=.06;lg.gain.value=110;lfo.connect(lg);lg.connect(lp.frequency);lfo.start(t);
     const g=ac.createGain();g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(.16,t+4);
@@ -183,5 +215,5 @@ const SFX=(()=>{
     let peak=0,sum=0,lastLoud=0;for(let i=0;i<d.length;i++){const v=Math.abs(d[i]);if(v>peak)peak=v;sum+=v*v;if(v>.01)lastLoud=i}
     return {peak:+peak.toFixed(3),rms:+Math.sqrt(sum/d.length).toFixed(4),seconds:+(lastLoud/44100).toFixed(2)};
   }
-  return {resume,play,setVol,toggle,measure,names:Object.keys(S),get vol(){return vol},get on(){return on},get running(){return !!ac&&ac.state==='running'}};
+  return {resume,play,setVol,toggle,measure,names:Object.keys(S),get loaded(){return Object.fromEntries(Object.entries(files).map(([k,v])=>[k,v.length]))},get vol(){return vol},get on(){return on},get running(){return !!ac&&ac.state==='running'}};
 })();
