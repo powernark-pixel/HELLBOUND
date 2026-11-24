@@ -67,3 +67,14 @@ idle = read_png(os.path.join(SRC, 'OutlinedRat', 'rat-idle-outline.png'))
 pts = [(x, y) for y in range(32) for x in range(32) if idle.p[y][x]]
 print('RAT idle frame0 bbox x', min(p[0] for p in pts), max(p[0] for p in pts), 'y', min(p[1] for p in pts), max(p[1] for p in pts))
 print('done')
+
+# ---- Momentary Unicorn's item art (credit "Momentary Unicorn"): 32x32 swords, axes, armour, shields, potions ----
+# -> assets/items/mu_items.png, one row of 32x32 cells: Sword 1-7, Axe 1-8, Armor 1-4, Shield 1-5, Potion 1-4
+MU = [('Sword', 7), ('Axe', 8), ('Armor', 4), ('Shield', 5), ('Potion', 4)]
+if os.path.exists(os.path.join(SRC, 'Sword 1.png')):
+    cells = [read_png(os.path.join(SRC, f'{n} {i}.png')) for n, c in MU for i in range(1, c + 1)]
+    sheet = Img(32 * len(cells), 32)
+    for i, c in enumerate(cells):
+        sheet.blit(c, i * 32, 0)
+    sheet.save(os.path.join(ROOT, 'assets', 'items', 'mu_items.png'))
+    print('MU items:', len(cells), 'cells')

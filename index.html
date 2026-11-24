@@ -218,7 +218,7 @@ h3{font-size:calc(var(--u)*10);margin:calc(var(--u)*3) 0 calc(var(--u)*2)}
         <span class="kbd">V</span><span>Switch between isometric and top-down view</span>
       </div>
       <div class="small muted">Slay the Warden of each circle to unseal the stairs, then step onto them to descend.</div>
-      <div class="small muted" style="margin-top:calc(var(--u)*3)">Art credits: Blood FX by jasontomlee · Rat by WilliamQM (Dark Enemies Pack)</div>
+      <div class="small muted" style="margin-top:calc(var(--u)*3)">Art credits: Blood FX by jasontomlee · Rat by WilliamQM (Dark Enemies Pack) · Weapons &amp; armour by Momentary Unicorn · Sounds by Kenney</div>
       <div style="text-align:center;margin-top:calc(var(--u)*4)"><button class="gbtn" data-close="controls">Back</button></div>
     </div>
   </div>
@@ -335,6 +335,7 @@ const ASSET_PATHS={
   title:'assets/ui/title_bg.png',
   altar:'assets/tiles/altar.png',
   hearth:'assets/tiles/hearth.png',
+  mu:'assets/items/mu_items.png',                   // item art by Momentary Unicorn (see CREDITS.md)
   rat:'assets/sprites/enemies/rat_sheet.png',      // Dark Enemies Pack by WilliamQM (see CREDITS.md)
   bloodfx:'assets/fx/blood_fx.png'                 // Blood FX by jasontomlee (see CREDITS.md)
 };
@@ -1193,7 +1194,28 @@ function compareStats(it){
   return {rows:out,lost,gained};
 }
 const fmtDiff=r=>(r.diff>0?'+':'')+r.diff.toFixed(r.d);
-function iconStyle(slot){return `background-position:calc(var(--u)*${-16*Math.max(0,SLOTS.indexOf(slot))}) 0`}
+/* Item art: weapons and chest armour use Momentary Unicorn's 32px sprites (mu_items.png:
+   Sword 1-7 = 0-6, Axe 1-8 = 7-14, Armor 1-4 = 15-18). Rarer items get the fancier variants.
+   Everything else keeps the 16px icons in item_icons.png. */
+const AXE_BASES=new Set(['Brimstone Cleaver','Damnation Glaive']);
+function muIcon(it){
+  if(!it||!IMG.mu)return -1;
+  const h=[...it.base].reduce((a,c)=>a+c.charCodeAt(0),0);
+  if(it.slot==='blade')return AXE_BASES.has(it.base)?7+Math.min(7,it.r+(h%3)):Math.min(6,Math.floor(it.r*1.2)+(h%2));
+  if(it.slot==='plate')return 15+Math.min(3,Math.floor(it.r/1.5));
+  return -1;
+}
+function iconStyle(slot,it){
+  const m=muIcon(it);
+  if(m>=0)return `background-image:url(assets/items/mu_items.png);background-size:calc(var(--u)*${16*28}) calc(var(--u)*16);background-position:calc(var(--u)*${-16*m}) 0`;
+  return `background-position:calc(var(--u)*${-16*Math.max(0,SLOTS.indexOf(slot))}) 0`;
+}
+// Draw an item's icon at 16x16 (the 32px sprites shrink by exactly half, so they stay crisp)
+function drawItemIcon(it,x,y){
+  const m=muIcon(it);
+  if(m>=0)ctx.drawImage(IMG.mu,m*32,0,32,32,x,y,16,16);
+  else ctx.drawImage(IMG.items,Math.max(0,SLOTS.indexOf(it.slot))*16,0,16,16,x,y,16,16);
+}
 function itemBlock(it){
   return `<span class="nm" style="color:${colorOf(it)}">${esc(it.name)}</span>`+
     `<span class="meta">${RAR[it.r].n} · ${SLOTNAME[it.slot]} · iLvl ${it.ilvl} · base ${it.bv}</span><br>`+
@@ -1212,7 +1234,7 @@ function renderInv(){
     const body=it?`<span class="nm" style="color:${colorOf(it)}">${esc(it.name)}</span><span class="muted">${RAR[it.r].n} · iLvl ${it.ilvl}</span>`+
       `<button class="mini" data-reroll="${slot}" title="Reroll affixes for 25 ★">Reroll 25★</button>`:'<span class="muted">Empty</span>';
     return `<div class="eslot slotf hit" data-slot="${slot}" style="${it?`box-shadow:0 0 0 calc(var(--u)*1) ${RAR[it.r].c}`:''}">`+
-      `<div class="ico" style="${iconStyle(slot)};${it?'':'opacity:.25'}"></div><span class="lbl">${SLOTNAME[slot]}</span>${body}</div>`;
+      `<div class="ico" style="${iconStyle(slot,it)};${it?'':'opacity:.25'}"></div><span class="lbl">${SLOTNAME[slot]}</span>${body}</div>`;
   }).join('');
   // filter + sort tabs
   $('filterTabs').innerHTML=GROUPS.map(([k,l])=>{
@@ -1228,7 +1250,7 @@ function renderInv(){
     const top=cmp.rows.slice().sort((a,b)=>Math.abs(b.diff/(S[b.k]||1))-Math.abs(a.diff/(S[a.k]||1))).slice(0,3);
     const deltas=top.length?top.map(r=>`<span class="${r.better?'up':'down'}">${r.better?'▲':'▼'} ${r.label} ${fmtDiff(r)}</span>`).join('<br>'):'<span class="same">= no change</span>';
     return `<div class="card" data-id="${it.id}" style="border-color:${c};--rc:${c}66">`+
-      `<div class="ico" style="${iconStyle(it.slot)}"></div>`+
+      `<div class="ico" style="${iconStyle(it.slot,it)}"></div>`+
       `<span class="nm" style="color:${c}">${esc(it.name)}</span><span class="meta">${RAR[it.r].n} ${SLOTNAME[it.slot]} · iLvl ${it.ilvl}</span>`+
       `<div class="delta">${deltas}</div>`+
       `<div class="acts">`+(invMode==='stash'?`<button class="mini" data-take="${it.id}">Take</button><button class="mini" data-sequip="${it.id}">Equip</button>`:
@@ -1791,7 +1813,7 @@ function draw(){
     }
     pxShadow(g.x,g.y+8,12);
     const idx=Math.max(0,SLOTS.indexOf(g.slot));
-    ctx.drawImage(IMG.items,idx*16,0,16,16,Math.round(g.x-8),Math.round(g.y+bob-8),16,16);
+    drawItemIcon(g,Math.round(g.x-8),Math.round(g.y+bob-8));
     if(g.r>=1){
       addLight(g.x,g.y,22+g.r*5,0.35);
       ctx.save();ctx.font=`8px ${PXFONT}`;ctx.textAlign='center';
@@ -2064,7 +2086,7 @@ function drawIso(){
     items.push({d:(g.x+g.y)/T,draw:()=>{
       if(g.r>=2){ctx.save();ctx.globalAlpha=0.18+0.06*Math.sin(time*4+g.id);ctx.fillStyle=c;ctx.fillRect(sx-2,sy-46,4,40);ctx.fillRect(sx-1,sy-62,2,16);ctx.restore()}
       pxShadow(sx,sy+2,12);
-      ctx.drawImage(IMG.items,Math.max(0,SLOTS.indexOf(g.slot))*16,0,16,16,sx-8,sy-14+bob,16,16);
+      drawItemIcon(g,sx-8,sy-14+bob);
       if(g.r>=1){ctx.save();ctx.font=`8px ${PXFONT}`;ctx.textAlign='center';ctx.fillStyle='#000';ctx.fillText(g.name,sx+1,sy-19+bob);ctx.fillStyle=c;ctx.fillText(g.name,sx,sy-20+bob);ctx.restore()}
     }});
   }
