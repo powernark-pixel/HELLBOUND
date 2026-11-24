@@ -150,6 +150,20 @@ as its own focused piece of work.
 - The rhythm: fight through a level → collect drops and orbs → back to the shack → open the chest,
   shop, spin the slots, sort gear → descend.
 
+### 21. Boss concept: the Kung Fu Master ("Boss 01: The Crossing")
+- From a concept sheet (Desktop\GAME): a **lanky, smug guy in a tracksuit hoodie**, hands in his pockets,
+  walking with a weird, out-of-sync shambling sway.
+- **Limbs stretch and lengthen in combat** (long kicks, reaching punches).
+- **Special move, the Shambler Shake:** goes loose and floppy, laughs a nervous, closed-mouth laugh that
+  **buzzes like electricity**, then **lunges**.
+- **Arena:** a dojo with a punching bag, a 功夫 banner and candles.
+- **Drop: the Black Belt** (+12% movement speed, +18% unarmed attack speed).
+- Darkly comic, like the mansion ideas (idea 8).
+
+### Style reference
+- `Desktop\GAME	argeted-image.jpg` (a screenshot from "City of Berelaai"): a top-down/isometric camera,
+  a lantern-lit circle of light, heavy blood splatter and a minimal gothic HUD. A good target for HELLBOUND's look.
+
 ---
 
 ## Questions to answer before building any of this
