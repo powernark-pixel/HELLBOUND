@@ -1,7 +1,7 @@
 /* HELLBOUND · js/skills.js · Skills: Blood Flask, Cleave, Fire Line
    (Files load in the order listed in index.html and share one global scope.) */
 
-/* ----- BLOOD FLASK (key 2) -----
+/* ----- BLOOD FLASK (R) -----
    Drink to heal 45% of max health over one second. Start each level with 3.
    Every 6 kills fills one back up, and the shack's fire refills them all. */
 const FLASK_MAX=3,FLASK_HEAL=0.45,FLASK_KILLS=6;
@@ -25,7 +25,7 @@ function updateHeal(dt){
   if(P.healT<=0)P.healLeft=0;
 }
 
-/* ----- CLEAVE (key 3) -----
+/* ----- CLEAVE (E) -----
    A full spin of the blade: hits everything around you for 1.6x damage, shoves it away,
    and you can't be hurt for a moment while you spin. */
 const SPIN_CD=6;
@@ -38,14 +38,14 @@ function castSpin(){
   P.atkAnim=0.3;setAnim(P,'attack');P.animT=0;shake=Math.max(shake,0.3);
   SFX.play('spin');SFX.play('swing');
   for(const e of enemies){
-    if(e.dead||dist(e,P)>R+e.r)continue;
+    if(e.dead||dist(e,P)>R+hurtR(e))continue;
     dealDamage(e,S.damage*1.6);
     if(!e.boss&&!e.dead){const a=Math.atan2(e.y-P.y,e.x-P.x),k=e.type==='demon'?200:420;e.kbx=Math.cos(a)*k;e.kby=Math.sin(a)*k;e.kbT=0.16;e.act=null}
   }
   for(let i=0;i<24;i++){const a=i/24*TAU;parts.push({x:P.x+Math.cos(a)*R*0.7,y:P.y+Math.sin(a)*R*0.7,vx:Math.cos(a)*90,vy:Math.sin(a)*90,life:.3,max:.3,c:pick(['#fff1c2','#ffd27a','#5d5059']),s:1,ground:1})}
 }
 
-/* ----- FIRE LINE (key 1 or right-click) -----
+/* ----- FIRE LINE (Q or right-click) -----
    A wave of fire pillars rushes out in a straight line toward where you aim. Each pillar burns
    enemies it touches (once per wave). Walls stop it. With the PYRE trait (the Altar-Forged Blade)
    it reaches twice as far, hits twice as hard and leaves burning ground. */
@@ -69,7 +69,7 @@ function updateFire(dt){
       decals.push({x:px,y:py,scorch:1});if(decals.length>200)decals.shift();
       if(w.pyre)burns.push({x:px,y:py,life:3,max:3,seed:Math.random()*10});
       for(const e of enemies){
-        if(e.dead||w.hit.has(e)||Math.hypot(e.x-px,e.y-py)>20+e.r)continue;
+        if(e.dead||w.hit.has(e)||Math.hypot(e.x-px,e.y-py)>14+hurtR(e))continue;
         w.hit.add(e);dealDamage(e,w.dmg);
       }
       for(let i=0;i<3;i++)parts.push({x:px+rnd(-6,6),y:py+rnd(-6,6),vx:rnd(-20,20),vy:rnd(-60,-20),life:rnd(.4,.9),max:.9,c:pick(['#ff6a1a','#ffd27a','#a12a06']),s:rnd(1,2)});
@@ -83,7 +83,7 @@ function updateFire(dt){
   for(const b of burns){
     b.life-=dt;
     for(const e of enemies){
-      if(e.dead||Math.hypot(e.x-b.x,e.y-b.y)>14+e.r)continue;
+      if(e.dead||Math.hypot(e.x-b.x,e.y-b.y)>12+hurtR(e))continue;
       e.hp-=S.damage*0.6*dt;e.flash=Math.max(e.flash,0.02);
       if(e.hp<=0)killEnemy(e);
     }

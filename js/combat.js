@@ -4,6 +4,29 @@
 /* =====================================================================
    8. COMBAT
    ===================================================================== */
+/* ----- HITBOXES -----
+   Every fighter has circles on the ground (press H in game to see them):
+   - BODY (red): how close something must be to touch you. Contact damage and orbs use it.
+     Bodies are smaller than the sprites, so a near miss really is a miss.
+   - HURT (yellow): how big an enemy is as a target for YOUR attacks. A bit bigger than the
+     body, so a swing that visibly reaches an enemy lands.
+   The knight's own body is PLAYER_BODY (cyan). */
+const PLAYER_BODY=8;
+const bodyR=e=>e.boss?24:e.r*0.75;
+const hurtR=e=>e.boss?32:e.r+3;
+let showHitboxes=false;
+function drawHitboxes(proj){
+  if(!showHitboxes)return;
+  const ring=(x,y,r,c)=>{ctx.globalAlpha=0.9;polyFill(proj,ringPts(x,y,r,28),null,c)};
+  ring(P.x,P.y,PLAYER_BODY,'#4fe0ff');
+  // sword reach: the arc your next swing covers
+  const half=S.arcDeg*Math.PI/360,pts=[[P.x,P.y]];
+  for(let i=0;i<=16;i++){const a=P.aim-half+i/16*half*2;pts.push([P.x+Math.cos(a)*S.range,P.y+Math.sin(a)*S.range])}
+  ctx.globalAlpha=0.6;polyFill(proj,pts,null,'#ffe14f');
+  for(const e of enemies){if(e.dead)continue;ring(e.x,e.y,bodyR(e),'#ff4040');ring(e.x,e.y,hurtR(e),'#ffe14f')}
+  ctx.globalAlpha=1;
+}
+
 function dealDamage(e,base){
   if(e.dead)return;
   let dmg=base,crit=false;
@@ -89,10 +112,12 @@ function swing(){
   for(const e of enemies){
     if(e.dead)continue;
     const d=dist(e,P);
-    if(d>S.range+e.r)continue;
+    const hr=hurtR(e);
+    if(d>S.range+hr)continue;
+    if(d<hr+PLAYER_BODY){dealDamage(e,S.damage);continue}   // right on top of you: always hit
     let da=Math.atan2(e.y-P.y,e.x-P.x)-P.aim;
     da=Math.atan2(Math.sin(da),Math.cos(da));
-    if(Math.abs(da)<=half+Math.asin(Math.min(1,e.r/Math.max(d,1))))dealDamage(e,S.damage);
+    if(Math.abs(da)<=half+Math.asin(Math.min(1,hr/Math.max(d,1))))dealDamage(e,S.damage);
   }
   if(oath){
     for(let k=0;k<12;k++){

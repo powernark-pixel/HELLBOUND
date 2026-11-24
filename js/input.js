@@ -20,12 +20,15 @@ addEventListener('keydown',e=>{
   }
   if(paused)return;
   if(k==='i')toggleInv();
-  if(k==='e'&&!invOpen&&!dead)openChest();
-  if(k==='1')castFireLine();
-  if(k==='2')drinkFlask();
+  if(k==='h'){showHitboxes=!showHitboxes;log(showHitboxes?'Hitboxes shown (H)':'Hitboxes hidden','#c9a99a')}
+  // Skills: Q Fire Line, E Cleave, R Blood Flask (1, 2, 3 also work).
+  // In the shack there's nothing to fight, so E is "use": the stash, the bed, the reward chest.
+  if(k==='e'&&!invOpen&&!dead){if(level&&level.safe)openChest();else castSpin()}
+  if(k==='q'||k==='1')castFireLine();
   if(k==='3')castSpin();
+  if((k==='r'&&!dead)||k==='2')drinkFlask();
   if(k==='f'){filter=(filter+1)%FILTERS.length;log(`Loot filter: ${FILTERS[filter]}`,'#ffb347');renderInv()}
-  if(k==='r'&&dead)newGame();
+  if(k==='r'&&dead)newGame();   // R is the flask while alive, "rise again" once dead
   if(k==='m'){const on=SFX.toggle();log(on?'Sound on':'Sound muted (M)','#c9a99a');soundLabel()}
 });
 addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false});

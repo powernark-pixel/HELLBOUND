@@ -261,6 +261,7 @@ function drawIso(){
   ctx.drawImage(lc,0,0,LW,LH);
   if(!(level&&level.safe))drawFog(camX,camY,0.2);
   drawMotes(S_,psx,psy);
+  drawHitboxes(S_);   // debug view (H), drawn over everything so it's always readable
   ctx.save();ctx.globalCompositeOperation='soft-light';ctx.globalAlpha=0.35;
   const wg=ctx.createRadialGradient(LW/2,LH/2,10,LW/2,LH/2,260);
   wg.addColorStop(0,'#ff9a4a');wg.addColorStop(1,'#3a0a10');

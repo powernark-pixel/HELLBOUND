@@ -146,8 +146,8 @@ function update(dt){
       if(e.hp<=0){killEnemy(e);continue}
     }
     if(e.boss){
-      if(d<e.r+10&&!e.dormant){const push=(e.r+10-d);slide(P,nx*push,ny*push,10)}
-    }else if(d<e.r+10&&e.touch<=0){
+      const reach=bodyR(e)+PLAYER_BODY;if(d<reach&&!e.dormant)slide(P,nx*(reach-d),ny*(reach-d),10);
+    }else if(d<bodyR(e)+PLAYER_BODY&&e.touch<=0){
       const mult=(1+(floor-1)*0.15)*(e.boss?1.2:1);
       hurt(Tt.dmg*mult*e.dmgMul*(e.act==='lunge'?1.3:1));   // a landed lunge bites harder
       e.touch=0.7;
@@ -160,7 +160,7 @@ function update(dt){
     for(const e of enemies){
       if(b.left<=0)break;
       if(e.dead||b.hit.includes(e))continue;
-      if(Math.hypot(e.x-b.x,e.y-b.y)<e.r+4){b.hit.push(e);b.left--;dealDamage(e,b.dmg)}
+      if(Math.hypot(e.x-b.x,e.y-b.y)<hurtR(e)+(b.r||4)){b.hit.push(e);b.left--;dealDamage(e,b.dmg)}
     }
     if(b.left<=0)b.life=0;
   }
@@ -169,7 +169,7 @@ function update(dt){
   for(const b of ebullets){
     b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;
     if(tileAt(b.x,b.y)===0){b.life=0;continue}
-    if(Math.hypot(b.x-P.x,b.y-P.y)<b.r+10){hurt(b.dmg);b.life=0}
+    if(Math.hypot(b.x-P.x,b.y-P.y)<b.r+PLAYER_BODY){hurt(b.dmg);b.life=0}
   }
   ebullets=ebullets.filter(b=>b.life>0);
 
