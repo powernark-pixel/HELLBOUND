@@ -4,6 +4,7 @@
 
 - Blood FX by jasontomlee (https://jasontomlee.itch.io/blood-fx), Batch 1:
   'VFX Blood Batch 1_SpriteSheetRows.png' -> assets/fx/blood_fx.png (+ prints the frame table for index.html)
+- Blood Flask (from Momentary Unicorn's Potion 1) and wall torches (Dungeon Tileset II Extended by Niji, CC0)
 - Rat from Dark Enemies Pack by WilliamQM (https://williamqm.itch.io/dark-enemies-pack):
   OutlinedRat/*.png -> assets/sprites/enemies/rat_sheet.png (rows idle, walk, attack, hurt, death)
 """
@@ -78,3 +79,36 @@ if os.path.exists(os.path.join(SRC, 'Sword 1.png')):
         sheet.blit(c, i * 32, 0)
     sheet.save(os.path.join(ROOT, 'assets', 'items', 'mu_items.png'))
     print('MU items:', len(cells), 'cells')
+
+# ---- Blood Flask: Momentary Unicorn's grey 'Potion 1' recoloured to blood -> assets/items/blood_flask.png ----
+if os.path.exists(os.path.join(SRC, 'Potion 1.png')):
+    pot = read_png(os.path.join(SRC, 'Potion 1.png'))
+    RED = [(40, 4, 10), (92, 10, 22), (150, 20, 32), (204, 44, 48), (240, 110, 96), (255, 214, 190)]
+    out = Img(32, 32)
+    for y in range(32):
+        for x in range(32):
+            c = pot.p[y][x]
+            if not c or c[3] == 0:
+                continue
+            r, g, b, a = c
+            v = (r + g + b) / 765
+            # the glass neck and cork (top third) stay grey-brown; the body turns to blood
+            if y < 13 and x < 21:
+                out.p[y][x] = (int(r * 0.75), int(g * 0.62), int(b * 0.55), a)
+            else:
+                out.p[y][x] = RED[min(5, int(v * 6))] + (a,)
+    out.save(os.path.join(ROOT, 'assets', 'items', 'blood_flask.png'))
+    print('blood flask done')
+
+# ---- Wall torch from Dungeon Tileset II Extended by Niji (CC0; based on 0x72's Dungeon Tileset II) ----
+# 8 animation frames of 16x24 -> assets/props/wall_torch.png (128x24)
+DT = os.path.join(SRC, 'dungeontiles-extended v1.1', 'dungeontileset-extended.png')
+if os.path.exists(DT):
+    dts = read_png(DT)
+    torch = Img(16 * 8, 24)
+    for f in range(8):
+        for y in range(24):
+            for x in range(16):
+                torch.p[y][f * 16 + x] = dts.p[352 + y][128 + f * 16 + x]
+    torch.save(os.path.join(ROOT, 'assets', 'props', 'wall_torch.png'))
+    print('wall torch done')

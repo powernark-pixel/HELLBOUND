@@ -87,6 +87,9 @@ h3{font-size:calc(var(--u)*10);margin:calc(var(--u)*3) 0 calc(var(--u)*2)}
 .skill .cd{position:absolute;left:0;right:0;bottom:0;height:0;background:rgba(0,0,0,.72)}
 .skill .key{position:absolute;left:0;right:0;bottom:calc(var(--u)*-7);text-align:center;font-family:var(--f-pixel);font-size:calc(var(--u)*4.5);color:var(--bone-lo);text-shadow:0 calc(var(--u)*1) 0 #000}
 .skill.ready{box-shadow:0 0 calc(var(--u)*4) #ff6a1a}
+.skill .cnt{position:absolute;right:calc(var(--u)*1.5);top:calc(var(--u)*0.5);font-family:var(--f-pixel);font-size:calc(var(--u)*5);color:#ffd9c0;text-shadow:0 calc(var(--u)*1) 0 #000}
+#skFlaskIco{background:url(assets/items/blood_flask.png) 0 0/100% 100%}
+.skill.empty .ico{opacity:.35}
 #vatb.full{background-image:url(assets/ui/fillHp.png);filter:brightness(1.25)}
 #log{position:absolute;left:calc(var(--u)*8);bottom:calc(var(--u)*8);width:calc(var(--u)*260);font-size:calc(var(--u)*6);text-shadow:0 calc(var(--u)*1) 0 #000,0 0 calc(var(--u)*3) #000}
 #log div{transition:opacity 1s}
@@ -190,7 +193,7 @@ h3{font-size:calc(var(--u)*10);margin:calc(var(--u)*3) 0 calc(var(--u)*2)}
     <div id="tr"></div>
     <div id="bossbar"><div class="name" id="bossName">The Warden</div><div class="bar"><i id="bossb"></i></div></div>
     <div id="log"></div>
-    <div id="skills"><div class="skill slotf" id="skSword"><div class="ico" id="skSwordIco"></div><div class="cd" id="skSwordCd"></div><div class="key">L-CLICK</div></div><div class="skill slotf" id="skFire"><canvas id="skFireIco" width="16" height="16"></canvas><div class="cd" id="skFireCd"></div><div class="key">R-CLICK · Q</div></div></div>
+    <div id="skills"><div class="skill slotf" id="skSword"><div class="ico" id="skSwordIco"></div><div class="cd" id="skSwordCd"></div><div class="key">L-CLICK</div></div><div class="skill slotf" id="skFire"><canvas id="skFireIco" width="16" height="16"></canvas><div class="cd" id="skFireCd"></div><div class="key">1 · R-CLICK</div></div><div class="skill slotf" id="skFlask"><div class="ico" id="skFlaskIco"></div><div class="cd" id="skFlaskCd"></div><div class="cnt" id="skFlaskN">3</div><div class="key">2</div></div><div class="skill slotf" id="skSpin"><canvas id="skSpinIco" width="16" height="16"></canvas><div class="cd" id="skSpinCd"></div><div class="key">3</div></div></div>
     <div id="hint">ESC menu · I reliquary · F filter · V view</div>
     <div id="sndHint" style="position:absolute;left:0;right:0;bottom:calc(var(--u)*22);text-align:center;font-family:var(--f-pixel);font-size:calc(var(--u)*5);color:#e0bf68;text-shadow:0 calc(var(--u)*1) 0 #000;display:none">♪ CLICK THE GAME TO TURN ON SOUND</div>
     <div id="banner"></div>
@@ -215,7 +218,9 @@ h3{font-size:calc(var(--u)*10);margin:calc(var(--u)*3) 0 calc(var(--u)*2)}
         <span class="kbd">W A S D</span><span>Move (arrow keys work too)</span>
         <span class="kbd">MOUSE</span><span>Aim. Hold left click to swing your blade</span>
         <span class="kbd">SPACE</span><span>Roll. Brief invulnerability</span>
-        <span class="kbd">R-CLICK · Q</span><span>Fire Line: a wave of fire in a straight line (cooldown)</span>
+        <span class="kbd">1 · R-CLICK</span><span>Fire Line: a wave of fire in a straight line (cooldown)</span>
+        <span class="kbd">2</span><span>Blood Flask: heal almost half your health. Kills refill flasks</span>
+        <span class="kbd">3</span><span>Cleave: spin and hit everything around you, knocking it back</span>
         <span class="kbd">E</span><span>Open a reliquary chest</span>
         <span class="kbd">I</span><span>Reliquary: equip, compare, sort, salvage</span>
         <span class="kbd">RIGHT CLICK</span><span>Salvage an item in the reliquary</span>
@@ -226,7 +231,7 @@ h3{font-size:calc(var(--u)*10);margin:calc(var(--u)*3) 0 calc(var(--u)*2)}
         <span class="kbd">V</span><span>Switch between isometric and top-down view</span>
       </div>
       <div class="small muted">Slay the Warden of each circle to unseal the stairs, then step onto them to descend.</div>
-      <div class="small muted" style="margin-top:calc(var(--u)*3)">Art credits: Blood FX by jasontomlee · Rat by WilliamQM (Dark Enemies Pack) · Weapons &amp; armour by Momentary Unicorn · Sounds by Kenney</div>
+      <div class="small muted" style="margin-top:calc(var(--u)*3)">Art credits: Blood FX by jasontomlee · Rat by WilliamQM (Dark Enemies Pack) · Weapons, armour &amp; flask by Momentary Unicorn · Wall torches from Dungeon Tileset II Extended by Niji · Sounds by Kenney</div>
       <div style="text-align:center;margin-top:calc(var(--u)*4)"><button class="gbtn" data-close="controls">Back</button></div>
     </div>
   </div>
@@ -344,6 +349,8 @@ const ASSET_PATHS={
   altar:'assets/tiles/altar.png',
   hearth:'assets/tiles/hearth.png',
   mu:'assets/items/mu_items.png',                   // item art by Momentary Unicorn (see CREDITS.md)
+  flask:'assets/items/blood_flask.png',             // Momentary Unicorn's potion, recoloured to blood
+  torch:'assets/props/wall_torch.png',              // Dungeon Tileset II Extended by Niji (CC0)
   rat:'assets/sprites/enemies/rat_sheet.png',      // Dark Enemies Pack by WilliamQM (see CREDITS.md)
   bloodfx:'assets/fx/blood_fx.png'                 // Blood FX by jasontomlee (see CREDITS.md)
 };
@@ -927,7 +934,7 @@ function newGame(){
   floor=1;
   P={x:0,y:0,vx:0,vy:0,hp:100,sh:0,maxHp:100,maxSh:0,lvl:1,xp:0,xpNext:30,
      atk:0,atkAnim:0,hurtT:0,roll:0,inv:0,sinceHit:9,aim:0,face:1,swings:0,warned:false,
-     points:0,alloc:{root:1},anim:'idle',animT:0,bonusHp:0,boons:[],dash:null,ghosts:[],stepT:0,hbT:0,fireCD:0,gotAltarBlade:false};
+     points:0,alloc:{root:1},anim:'idle',animT:0,bonusHp:0,boons:[],dash:null,ghosts:[],stepT:0,hbT:0,fireCD:0,gotAltarBlade:false,flasks:FLASK_MAX,flaskProg:0,healLeft:0,healT:0,spinCD:0};
   eq={blade:makeItem('blade',1,0),helm:null,plate:null,gloves:null,greaves:null,boots:null,ring:null,sigil:null};
   inv=[];stardust=0;filter=0;dead=false;shake=0;parts=[];texts=[];swings=[];invOpen=false;treeOpen=false;pickupSeq=0;
   closeAllOverlays();
@@ -973,7 +980,7 @@ function completionReward(done){
 function enterShack(){
   const done=floor-1,boon=completionReward(done);
   buildLevel(window.LEVEL_SHACK);calc();
-  P.hp=P.maxHp;P.sh=P.maxSh;P.warned=false;invMode='bag';
+  P.hp=P.maxHp;P.sh=P.maxSh;P.warned=false;invMode='bag';P.flasks=FLASK_MAX;P.flaskProg=0;
   SFX.play('levelup');
   if(boon){
     log(`Circle ${done} complete: +10 max health, and a boon: ${TR[boon]}`,'#ff8ad8');
@@ -1433,7 +1440,7 @@ function killEnemy(e){
   const Tt=ET[e.type];
   // Sprite enemies leave a death animation and a blood stain behind
   corpses.push({key:spriteKey(e),x:e.x,y:e.y,animT:0,life:0.9,flip:e.face<0});
-  pourBlood(e);
+  pourBlood(e);flaskKill();
   hitStop=Math.max(hitStop,e.boss?0.3:0.05);shake=Math.max(shake,e.boss?1:0.18);
   decals.push({x:e.x+rnd(-4,4),y:e.y+rnd(2,8),cell:ri(2,5)});
   if(decals.length>160)decals.shift();
@@ -1458,9 +1465,11 @@ function killEnemy(e){
     dropItem(e.x,e.y,e.type==='demon'?2:0,floor+ri(0,3));
   }
 }
+const ENEMY_DMG=0.75;   // all enemy damage is scaled by this (lower = easier)
 function hurt(d,noIF){
   if(dead)return;
   if(!noIF&&P.inv>0)return;
+  if(!noIF){d*=ENEMY_DMG;P.inv=0.35}   // a moment of grace after each hit, so a pack can't shred you in one go
   P.sinceHit=0;
   P.hurtT=0.3;                 // triggers the player's hurt animation
   let rem=d;
@@ -1475,7 +1484,51 @@ function hurt(d,noIF){
     log('Press R to begin again','#ff4f6e');
   }
 }
-/* ----- FIRE LINE (right-click or Q) -----
+/* ----- BLOOD FLASK (key 2) -----
+   Drink to heal 45% of max health over one second. Start each level with 3.
+   Every 6 kills fills one back up, and the shack's fire refills them all. */
+const FLASK_MAX=3,FLASK_HEAL=0.45,FLASK_KILLS=6;
+function drinkFlask(){
+  if(scene!=='game'||dead||paused||anyPanelOpen())return;
+  if(P.flasks<1){log('No blood flasks left. Kill to refill them.','#c4302c');return}
+  if(P.hp>=P.maxHp){log('Already at full health.','#c9a99a');return}
+  P.flasks--;P.healLeft+=P.maxHp*FLASK_HEAL;P.healT=1;
+  SFX.play('drink');addText(P.x,P.y-30,'FLASK','#ff6a6a',1);
+  for(let i=0;i<14;i++)parts.push({x:P.x+rnd(-8,8),y:P.y+rnd(-4,4),vx:rnd(-12,12),vy:rnd(-60,-25),life:rnd(.4,.8),max:.8,c:pick(['#c4302c','#ff6a6a','#8f1a1f']),s:rnd(1,2)});
+}
+function flaskKill(){
+  if(P.flasks>=FLASK_MAX){P.flaskProg=0;return}
+  if(++P.flaskProg>=FLASK_KILLS){P.flaskProg=0;P.flasks++;addText(P.x,P.y-30,'+1 FLASK','#ff8a8a',1);SFX.play('pickup')}
+}
+function updateHeal(dt){
+  if(P.healT<=0||dead)return;
+  const step=Math.min(P.healLeft,P.healLeft*dt/P.healT);
+  P.hp=Math.min(P.maxHp,P.hp+step);P.healLeft-=step;P.healT-=dt;
+  if(Math.random()<dt*25)parts.push({x:P.x+rnd(-7,7),y:P.y+rnd(-3,3),vx:0,vy:rnd(-40,-20),life:.5,max:.5,c:'#ff6a6a',s:1});
+  if(P.healT<=0)P.healLeft=0;
+}
+
+/* ----- CLEAVE (key 3) -----
+   A full spin of the blade: hits everything around you for 1.6x damage, shoves it away,
+   and you can't be hurt for a moment while you spin. */
+const SPIN_CD=6;
+function castSpin(){
+  if(scene!=='game'||dead||paused||anyPanelOpen()||P.spinCD>0)return;
+  P.spinCD=SPIN_CD;P.inv=Math.max(P.inv,0.3);
+  const R=S.range*1.4;
+  swings.push({x:P.x,y:P.y,a:P.aim,life:.18,r:R,arc:TAU-0.01,oath:false});
+  swings.push({x:P.x,y:P.y,a:P.aim+Math.PI,life:.18,r:R*0.8,arc:TAU-0.01,oath:false});
+  P.atkAnim=0.3;setAnim(P,'attack');P.animT=0;shake=Math.max(shake,0.3);
+  SFX.play('spin');SFX.play('swing');
+  for(const e of enemies){
+    if(e.dead||dist(e,P)>R+e.r)continue;
+    dealDamage(e,S.damage*1.6);
+    if(!e.boss&&!e.dead){const a=Math.atan2(e.y-P.y,e.x-P.x),k=e.type==='demon'?200:420;e.kbx=Math.cos(a)*k;e.kby=Math.sin(a)*k;e.kbT=0.16;e.act=null}
+  }
+  for(let i=0;i<24;i++){const a=i/24*TAU;parts.push({x:P.x+Math.cos(a)*R*0.7,y:P.y+Math.sin(a)*R*0.7,vx:Math.cos(a)*90,vy:Math.sin(a)*90,life:.3,max:.3,c:pick(['#fff1c2','#ffd27a','#5d5059']),s:1,ground:1})}
+}
+
+/* ----- FIRE LINE (key 1 or right-click) -----
    A wave of fire pillars rushes out in a straight line toward where you aim. Each pillar burns
    enemies it touches (once per wave). Walls stop it. With the PYRE trait (the Altar-Forged Blade)
    it reaches twice as far, hits twice as hard and leaves burning ground. */
@@ -1565,7 +1618,7 @@ function demonAI(e,d,nx,ny,dt){
 function demonSlam(e){
   shake=Math.max(shake,0.55);hitStop=Math.max(hitStop,0.08);SFX.play('slam');
   setAnim(e,'attack');e.animT=0.09;
-  if(dist(P,e)<SLAM_R&&!dead)hurt(ET.demon.dmg*1.7*e.dmgMul*(1+(floor-1)*0.15));
+  if(dist(P,e)<SLAM_R&&!dead)hurt(ET.demon.dmg*1.4*e.dmgMul*(1+(floor-1)*0.15));
   for(let i=0;i<28;i++){const a=i/28*TAU,sp=rnd(120,220);
     parts.push({x:e.x,y:e.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:rnd(.25,.5),max:.5,c:pick(['#5d5059','#4a3f48','#ff6a1a']),s:rnd(1,2.5),ground:1})}
   impacts.push({x:e.x,y:e.y,life:0.12,max:0.12,crit:true});
@@ -1677,7 +1730,7 @@ function update(dt){
     P.ghosts.push({x:P.x,y:P.y,anim:P.anim,animT:P.animT,face:P.face,life:0.22,max:0.22});
   }
   if(mouse.down&&P.atk<=0)swing();
-  P.fireCD-=dt;updateFire(dt);
+  P.fireCD-=dt;updateFire(dt);P.spinCD-=dt;updateHeal(dt);
 
   // Choose the player's animation from the current state
   const moving=Math.hypot(P.vx,P.vy)>20;
@@ -1782,7 +1835,7 @@ function update(dt){
     }
     if(d<e.r+10&&e.touch<=0){
       const mult=(1+(floor-1)*0.15)*(e.boss?1.2:1);
-      hurt(Tt.dmg*mult*e.dmgMul*(e.act==='lunge'?1.5:1));   // a landed lunge bites harder
+      hurt(Tt.dmg*mult*e.dmgMul*(e.act==='lunge'?1.3:1));   // a landed lunge bites harder
       e.touch=0.7;
       burst(e.x,e.y,'#ff4f2b',6);
     }
@@ -2116,13 +2169,14 @@ function isoFlatImg(img,sx,sy,sw,sh,cx,cy,w,h){
 // A filled shape in screen space, for shading wall faces
 function quad(pts,c){ctx.fillStyle=c;ctx.beginPath();ctx.moveTo(pts[0],pts[1]);for(let i=2;i<pts.length;i+=2)ctx.lineTo(pts[i],pts[i+1]);ctx.closePath();ctx.fill()}
 // A wall block: top face plus the south and east faces that look onto open floor
-function isoWall(cx,cy,face,top,showS,showE,alpha,flames,tx,ty){
+function isoWall(cx,cy,face,top,showS,showE,alpha,flames,tx,ty,torch){
   if(alpha<1)ctx.globalAlpha=alpha;
   const fs=tileSrc(face)??tileSrc('wallFace'),eFace=tileSrc(level&&level.style==='wood'?'woodWallFace':'wallFace');
   if(showS&&fs!=null){
     ctx.setTransform(0.5,0.25,0,WALL_H/32,cx-16,cy+8-WALL_H);ctx.drawImage(TS.img,fs,0,TS.size,TS.size,0,0,T,T);ctx.setTransform(1,0,0,1,0,0);
     quad([cx-16,cy+8-WALL_H,cx,cy+16-WALL_H,cx,cy+16,cx-16,cy+8],'rgba(0,0,0,0.12)');
-    if(face==='wallSconce'){flames.push([cx-8,cy+12-WALL_H+Math.round(9*WALL_H/32),tx+ty]);addLight(cx-8+0.001,cy+16,85,0.85,true)}
+    if((face==='wallSconce'||torch)&&IMG.torch){const fr=Math.floor(time*10+tx*3+ty*5)%8;ctx.drawImage(IMG.torch,fr*16,0,16,24,cx-16,cy+14-WALL_H,16,24);addLight(cx-8+0.001,cy+16,90,0.85,true)}
+    else if(face==='wallSconce'){flames.push([cx-8,cy+12-WALL_H+Math.round(9*WALL_H/32),tx+ty]);addLight(cx-8+0.001,cy+16,85,0.85,true)}
     if(face==='wallWindow')addLight(cx-8,cy+8,40,0.35,true);
   }
   if(showE&&eFace!=null){
@@ -2220,7 +2274,8 @@ function drawIso(){
       // fade walls that stand in front of the knight so you can always see yourself
       const front=tx+ty+2>pDepth&&Math.abs(cx-psx)<40&&cy+16>psy-44&&cy<psy+8;
       const drip=!wood&&!front&&showS&&(f==='wallBlood'||hash(tx*3,ty*7)<0.12);
-      items.push({d:tx+ty+1.99,draw:()=>{isoWall(cx,cy,f,wood?'woodWallTop':'wallTop',showS,showE,front?0.35:1,flames,tx,ty);
+      const torch=!wood&&!drip&&showS&&f==='wallFace'&&hash(tx*7+1,ty*3+2)<0.09;   // scattered burning wall torches
+      items.push({d:tx+ty+1.99,draw:()=>{isoWall(cx,cy,f,wood?'woodWallTop':'wallTop',showS,showE,front?0.35:1,flames,tx,ty,torch);
         if(drip){const h=hash(tx+5,ty+9),[dx,dy]=S_(tx*T+T*(0.25+h*0.5),(ty+1)*T);drawDrip(dx,dy,h)}}});
     }else if(t===2){
       if(level){const fr=Math.floor(time*2+ty*0.35)%3;isoFlat('blood'+fr,cx,cy);if((tx+ty)%2===0)light((tx+.5)*T,(ty+.5)*T,34,0.22)}
@@ -2470,6 +2525,9 @@ function updateHUD(){
   {const swCd=Math.max(0,P.atk)*S.atkRate,fCd=Math.max(0,P.fireCD)/fireCdMax();
    $('skSwordCd').style.height=Math.min(100,swCd*100)+'%';$('skFireCd').style.height=Math.min(100,fCd*100)+'%';
    $('skFire').classList.toggle('ready',fCd<=0);
+   const sCd=Math.max(0,P.spinCD)/SPIN_CD;$('skSpinCd').style.height=Math.min(100,sCd*100)+'%';$('skSpin').classList.toggle('ready',sCd<=0);
+   $('skFlaskN').textContent=P.flasks;$('skFlask').classList.toggle('empty',P.flasks<1);
+   $('skFlaskCd').style.height=(P.flasks>=FLASK_MAX?0:100-P.flaskProg/FLASK_KILLS*100)*(P.flasks<1?1:0)+'%';
    const ico=$('skSwordIco');const st=iconStyle('blade',eq.blade);if(ico.dataset.st!==st){ico.style.cssText=st;ico.dataset.st=st}}
   const safe=level&&level.safe;$('vatRow').style.display=safe?'none':'';
   if(!safe){const pct=vatNeed?Math.min(1,vat/vatNeed):1;$('vatb').style.width=(pct*100)+'%';$('vatb').classList.toggle('full',pct>=1);
@@ -2541,7 +2599,9 @@ addEventListener('keydown',e=>{
   if(k==='i')toggleInv();
   if(k==='t')log('Passives now come from completing levels: +10 max health each, and a boon every third.','#c9a99a');
   if(k==='e'&&!invOpen&&!treeOpen&&!dead)openChest();
-  if(k==='q')castFireLine();
+  if(k==='1')castFireLine();
+  if(k==='2')drinkFlask();
+  if(k==='3')castSpin();
   if(k==='f'){filter=(filter+1)%FILTERS.length;log(`Loot filter: ${FILTERS[filter]}`,'#ffb347');renderInv()}
   if(k==='r'&&dead)newGame();
   if(k==='v'){VIEW=VIEW==='iso'?'top':'iso';log(VIEW==='iso'?'Isometric view (V)':'Top-down view (V)','#c9a99a')}
@@ -2570,6 +2630,11 @@ function frame(now){
   updateHUD();
   requestAnimationFrame(frame);
 }
+(function drawSpinIcon(){
+  const c=$('skSpinIco').getContext('2d');
+  for(let a=0;a<TAU;a+=0.05){const r=6,x=8+Math.cos(a)*r,y=8+Math.sin(a)*r;c.fillStyle=a<2?'#fff6d8':a<4?'#ffb347':'#8f1a1f';c.fillRect(Math.round(x),Math.round(y),1,1)}
+  c.fillStyle='#d9dbe0';c.fillRect(7,2,2,9);c.fillStyle='#8f1a1f';c.fillRect(5,11,6,1);c.fillStyle='#5d5059';c.fillRect(7,12,2,3);
+})();
 (function drawFireIcon(){
   const c=$('skFireIco').getContext('2d'),px=(x,y,w,h,col)=>{c.fillStyle=col;c.fillRect(x,y,w,h)};
   px(5,12,6,3,'#a12a06');px(4,8,8,5,'#ff6a1a');px(5,4,6,5,'#ff6a1a');px(6,2,3,3,'#ff6a1a');
