@@ -61,6 +61,7 @@ function killEnemy(e){
   decals.push({x:e.x+rnd(-4,4),y:e.y+rnd(2,8),cell:ri(2,5)});
   if(decals.length>160)decals.shift();
   stardust+=ri(1,3);
+  if(hasPerk('bloodthirst'))P.hp=Math.min(P.maxHp,P.hp+P.maxHp*0.03);
   burst(e.x,e.y,'#8f1a1f',8);
   bloodFx(e.x,e.y,e.boss?'big':e.r<9?'hit':'kill',e.x<P.x);   // small foes get a small spray
   SFX.play(e.boss?'bigkill':'kill');
@@ -85,7 +86,7 @@ const ENEMY_DMG=0.75;   // all enemy damage is scaled by this (lower = easier)
 function hurt(d,noIF){
   if(dead)return;
   if(!noIF&&P.inv>0)return;
-  if(!noIF){d*=ENEMY_DMG;P.inv=0.35}   // a moment of grace after each hit, so a pack can't shred you in one go
+  if(!noIF){d*=ENEMY_DMG*(hasPerk('ironhide')?0.88:1);P.inv=0.35}   // a moment of grace after each hit, so a pack can't shred you in one go
   P.sinceHit=0;
   P.hurtT=0.3;                 // triggers the player's hurt animation
   let rem=d;
@@ -131,7 +132,7 @@ function swing(){
     let da=Math.atan2(e.y-P.y,e.x-P.x)-P.aim;
     da=Math.atan2(Math.sin(da),Math.cos(da));
     // anything right on top of you is always hit
-    if(d<hr+PLAYER_BODY||Math.abs(da)<=half+Math.asin(Math.min(1,hr/Math.max(d,1)))){dealDamage(e,S.damage*c.dmg,{kb:c.kb});landed=true}
+    if(d<hr+PLAYER_BODY||Math.abs(da)<=half+Math.asin(Math.min(1,hr/Math.max(d,1)))){dealDamage(e,S.damage*c.dmg*(step===1&&hasPerk('executioner')?1.4:1),{kb:c.kb});landed=true}
   }
   if(step===1){
     // the chop hits the floor: dust, a crack, a thud

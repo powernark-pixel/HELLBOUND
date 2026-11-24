@@ -14,11 +14,14 @@ addEventListener('keydown',e=>{
   keys[k]=true;
   if(k==='escape'){
     if($('controls').classList.contains('open'))closeControls();
+    else if(perkOpen)return;   // a perk must be chosen
+    else if(engineOpen)closeEngine();
     else if(invOpen)toggleInv(false);
     else togglePause();
     return;
   }
-  if(paused)return;
+  if(paused||perkOpen)return;
+  if(engineOpen){if(k==='e')closeEngine();return}
   if(k==='i')toggleInv();
   if(k==='h'){showHitboxes=!showHitboxes;log(showHitboxes?'Hitboxes shown (H)':'Hitboxes hidden','#c9a99a')}
   // Skills: Q Fire Line, E Cleave, R Blood Flask (1, 2, 3 also work).

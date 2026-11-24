@@ -48,11 +48,12 @@ function computeStats(eqx){
   AFF.forEach(a=>s[a.k]=0);
   for(const slot of SLOTS){
     const it=eqx[slot];if(!it)continue;
-    if(slot==='blade'||slot==='gloves')s.dmgB+=it.bv;
-    if(slot==='plate'||slot==='helm')s.hpB+=it.bv;
-    if(slot==='sigil'||slot==='ring')s.wardB+=it.bv;
-    if(slot==='greaves'||slot==='boots')s.spB+=it.bv;
-    for(const a of it.aff)s[a.k]+=a.v;
+    const m=1+(it.emp||0)/100;   // empowered by the Stardust Engine: +1% to every stat per feeding
+    if(slot==='blade'||slot==='gloves')s.dmgB+=it.bv*m;
+    if(slot==='plate'||slot==='helm')s.hpB+=it.bv*m;
+    if(slot==='sigil'||slot==='ring')s.wardB+=it.bv*m;
+    if(slot==='greaves'||slot==='boots')s.spB+=it.bv*m;
+    for(const a of it.aff)s[a.k]+=a.v*m;
     if(it.trait)s.traits.push(it.trait);
   }
   for(const b of P.boons||[])if(!s.traits.includes(b))s.traits.push(b);   // boons from completed stages
@@ -66,7 +67,7 @@ function computeStats(eqx){
   s.mag=60+s.magnet;
   s.range=56+s.reach;
   s.arcDeg=70+s.arc;
-  s.rollCD=2.2*(1-Math.min(.6,s.warp/100));
+  s.rollCD=2.2*(1-Math.min(.6,s.warp/100))*(P&&P.perks&&P.perks.includes('shadowstep')?0.65:1);
   return s;
 }
 // calc(): recompute the player's totals into S

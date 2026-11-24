@@ -20,6 +20,7 @@ const ASSET_PATHS={
   title:'assets/ui/title_bg.png',
   altar:'assets/tiles/altar.png',
   hearth:'assets/tiles/hearth.png',
+  engine:'assets/tiles/engine.png',               // the Stardust Engine in the shack
   mu:'assets/items/mu_items.png',                   // item art by Momentary Unicorn (see CREDITS.md)
   flask:'assets/items/blood_flask.png',             // Momentary Unicorn's potion, recoloured to blood
   torch:'assets/props/wall_torch.png',              // Dungeon Tileset II Extended by Niji (CC0)

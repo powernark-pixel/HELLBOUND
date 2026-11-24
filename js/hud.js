@@ -10,9 +10,9 @@ function updateHUD(){
   {const swCd=Math.max(0,P.atk)*S.atkRate,fCd=Math.max(0,P.fireCD)/fireCdMax();
    $('skSwordCd').style.height=Math.min(100,swCd*100)+'%';$('skFireCd').style.height=Math.min(100,fCd*100)+'%';
    $('skFire').classList.toggle('ready',fCd<=0);
-   const sCd=Math.max(0,P.spinCD)/SPIN_CD;$('skSpinCd').style.height=Math.min(100,sCd*100)+'%';$('skSpin').classList.toggle('ready',sCd<=0);
+   const sCd=Math.max(0,P.spinCD)/spinCdMax();$('skSpinCd').style.height=Math.min(100,sCd*100)+'%';$('skSpin').classList.toggle('ready',sCd<=0);
    $('skFlaskN').textContent=P.flasks;$('skFlask').classList.toggle('empty',P.flasks<1);
-   $('skFlaskCd').style.height=(P.flasks>=FLASK_MAX?0:100-P.flaskProg/FLASK_KILLS*100)*(P.flasks<1?1:0)+'%';
+   $('skFlaskCd').style.height=(P.flasks>=flaskMax()?0:100-P.flaskProg/FLASK_KILLS*100)*(P.flasks<1?1:0)+'%';
    const ico=$('skSwordIco');const st=iconStyle('blade',eq.blade);if(ico.dataset.st!==st){ico.style.cssText=st;ico.dataset.st=st}}
   const safe=level&&level.safe;$('vatRow').style.display=safe?'none':'';
   if(!safe){const pct=vatNeed?Math.min(1,vat/vatNeed):1;$('vatb').style.width=(pct*100)+'%';$('vatb').classList.toggle('full',pct>=1);

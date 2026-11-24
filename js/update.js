@@ -20,7 +20,7 @@ function update(dt){
   if(P.ghosts){for(const g of P.ghosts)g.life-=dt;P.ghosts=P.ghosts.filter(g=>g.life>0)}
   for(const c of corpses){c.animT+=dt;c.life-=dt}
   corpses=corpses.filter(c=>c.life>0);
-  if(invOpen||dead||paused)return;
+  if(invOpen||engineOpen||perkOpen||dead||paused)return;
 
   let mx=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0);
   let my=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0);

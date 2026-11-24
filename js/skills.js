@@ -14,7 +14,7 @@ function drinkFlask(){
   for(let i=0;i<14;i++)parts.push({x:P.x+rnd(-8,8),y:P.y+rnd(-4,4),vx:rnd(-12,12),vy:rnd(-60,-25),life:rnd(.4,.8),max:.8,c:pick(['#c4302c','#ff6a6a','#8f1a1f']),s:rnd(1,2)});
 }
 function flaskKill(){
-  if(P.flasks>=FLASK_MAX){P.flaskProg=0;return}
+  if(P.flasks>=flaskMax()){P.flaskProg=0;return}
   if(++P.flaskProg>=FLASK_KILLS){P.flaskProg=0;P.flasks++;addText(P.x,P.y-30,'+1 FLASK','#ff8a8a',1);SFX.play('pickup')}
 }
 function updateHeal(dt){
@@ -31,8 +31,8 @@ function updateHeal(dt){
 const SPIN_CD=6;
 function castSpin(){
   if(scene!=='game'||dead||paused||anyPanelOpen()||P.spinCD>0)return;
-  P.spinCD=SPIN_CD;P.inv=Math.max(P.inv,0.3);
-  const R=S.range*1.4;
+  P.spinCD=spinCdMax();P.inv=Math.max(P.inv,0.3);
+  const R=S.range*1.4*(hasPerk('whirlwind')?1.2:1);
   swings.push({x:P.x,y:P.y,a:P.aim,life:.18,r:R,arc:TAU-0.01,oath:false});
   swings.push({x:P.x,y:P.y,a:P.aim+Math.PI,life:.18,r:R*0.8,arc:TAU-0.01,oath:false});
   P.atkAnim=0.3;setAnim(P,'attack');P.animT=0;shake=Math.max(shake,0.3);
@@ -50,7 +50,7 @@ function castSpin(){
    enemies it touches (once per wave). Walls stop it. With the PYRE trait (the Altar-Forged Blade)
    it reaches twice as far, hits twice as hard and leaves burning ground. */
 const FIRE_CD=3.2,FIRE_CD_PYRE=2.5;
-function fireCdMax(){return hasTrait('pyre')?FIRE_CD_PYRE:FIRE_CD}
+function fireCdMax(){return (hasTrait('pyre')?FIRE_CD_PYRE:FIRE_CD)*(hasPerk('emberheart')?0.7:1)}
 function castFireLine(){
   if(scene!=='game'||dead||paused||anyPanelOpen()||P.fireCD>0)return;
   const pyre=hasTrait('pyre');

@@ -147,3 +147,21 @@ h3{font-size:calc(var(--u)*10);margin:calc(var(--u)*3) 0 calc(var(--u)*2)}
 @keyframes pulse{to{filter:drop-shadow(0 0 calc(var(--u)*4) #e0bf68)}}
 
 #err{position:fixed;inset:0;background:#000e;color:#ff8a8a;padding:30px;white-space:pre-wrap;z-index:99;display:none;font:14px/1.6 Consolas,monospace}
+
+/* Perk choice */
+#perkPanel{left:50%;top:50%;transform:translate(-50%,-50%);width:calc(var(--u)*360);text-align:center}
+#perkCards{display:flex;gap:calc(var(--u)*6);justify-content:center}
+.perkCard{pointer-events:auto;cursor:pointer;flex:1;display:flex;flex-direction:column;align-items:center;gap:calc(var(--u)*3);
+  padding:calc(var(--u)*8) calc(var(--u)*5);background:linear-gradient(#2a0c12,#160609);border:calc(var(--u)*1) solid #5a2a1a;color:var(--bone);font-family:inherit}
+.perkCard:hover{border-color:var(--gold-hi);background:linear-gradient(#4a0b10,#2a0609);box-shadow:0 0 calc(var(--u)*6) #ff6a1a}
+.perkCard .pi{font-size:calc(var(--u)*18);color:#ff8ad8;line-height:1}
+.perkCard .pn{font-family:var(--f-label);font-weight:800;color:var(--gold-hi);font-size:calc(var(--u)*7)}
+.perkCard .pd{font-size:calc(var(--u)*5.5)}
+/* Stardust Engine */
+#enginePanel{left:50%;top:50%;transform:translate(-50%,-50%);width:calc(var(--u)*240)}
+.engItem{position:relative;padding-left:calc(var(--u)*22);min-height:calc(var(--u)*20)}
+.engItem .ico{left:0;top:calc(var(--u)*1)}
+.engItem .nm{display:block;font-weight:700}
+.engCost{margin:calc(var(--u)*3) 0;color:#8fa8ff}
+.engBtns{display:flex;gap:calc(var(--u)*3);justify-content:center;margin-top:calc(var(--u)*4)}
+.engBtns .gbtn[disabled]{opacity:.4;pointer-events:none}

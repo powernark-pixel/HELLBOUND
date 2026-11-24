@@ -122,6 +122,21 @@ const stashOk = await page.evaluate(() => {
   takeId(it.id); return stored && inv.some(i => i.id === it.id);
 });
 stashOk ? ok('items can be stored in and taken from the stash') : fail('the stash did not store/take an item');
+// the reward chest after the first level offers a perk; the Stardust Engine empowers the weapon
+const perk = await page.evaluate(async () => {
+  const c = chests.find(c => c.reward); P.x = c.x; P.y = c.y + 20; openChest();
+  await new Promise(r => setTimeout(r, 600));
+  const offered = perkOpen && document.querySelectorAll('#perkCards [data-perk]').length === 3;
+  document.querySelector('#perkCards [data-perk]').click();
+  return { offered, chosen: P.perks.length === 1 && !perkOpen };
+});
+perk.offered && perk.chosen ? ok('the reward chest offers 3 perks and one can be chosen') : fail('perk choice failed: ' + JSON.stringify(perk));
+const forge = await page.evaluate(() => {
+  if (!eq.blade) { const b = makeItem('blade', 1, 0); eq.blade = b; calc(); }
+  const before = S.damage; stardust = 100; openEngine(); feedEngine(false); closeEngine();
+  return { emp: eq.blade.emp, dust: stardust, stronger: S.damage > before, engine: !!level.engine };
+});
+forge.engine && forge.emp === 1 && forge.dust === 90 && forge.stronger ? ok('the Stardust Engine turns 10 stardust into +1% weapon stats') : fail('Stardust Engine failed: ' + JSON.stringify(forge));
 await page.evaluate(() => { P.x = (stairsT.x + .5) * T; P.y = (stairsT.y + .5) * T; });
 await page.waitForTimeout(400);
 (await page.evaluate(() => floor === 2 && !level)) ? ok('the trapdoor leads down to Circle 2') : fail('the trapdoor did not lead to Circle 2');
