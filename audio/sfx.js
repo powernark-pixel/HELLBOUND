@@ -155,6 +155,10 @@ const SFX=(()=>{
       out(chain(noise(ctx,t,.5),filt(ctx,'bandpass',400,3000,t,.45,1.2),env(ctx,t,.05,.45,.6)),o,.3);
       out(chain(osc(ctx,'sawtooth',90,180,t,.5),filt(ctx,'lowpass',600,1200,t,.5),env(ctx,t,.08,.45,.35)),o,.2);
       out(chain(osc(ctx,'triangle',1568,1568,t+.35,.6),env(ctx,t+.35,.003,.6,.25)),o,.6)},
+    // the Oculus's tentacles crackling with electricity
+    zap(o,t){const{ctx}=o;
+      out(chain(noise(ctx,t,.16),filt(ctx,'highpass',2500,2500,t,.15,.7),env(ctx,t,.002,.15,.3)),o,.2);
+      out(chain(osc(ctx,'square',60,55,t,.15),filt(ctx,'bandpass',900,900,t,.15,2),env(ctx,t,.002,.14,.12)),o,.1)},
     drink(o,t){const{ctx}=o;
       for(let i=0;i<5;i++){const tt=t+i*.09;out(chain(osc(ctx,'sine',300+Math.random()*250,700+Math.random()*300,tt,.07),env(ctx,tt,.005,.06,.08)),o,.16)}},
     spin(o,t){const{ctx}=o;

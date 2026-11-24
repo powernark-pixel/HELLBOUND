@@ -181,7 +181,8 @@ function drawIso(){
     if(e.boss)light(e.x,e.y,90,0.45);
     items.push({d:(e.x+e.y)/T,draw:()=>{
       if(e.elite)pxEllipse(sx,sy+2,e.r+4+Math.sin(time*5)*1.5,(e.r+4)/2,'rgba(196,48,44,0.85)');
-      if(!drawSprite(spriteKey(e),e.anim,e.animT,sx,sy,e.face<0)){ctx.save();ctx.fillStyle=e.flash>0?'#fff':e.c;shape(e.shape,sx,sy-e.r,e.r);ctx.fill();ctx.restore()}
+      if(e.type==='eye')drawOculus(e,sx,sy);   // drawn live, no sprite sheet (js/eye.js)
+      else if(!drawSprite(spriteKey(e),e.anim,e.animT,sx,sy,e.face<0)){ctx.save();ctx.fillStyle=e.flash>0?'#fff':e.c;shape(e.shape,sx,sy-e.r,e.r);ctx.fill();ctx.restore()}
       else if(e.flash>0){ctx.save();ctx.globalAlpha=0.5;ctx.globalCompositeOperation='lighter';drawSprite(spriteKey(e),e.anim,e.animT,sx,sy,e.face<0);ctx.restore()}
       if(e.hp<e.max&&!e.boss){
         const w=Math.max(14,Math.round(e.r*2)),bx=sx-Math.round(w/2),by=sy-e.r-26;

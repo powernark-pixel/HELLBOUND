@@ -24,6 +24,7 @@ A gothic dark-fantasy dungeon crawler for the browser. Play it at https://powern
   | `engine.js` | the Stardust Engine: stardust → +1% weapon stats |
   | `liquids.js` | lava and blood pools |
   | `enemies.js` | hound lunge, demon slam, the Warden's fight, ground warnings |
+  | `eye.js` | the Oculus, an eye monster drawn live (tentacles move every frame); press O to spawn one |
   | `update.js` | one step of game logic per frame |
   | `render.js` | drawing the world in isometric view |
   | `ambience.js` | fog, dust motes, blood drips |
