@@ -136,7 +136,11 @@ const SFX=(()=>{
       fetch(url).then(r=>r.arrayBuffer()).then(b=>ac.decodeAudioData(b)).then(buf=>{files[k]=buf;if(k==='ambience'&&started)startAmbience()}).catch(()=>{});
     return true;
   }
-  function resume(){if(!init())return;if(ac.state==='suspended')ac.resume();if(!started){started=true;startAmbience()}}
+  function resume(){
+    if(!init())return;
+    if(ac.state!=='running')ac.resume().catch(()=>{});
+    if(!started){started=true;startAmbience()}
+  }
   function play(name,a){
     if(!ac||!on||ac.state!=='running')return;
     const t=ac.currentTime;if(last[name]&&t-last[name]<(GAP[name]||.02))return;last[name]=t;
