@@ -6,7 +6,8 @@
    .  plank floor          S  where you arrive       X  trapdoor down to the next level
    F  stone hearth (2x2 tiles; put F at its top-left)
    E  bed (rest)           Z  stash chest            Q  rug        c  candles
-   Y  reward chest: refilled with a random drop every time you arrive */
+   Y  reward chest: refilled with a random drop every time you arrive
+   M  the Stardust Engine: feed it stardust to empower your weapon */
 window.LEVEL_SHACK={
   name:'The Shack',
   safe:true,
@@ -14,7 +15,7 @@ window.LEVEL_SHACK={
   map:[
     "################",
     "##w####w####w###",
-    "#.F........c..E#",
+    "#.F....M...c..E#",
     "#..............#",
     "#......S.......#",
     "#......Q.......#",

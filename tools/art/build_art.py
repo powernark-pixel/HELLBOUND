@@ -41,6 +41,7 @@ def main():
     environment.altar().save(A('tiles', 'altar.png'))
     import shack
     shack.hearth().save(A('tiles', 'hearth.png'))
+    shack.engine().save(A('tiles', 'engine.png'))
     items_ui.item_icons().save(A('items', 'item_icons.png'))
     items_ui.effects().save(A('effects', 'effects.png'))
     for k, im in items_ui.ui_images().items():

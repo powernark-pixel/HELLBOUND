@@ -148,6 +148,7 @@ function drawIso(){
     for(let i=0;i<7;i++)flames.push([sx-32+20+i*4,sy-60+50-(i%3),i*3+7],[sx-32+22+i*4,sy-60+46-(i%2)*3,i*5+2]);
     light((hx+1)*T,(hy+2.2)*T,280*(0.95+Math.sin(time*7)*0.04),1);
   }
+  drawEngine(S_,items,light);
   if(level&&level.stash){const st=level.stash,[sx,sy]=S_(st.x,st.y);items.push({d:(st.x+st.y)/T,draw:()=>{const s=tileSrc('stash');if(s!=null)ctx.drawImage(TS.img,s,0,TS.size,TS.size,sx-16,sy-24,T,T)}});light(st.x,st.y,40,0.3)}
   if(level&&level.altarAt&&IMG.altar&&seen[level.altarAt.ty][level.altarAt.tx]){
     const a=level.altarAt,[sx,sy]=S_(a.x,a.y+T/2);
@@ -284,7 +285,7 @@ function drawIso(){
   if(level&&level.safe){
     ctx.font=`8px ${PXFONT}`;ctx.globalAlpha=1;
     const tip=(o,txt)=>{if(!o||dist(o,P)>70)return;const [sx,sy]=S_(o.x,o.y);ctx.fillStyle='#000';ctx.fillText(txt,sx+1,sy-33);ctx.fillStyle='#e0bf68';ctx.fillText(txt,sx,sy-34)};
-    tip(level.stash,'[E] STASH');tip(level.bed,'[E] REST');
+    tip(level.stash,'[E] STASH');tip(level.bed,'[E] REST');tip(level.engine,'[E] STARDUST ENGINE');
     for(const c of chests)if(c.reward&&!c.open)tip(c,'[E] REWARD CHEST');
     if(stairsT)tip({x:(stairsT.x+.5)*T,y:(stairsT.y+.5)*T},'STEP ON THE TRAPDOOR TO DESCEND');
   }

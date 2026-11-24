@@ -56,7 +56,7 @@ function buildLevel(L){
   seen=Array.from({length:MH},()=>new Uint8Array(MW));
   rooms=[];chests=[];enemies=[];bullets=[];ebullets=[];ground=[];corpses=[];decor=[];decals=[];fxs=[];fireWaves=[];pillars=[];burns=[];
   const faces={},floors={},solid=new Uint8Array(MW*MH),areas=[],foes=[];
-  let start=null,altarAt=null,warden=null,hearth=null,stashAt=null,bedAt=null;const gates=[];
+  let start=null,altarAt=null,warden=null,hearth=null,stashAt=null,bedAt=null,engineAt=null;const gates=[];
   L.map.forEach((row,y)=>{for(let x=0;x<row.length;x++){
     const ch=row[x],k=x+','+y,px=x*T+T/2,py=y*T+T/2;
     if(ch==='#'||FACE_CH[ch]){if(FACE_CH[ch])faces[k]=FACE_CH[ch];continue}   // walls stay 0
@@ -76,12 +76,14 @@ function buildLevel(L){
     if(ch==='F')hearth={tx:x,ty:y};
     if(ch==='Z')stashAt={x:px,y:py,tx:x,ty:y};
     if(ch==='E')bedAt={x:px,y:py};
+    if(ch==='M')engineAt={x:px,y:py,tx:x,ty:y};
   }});
   // The altar slab blocks movement (its tiles are still drawn as floor)
   if(altarAt)for(let dx=-1;dx<=1;dx++)solid[altarAt.ty*MW+altarAt.tx+dx]=1;
   // The hearth (2x2 tiles) and the stash chest block movement too
   if(hearth)for(let dy=0;dy<2;dy++)for(let dx=0;dx<2;dx++)solid[(hearth.ty+dy)*MW+hearth.tx+dx]=1;
   if(stashAt)solid[stashAt.ty*MW+stashAt.tx]=1;
+  if(engineAt)solid[engineAt.ty*MW+engineAt.tx]=1;
   // Walk the path from the start (used to check every part of the level can be reached)
   const steps=new Int32Array(MW*MH).fill(-1),q=[];
   const sx=Math.floor(start.x/T),sy=Math.floor(start.y/T);steps[sy*MW+sx]=0;q.push(sx,sy);
@@ -99,7 +101,7 @@ function buildLevel(L){
   boss=warden?spawnEnemy('demon',{x:warden.x,y:warden.y,boss:true,dormant:true}):null;
   P.x=start.x;P.y=start.y;P.vx=0;P.vy=0;
   level={name:L.name,areaNames:L.areas||{},hints:L.hints||{},faces,floors,solid,areas,altarAt,steps,
-    safe:!!L.safe,style:L.style||'stone',hearth,stash:stashAt,bed:bedAt,gates,sealed:false};
+    safe:!!L.safe,style:L.style||'stone',hearth,stash:stashAt,bed:bedAt,engine:engineAt,gates,sealed:false};
   fillVatNeed();
   if(level.safe)for(let y=0;y<MH;y++)seen[y].fill(1);   // a safe room is fully visible
 }
@@ -191,7 +193,7 @@ function newGame(){
   floor=1;
   P={x:0,y:0,vx:0,vy:0,hp:100,sh:0,maxHp:100,maxSh:0,lvl:1,xp:0,xpNext:30,
      atk:0,atkAnim:0,hurtT:0,roll:0,inv:0,sinceHit:9,aim:0,face:1,swings:0,warned:false,
-     anim:'idle',animT:0,bonusHp:0,boons:[],dash:null,ghosts:[],stepT:0,hbT:0,fireCD:0,gotAltarBlade:false,flasks:FLASK_MAX,comboStep:0,comboT:0,atkHeavy:false,lunge:null,flaskProg:0,healLeft:0,healT:0,spinCD:0};
+     anim:'idle',animT:0,bonusHp:0,boons:[],perks:[],dash:null,ghosts:[],stepT:0,hbT:0,fireCD:0,gotAltarBlade:false,flasks:FLASK_MAX,comboStep:0,comboT:0,atkHeavy:false,lunge:null,flaskProg:0,healLeft:0,healT:0,spinCD:0};
   eq={blade:makeItem('blade',1,0),helm:null,plate:null,gloves:null,greaves:null,boots:null,ring:null,sigil:null};
   inv=[];stardust=0;filter=0;dead=false;shake=0;parts=[];texts=[];swings=[];invOpen=false;pickupSeq=0;
   closeAllOverlays();
@@ -237,7 +239,7 @@ function completionReward(done){
 function enterShack(){
   const done=floor-1,boon=completionReward(done);
   buildLevel(window.LEVEL_SHACK);calc();
-  P.hp=P.maxHp;P.sh=P.maxSh;P.warned=false;invMode='bag';P.flasks=FLASK_MAX;P.flaskProg=0;
+  P.hp=P.maxHp;P.sh=P.maxSh;P.warned=false;invMode='bag';P.flasks=flaskMax();P.flaskProg=0;
   SFX.play('levelup');
   if(boon){
     log(`Circle ${done} complete: +10 max health, and a boon: ${TR[boon]}`,'#ff8ad8');

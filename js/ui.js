@@ -42,10 +42,10 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 /* ----- Overlays: title, controls, pause, inventory, tree ----- */
 function setOverlay(id,open){$(id).classList.toggle('open',open)}
 function closeAllOverlays(){
-  ['controls','pause','inv'].forEach(id=>setOverlay(id,false));
-  invOpen=false;paused=false;hideTip();
+  ['controls','pause','inv','engine','perks'].forEach(id=>setOverlay(id,false));
+  invOpen=false;paused=false;engineOpen=false;perkOpen=false;hideTip();
 }
-function anyPanelOpen(){return invOpen||paused||$('controls').classList.contains('open')}
+function anyPanelOpen(){return invOpen||paused||engineOpen||perkOpen||$('controls').classList.contains('open')}
 function startGame(){
   scene='game';setOverlay('title',false);$('hudWrap').style.display='';
   newGame();

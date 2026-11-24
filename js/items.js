@@ -133,7 +133,7 @@ function drawItemIcon(it,x,y){
   else ctx.drawImage(IMG.items,Math.max(0,SLOTS.indexOf(it.slot))*16,0,16,16,x,y,16,16);
 }
 function itemBlock(it){
-  return `<span class="nm" style="color:${colorOf(it)}">${esc(it.name)}</span>`+
+  return `<span class="nm" style="color:${colorOf(it)}">${esc(it.name)}${it.emp?` <span style="color:#8fa8ff">+${it.emp}%</span>`:''}</span>`+
     `<span class="meta">${RAR[it.r].n} · ${SLOTNAME[it.slot]} · iLvl ${it.ilvl} · base ${it.bv}</span><br>`+
     it.aff.map(a=>esc(fmtAff(a))).join('<br>')+(it.trait?`<br><span class="trait">${TR[it.trait]}</span>`:'');
 }
@@ -248,6 +248,7 @@ function openChest(){
   if(level&&level.safe){
     if(level.stash&&dist(level.stash,P)<52){openStash();return}
     if(level.bed&&dist(level.bed,P)<44){restAtBed();return}
+    if(level.engine&&dist(level.engine,P)<56){openEngine();return}
   }
   let best=null,bd=44;
   for(const c of chests){const d=dist(c,P);if(!c.open&&d<bd){bd=d;best=c}}
@@ -272,4 +273,6 @@ function openChest(){
   }else for(let k=0;k<ri(2,3);k++)dropItem(best.x,best.y,1,floor+2);
   burst(best.x,best.y,'#ffe14f',30);
   log('Chest opened.','#ffe14f');
+  // the level just finished (floor-1) may grant a perk choice too
+  if(best.reward&&PERK_LEVELS.includes(floor-1)&&!P.perkFrom?.includes(floor-1)){(P.perkFrom=P.perkFrom||[]).push(floor-1);setTimeout(offerPerks,400)}
 }
