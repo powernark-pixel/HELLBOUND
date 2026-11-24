@@ -8,6 +8,7 @@ function update(dt){
   time+=dt;
   if(scene!=='game'){updateTitle(dt);return}
   updateFX(dt);
+  updateBubbles(dt,level?'blood':'lava');
   if(Math.random()<dt*8){
     // drifting embers and ash
     const ash=Math.random()<0.35;

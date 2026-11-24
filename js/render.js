@@ -106,8 +106,10 @@ function drawIso(){
       items.push({d:tx+ty+1.99,draw:()=>{isoWall(cx,cy,f,wood?'woodWallTop':'wallTop',showS,showE,front?0.35:1,flames,tx,ty,torch);
         if(drip){const h=hash(tx+5,ty+9),[dx,dy]=S_(tx*T+T*(0.25+h*0.5),(ty+1)*T);drawDrip(dx,dy,h)}}});
     }else if(t===2){
-      if(level){const fr=Math.floor(time*2+ty*0.35)%3;isoFlat('blood'+fr,cx,cy);if((tx+ty)%2===0)light((tx+.5)*T,(ty+.5)*T,34,0.22)}
-      else{const fr=Math.floor(time*3+hash(tx,ty)*3)%3;isoFlat('lava'+fr,cx,cy);light((tx+.5)*T,(ty+.5)*T,46,0.55)}
+      // pools: blood in handcrafted levels, lava in the random ones (see js/liquids.js)
+      const kind=level?'blood':'lava',[lr,li]=LIQ[kind].light;
+      drawLiquid(tx,ty,cx,cy,kind,S_);
+      if((tx+ty)%2===0||kind==='lava')light((tx+.5)*T,(ty+.5)*T,lr*(0.9+0.1*Math.sin(time*2+tx)),li);
     }else if(t===3){
       isoFlat(level&&level.safe?'trapdoor':(stairsLocked()?'stairsSealed':'stairs'),cx,cy);
       light((tx+.5)*T,(ty+.5)*T,60,0.7);
@@ -119,6 +121,7 @@ function drawIso(){
       if(lf==='floorSigil')light((tx+.5)*T,(ty+.5)*T,40,0.3);
     }
   }
+  drawBubbles(S_);
   // ---- 2. FLAT DECOR, BLOOD STAINS, SHADOWS (still on the floor) ----
   for(const d of decor){
     if(d.tx<tx0||d.tx>tx1||d.ty<ty0||d.ty>ty1||!seen[d.ty][d.tx])continue;
