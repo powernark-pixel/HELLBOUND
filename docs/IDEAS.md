@@ -164,6 +164,14 @@ as its own focused piece of work.
 - `Desktop\GAME	argeted-image.jpg` (a screenshot from "City of Berelaai"): a top-down/isometric camera,
   a lantern-lit circle of light, heavy blood splatter and a minimal gothic HUD. A good target for HELLBOUND's look.
 
+### 22. The Wormhole: an endgame loop through harder tiers
+- At the end of the game, a **wormhole** opens. Going through it **levels up the biomes you've already beaten
+  into Tier 2**: the same places, at a higher difficulty.
+- This is the endgame play loop: clear every biome, take the wormhole, play them all again at Tier 2 (and
+  later Tier 3...), with better loot to match.
+- Ties in with the Stardust Engine (stardust empowers your weapon by +1% per feeding), so each tier you push
+  needs a stronger weapon. "Speed for example": every weapon stat grows, attack speed included.
+
 ---
 
 ## Questions to answer before building any of this
@@ -183,6 +191,7 @@ as its own focused piece of work.
   and does the current passive tree become the first class's tree?
 
 ## Already built that these ideas can grow from
-- The Knight, with gear, affixes and a passive tree (a starting point for the Path of Exile-style growth)
+- The Knight, with gear and affixes, a two-hit sword combo and skills on Q, E and R
+- Perks from the reward chest, and the Stardust Engine that empowers your weapon (+1% per feeding)
 - The Blood Altar: a handcrafted, linear level with areas that get harder (the template for future levels)
 - The title screen and the save-free run structure (death sends you back to the start)
