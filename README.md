@@ -20,6 +20,9 @@ A gothic dark-fantasy dungeon crawler for the browser. Play it at https://powern
   | `items.js` | drops, equipping, salvage, inventory and stash, chests, the bed |
   | `combat.js` | dealing and taking damage, kills, the sword swing |
   | `skills.js` | Fire Line, Blood Flask, Cleave |
+  | `perks.js` | perks offered by the reward chest |
+  | `engine.js` | the Stardust Engine: stardust → +1% weapon stats |
+  | `liquids.js` | lava and blood pools |
   | `enemies.js` | hound lunge, demon slam, the Warden's fight, ground warnings |
   | `update.js` | one step of game logic per frame |
   | `render.js` | drawing the world in isometric view |
