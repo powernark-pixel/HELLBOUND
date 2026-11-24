@@ -135,6 +135,10 @@ const SFX=(()=>{
       out(chain(noise(ctx,t,.6),filt(ctx,'bandpass',300,2200,t,.45,1.2),env(ctx,t,.02,.5,.85)),o,.3);
       out(chain(osc(ctx,'sawtooth',95,45,t,.5),filt(ctx,'lowpass',650,200,t,.5),env(ctx,t,.01,.5,.35)),o,.3);
       for(let i=0;i<9;i++){const tt=t+.05+i*.045;out(chain(noise(ctx,tt,.03),filt(ctx,'highpass',3000,3000,tt,.03),env(ctx,tt,.001,.03,.28)),o,0)}},
+    drink(o,t){const{ctx}=o;
+      for(let i=0;i<5;i++){const tt=t+i*.09;out(chain(osc(ctx,'sine',300+Math.random()*250,700+Math.random()*300,tt,.07),env(ctx,tt,.005,.06,.08)),o,.16)}},
+    spin(o,t){const{ctx}=o;
+      out(chain(noise(ctx,t,.35),filt(ctx,'bandpass',600,2600,t,.3,2),env(ctx,t,.02,.3,.35)),o,.3)},
     growl(o,t){const{ctx}=o;
       const g=osc(ctx,'sawtooth',72,58,t,.5),lfo=ctx.createOscillator(),lg=ctx.createGain();
       lfo.frequency.value=23;lg.gain.value=12;lfo.connect(lg);lg.connect(g.frequency);lfo.start(t);lfo.stop(t+.55);
