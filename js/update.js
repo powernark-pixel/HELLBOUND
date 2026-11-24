@@ -9,6 +9,7 @@ function update(dt){
   if(scene!=='game'){updateTitle(dt);return}
   updateFX(dt);
   updateBubbles(dt,level?'blood':'lava');
+  updateOculusFX(dt);
   if(Math.random()<dt*8){
     // drifting embers and ash
     const ash=Math.random()<0.35;
@@ -122,6 +123,8 @@ function update(dt){
         [vx,vy]=houndAI(e,d,nx,ny,dt);
       }else if(e.type==='demon'){
         [vx,vy]=demonAI(e,d,nx,ny,dt);
+      }else if(e.type==='eye'){
+        [vx,vy]=oculusAI(e,d,nx,ny,dt);
       }else{
         vx=nx*e.spd;vy=ny*e.spd;
       }

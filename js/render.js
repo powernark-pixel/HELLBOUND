@@ -202,6 +202,7 @@ function drawIso(){
 
   // ---- 4. EFFECTS ON TOP: blood sprays, projectiles, swing arcs, particles, flames ----
   drawFireLayer(S_,light);
+  drawOculusFX(S_);
   for(const f of fxs){
     const fr=f.d.from+Math.min(f.d.n-1,Math.floor(f.t*20)),fsx=fr*110,fsy=f.d.row*93,[sx,sy]=S_(f.x,f.y);
     if(f.flip){ctx.save();ctx.translate(sx,0);ctx.scale(-1,1);ctx.drawImage(IMG.bloodfx,fsx,fsy,110,93,-f.d.ox,sy-10-f.d.oy,110,93);ctx.restore()}
