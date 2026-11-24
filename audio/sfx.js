@@ -135,6 +135,21 @@ const SFX=(()=>{
       out(chain(noise(ctx,t,.6),filt(ctx,'bandpass',300,2200,t,.45,1.2),env(ctx,t,.02,.5,.85)),o,.3);
       out(chain(osc(ctx,'sawtooth',95,45,t,.5),filt(ctx,'lowpass',650,200,t,.5),env(ctx,t,.01,.5,.35)),o,.3);
       for(let i=0;i<9;i++){const tt=t+.05+i*.045;out(chain(noise(ctx,tt,.03),filt(ctx,'highpass',3000,3000,tt,.03),env(ctx,tt,.001,.03,.28)),o,0)}},
+    // the knight's grunts on each combo hit: a short "hu!" and a longer, rougher "HUHHH" on the finisher.
+    // A buzzy voice (sawtooth) shaped by vowel formants for "uh", plus breath.
+    grunt(o,t,a={}){const{ctx}=o;const heavy=!!a.heavy,dur=heavy?.42:.15,p=R(.92,1.08);
+      const src=osc(ctx,'sawtooth',(heavy?128:165)*p,(heavy?84:120)*p,t,dur);
+      const voice=ctx.createGain();src.connect(voice);
+      if(heavy){const l=ctx.createOscillator(),lg=ctx.createGain();l.frequency.value=26;lg.gain.value=.5;l.connect(lg);lg.connect(voice.gain);l.start(t);l.stop(t+dur+.05)}
+      const mix=ctx.createGain();
+      for(const [f,q,g] of [[640,5,1],[1100,7,.6],[2450,9,.18]]){
+        const b=filt(ctx,'bandpass',f,heavy?f*.86:f,t,dur,q),gg=ctx.createGain();gg.gain.value=g;voice.connect(b);b.connect(gg);gg.connect(mix)}
+      chain(noise(ctx,t,dur+.08),filt(ctx,'bandpass',1500,800,t,dur,1.2),env(ctx,t,.01,dur+.05,heavy?.35:.22)).connect(mix);
+      out(chain(mix,env(ctx,t,heavy?.035:.012,dur,heavy?1.3:1.0)),o,.12)},
+    gruntHeavy(o,t){S.grunt(o,t,{heavy:true})},
+    swingHeavy(o,t){const{ctx}=o;const p=R(.9,1.1);
+      out(chain(noise(ctx,t,.32),filt(ctx,'bandpass',1500*p,260*p,t,.3,1.1),env(ctx,t,.05,.27,1)),o,.15);
+      out(chain(osc(ctx,'sine',120*p,55,t+.12,.25),env(ctx,t+.12,.005,.25,.45)),o,.1)},
     drink(o,t){const{ctx}=o;
       for(let i=0;i<5;i++){const tt=t+i*.09;out(chain(osc(ctx,'sine',300+Math.random()*250,700+Math.random()*300,tt,.07),env(ctx,tt,.005,.06,.08)),o,.16)}},
     spin(o,t){const{ctx}=o;

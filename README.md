@@ -4,7 +4,27 @@ A gothic dark-fantasy dungeon crawler for the browser. Play it at https://powern
 
 ## Files
 
-- `index.html` is the whole game. GitHub Pages publishes it from the `main` branch.
+- `index.html` is the page: the HUD and menus. GitHub Pages publishes the `main` branch.
+- `css/hellbound.css` is the look of the HUD and menus.
+- `js/` is the game code, split by job. The files load in this order and share one global scope
+  (no build step: each file may use anything from an earlier one):
+
+  | File | What's in it |
+  |---|---|
+  | `core.js` | canvas, scaling to the window, small helpers |
+  | `assets.js` | loading PNG art, sprite sheets, drawing sprites |
+  | `data.js` | item bases, affixes, traits, enemy types |
+  | `state.js` | the player, stats, starting a new game |
+  | `world.js` | building levels, random floors, the shack, the blood vat |
+  | `ui.js` | overlays, menus, announcements, the message log |
+  | `items.js` | drops, equipping, salvage, inventory and stash, chests, the bed |
+  | `combat.js` | dealing and taking damage, kills, the sword swing |
+  | `skills.js` | Fire Line, Blood Flask, Cleave |
+  | `enemies.js` | hound lunge, demon slam, the Warden's fight, ground warnings |
+  | `update.js` | one step of game logic per frame |
+  | `render.js` | drawing the world in isometric view |
+  | `ambience.js` | fog, dust motes, blood drips |
+  | `title.js`, `hud.js`, `input.js`, `main.js` | title screen, HUD, keyboard and mouse, the main loop |
 - `assets/` holds the pixel art PNGs: sprite sheets, dungeon tiles, item icons, effects and UI frames.
   If a file is missing, the game falls back to simple placeholder art so it still runs.
 - `tools/art/` is the Python script that draws every PNG in `assets/` pixel by pixel.
@@ -16,7 +36,7 @@ A gothic dark-fantasy dungeon crawler for the browser. Play it at https://powern
 - `audio/sfx.js` makes every sound live (no audio files needed). To swap in your own sounds, see `audio/README.md`.
 - `levels/shack.js` is **The Shack**, the hideout where every run starts and where you return after each level:
   rest, sort loot, and keep items in the stash (saved in your browser, survives death).
-- The game is drawn **isometric** (diagonal, like Path of Exile). Press **V** in game to switch to the old top-down view.
+- The game is drawn **isometric** (diagonal, like Path of Exile).
 - `V1`.txt` is an older copy, kept for reference.
 - `tests/smoke.mjs` and `.github/workflows/check.yml` are the automatic game check.
 
@@ -31,7 +51,7 @@ Any PNG in `assets/` can be swapped for hand-made art of the same size and layou
 | `sprites/enemies/hound_sheet.png`, `archer_sheet.png` | 32×32 | same rows as the imp |
 | `sprites/enemies/demon_sheet.png` | 40×40 | same rows as the imp |
 | `sprites/enemies/warden_sheet.png` (boss) | 56×56 | same rows as the imp |
-| `tiles/dungeon_tiles.png` | 32×32 | one row, order = `TILE_NAMES` in `index.html` |
+| `tiles/dungeon_tiles.png` | 32×32 | one row, order = `TILE_NAMES` in `js/assets.js` |
 | `items/item_icons.png` | 16×16 | one row: helm, weapon, chest, gloves, legs, boots, ring, amulet |
 | `effects/effects.png` | 16×16 | glow, spark, 4 blood splats, ember, ash |
 | `ui/*.png` | varies | 9-slice frames used by the CSS |

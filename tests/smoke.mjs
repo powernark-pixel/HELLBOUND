@@ -126,14 +126,14 @@ await page.evaluate(() => { P.x = (stairsT.x + .5) * T; P.y = (stairsT.y + .5) *
 await page.waitForTimeout(400);
 (await page.evaluate(() => floor === 2 && !level)) ? ok('the trapdoor leads down to Circle 2') : fail('the trapdoor did not lead to Circle 2');
 
-// 5b. skills: 1 = Fire Line, 2 = Blood Flask, 3 = Cleave
+// 5b. skills: Q = Fire Line, E = Cleave, R = Blood Flask
 await page.evaluate(() => { enemies.length = 0; P.hp = P.maxHp * 0.3; P.fireCD = 0; P.spinCD = 0; P.flasks = 3; });
-await page.keyboard.press('1'); await page.keyboard.press('2'); await page.keyboard.press('3');
+await page.keyboard.press('q'); await page.keyboard.press('e'); await page.keyboard.press('r');
 await page.waitForTimeout(1300);
 const sk = await page.evaluate(() => ({ fire: P.fireCD > 0, spin: P.spinCD > 0, flasks: P.flasks, healed: P.hp > P.maxHp * 0.6 }));
-sk.fire ? ok('key 1 casts Fire Line') : fail('key 1 did not cast Fire Line');
-sk.flasks === 2 && sk.healed ? ok('key 2 drinks a Blood Flask and heals') : fail('the Blood Flask did not work: ' + JSON.stringify(sk));
-sk.spin ? ok('key 3 spins a Cleave') : fail('key 3 did not Cleave');
+sk.fire ? ok('Q casts Fire Line') : fail('Q did not cast Fire Line');
+sk.flasks === 2 && sk.healed ? ok('R drinks a Blood Flask and heals') : fail('the Blood Flask did not work: ' + JSON.stringify(sk));
+sk.spin ? ok('E spins a Cleave') : fail('E did not Cleave');
 
 // 6. pause menu
 await page.keyboard.press('Escape');

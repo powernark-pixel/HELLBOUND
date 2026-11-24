@@ -14,9 +14,10 @@ A = lambda *p: os.path.join(ROOT, 'assets', *p)
 ORDER = ['idle', 'walk', 'attack', 'hurt', 'death']
 
 def sheet(rows, fw, fh):
-    n = max(len(rows[k]) for k in ORDER)
-    im = Img(fw * n, fh * len(ORDER))
-    for ri, k in enumerate(ORDER):
+    order = ORDER + [k for k in rows if k not in ORDER]   # extra rows (e.g. the knight's attack2) go at the bottom
+    n = max(len(rows[k]) for k in order)
+    im = Img(fw * n, fh * len(order))
+    for ri, k in enumerate(order):
         for fi, fr in enumerate(rows[k]):
             im.blit(fr, fi * fw, ri * fh)
     return im
