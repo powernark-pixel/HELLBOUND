@@ -1,5 +1,5 @@
 """Dungeon tiles (32x32): cathedral flagstones, brick walls with religious decor, lava, stairs, chests, decor.
-The order of TILE_NAMES must match TILE_NAMES in index.html.
+The order of TILE_NAMES must match TILE_NAMES in js/assets.js.
 """
 import math, random
 from pix import Img, rgb, ramp_pick, bayer, tile_noise, line, ellipse, capsule, poly
