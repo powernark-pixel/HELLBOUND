@@ -27,7 +27,7 @@ function drawHitboxes(proj){
   ctx.globalAlpha=1;
 }
 
-function dealDamage(e,base){
+function dealDamage(e,base,opt={}){
   if(e.dead)return;
   let dmg=base,crit=false;
   if(e.boss&&e.act==='rest')dmg*=1.3;   // the Warden's opening
@@ -36,7 +36,7 @@ function dealDamage(e,base){
   hitStop=Math.max(hitStop,crit?0.06:0.03);shake=Math.max(shake,crit?0.22:0.1);
   if(!e.boss){
     // knockback away from the knight (heavy demons barely move)
-    const a=Math.atan2(e.y-P.y,e.x-P.x),k=(e.type==='demon'?110:260)*(crit?1.4:1);
+    const a=Math.atan2(e.y-P.y,e.x-P.x),k=(e.type==='demon'?110:260)*(crit?1.4:1)*(opt.kb||1);
     e.kbx=Math.cos(a)*k;e.kby=Math.sin(a)*k;e.kbT=0.12;
   }
   for(let i=0;i<(crit?10:5);i++){const a=rnd(0,TAU),sp=rnd(80,240);
@@ -101,23 +101,44 @@ function hurt(d,noIF){
   }
 }
 
+/* ----- THE SWORD: a two-hit combo -----
+   Hit 1 is a quick slash. Attack again within COMBO_WINDOW and you get hit 2: a heavy
+   overhead chop with a step forward, a wider and longer arc, 1.6x damage and a big shove.
+   After the finisher there's a short recovery, then the combo starts over.
+   Holding the mouse button chains them automatically: slash, CHOP, slash, CHOP... */
+const COMBO_WINDOW=0.6;
+const COMBO=[
+  {anim:'attack', anim_t:0.25,dmg:1,  arc:1,   reach:0, kb:1,  lunge:70, cd:0.8, trail:.18,grunt:'grunt',     whoosh:'swing'},
+  {anim:'attack2',anim_t:0.38,dmg:1.6,arc:1.25,reach:12,kb:1.7,lunge:190,cd:1.5,trail:.26,grunt:'gruntHeavy',whoosh:'swingHeavy'},
+];
 function swing(){
-  P.atk=1/S.atkRate;P.swings++;
-  P.atkAnim=0.25;              // triggers the player's attack animation
-  SFX.play('swing');
-  setAnim(P,'attack');P.animT=0;
+  const step=P.comboStep===1&&P.comboT>0?1:0,c=COMBO[step];
+  P.comboStep=step===0?1:0;P.comboT=step===0?COMBO_WINDOW+1/S.atkRate:0;
+  P.atk=c.cd/S.atkRate;P.swings++;
+  P.atkAnim=c.anim_t;P.atkHeavy=step===1;setAnim(P,c.anim);P.animT=0;
+  P.lunge={a:P.aim,v:c.lunge,t:0.09};   // a small step into the swing
+  SFX.play(c.whoosh);SFX.play(c.grunt);
   const oath=hasTrait('oath')&&P.swings%5===0;
-  swings.push({x:P.x,y:P.y,a:P.aim,life:.18,r:S.range,arc:S.arcDeg*Math.PI/180,oath});
-  const half=S.arcDeg*Math.PI/360;
+  const R=S.range+c.reach,arc=S.arcDeg*c.arc;
+  // the finisher sweeps the other way, so the two hits read as one flowing combo
+  swings.push({x:P.x,y:P.y,a:P.aim,life:c.trail,max:c.trail,r:R,arc:arc*Math.PI/180,oath,dir:step?-1:1,heavy:step===1});
+  const half=arc*Math.PI/360;
+  let landed=false;
   for(const e of enemies){
     if(e.dead)continue;
-    const d=dist(e,P);
-    const hr=hurtR(e);
-    if(d>S.range+hr)continue;
-    if(d<hr+PLAYER_BODY){dealDamage(e,S.damage);continue}   // right on top of you: always hit
+    const d=dist(e,P),hr=hurtR(e);
+    if(d>R+hr)continue;
     let da=Math.atan2(e.y-P.y,e.x-P.x)-P.aim;
     da=Math.atan2(Math.sin(da),Math.cos(da));
-    if(Math.abs(da)<=half+Math.asin(Math.min(1,hr/Math.max(d,1))))dealDamage(e,S.damage);
+    // anything right on top of you is always hit
+    if(d<hr+PLAYER_BODY||Math.abs(da)<=half+Math.asin(Math.min(1,hr/Math.max(d,1)))){dealDamage(e,S.damage*c.dmg,{kb:c.kb});landed=true}
+  }
+  if(step===1){
+    // the chop hits the floor: dust, a crack, a thud
+    const fx=P.x+Math.cos(P.aim)*R*0.6,fy=P.y+Math.sin(P.aim)*R*0.6;
+    for(let i=0;i<14;i++){const a=rnd(0,TAU),sp=rnd(40,120);parts.push({x:fx,y:fy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:rnd(.25,.45),max:.45,c:pick(['#5d5059','#4a3f48','#8a7a80']),s:rnd(1,2),ground:1})}
+    decals.push({x:fx,y:fy,scorch:1});if(decals.length>200)decals.shift();
+    shake=Math.max(shake,landed?0.4:0.25);if(landed)hitStop=Math.max(hitStop,0.07);
   }
   if(oath){
     for(let k=0;k<12;k++){

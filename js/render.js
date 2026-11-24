@@ -213,10 +213,14 @@ function drawIso(){
   // the sword trail: a thick glowing crescent that sweeps out and fades (gold edge, blood-red tail)
   const TRAIL=['#fff6d8','#ffe2a0','#ffb347','#ff7a2b','#c4302c','#8f1a1f'];
   for(const s of swings){
-    const a0=s.a-s.arc/2,a1=s.a+s.arc/2,prog=Math.min(1,(1-s.life/.18)*1.8),f=Math.max(0,s.life/.18);
+    const mx=s.max||.18,dir=s.dir||1;
+    // the blade sweeps from one side of the arc to the other (the finisher sweeps back the other way)
+    const a0=s.a-dir*s.arc/2,a1=s.a+dir*s.arc/2,prog=Math.min(1,(1-s.life/mx)*1.8),f=Math.max(0,s.life/mx);
     const end=a0+(a1-a0)*prog,steps=Math.ceil(s.r*s.arc*prog);
-    for(let k=0;k<TRAIL.length;k++){
-      const r=s.r-k*1.6,c=s.oath&&k<3?'#ff7a2b':TRAIL[k],sz=k<2?2:1;
+    const layers=s.heavy?TRAIL.length+3:TRAIL.length;   // the heavy chop leaves a thicker trail
+    for(let k=0;k<layers;k++){
+      const kk=Math.min(TRAIL.length-1,s.heavy?Math.max(0,k-1):k);
+      const r=s.r-k*(s.heavy?1.4:1.6),c=s.oath&&k<3?'#ff7a2b':TRAIL[kk],sz=k<(s.heavy?3:2)?2:1;
       for(let i=0;i<=steps;i++){
         const t=i/Math.max(1,steps),a=a0+(end-a0)*t;
         ctx.globalAlpha=Math.max(0,(0.25+0.75*t)*f*(1-k*0.12));

@@ -39,7 +39,8 @@ const SHEETS={
   player:{fw:32,fh:32,ax:16,ay:22,anims:{
     idle:  {row:0,n:4,fps:4, loop:true},
     walk:  {row:1,n:6,fps:12,loop:true},
-    attack:{row:2,n:4,fps:16,loop:false},
+    attack:{row:2,n:5,fps:20,loop:false},
+    attack2:{row:5,n:6,fps:16,loop:false},   // heavy combo finisher
     hurt:  {row:3,n:2,fps:10,loop:false},
     death: {row:4,n:4,fps:5, loop:false}}},
   imp:   {fw:24,fh:24,ax:12,ay:15,anims:MON_ANIMS},
@@ -70,7 +71,7 @@ function bloodFx(x,y,set,flip){
 // Code-drawn fallbacks (old 16px placeholders, drawn at 2x)
 const FALLBACK_SHEETS={
   player:{fw:16,fh:16,ax:8,ay:8,scale:SPR,anims:{
-    idle:{row:0,n:4,fps:5,loop:true},walk:{row:1,n:6,fps:12,loop:true},attack:{row:2,n:4,fps:14,loop:false},
+    idle:{row:0,n:4,fps:5,loop:true},walk:{row:1,n:6,fps:12,loop:true},attack:{row:2,n:4,fps:14,loop:false},attack2:{row:2,n:4,fps:12,loop:false},
     hurt:{row:3,n:2,fps:10,loop:false},death:{row:4,n:4,fps:6,loop:false}}},
   imp:{fw:16,fh:16,ax:8,ay:8,scale:SPR,anims:{
     idle:{row:0,n:4,fps:5,loop:true},walk:{row:1,n:4,fps:10,loop:true},attack:{row:2,n:3,fps:12,loop:false},

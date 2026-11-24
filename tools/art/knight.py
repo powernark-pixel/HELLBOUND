@@ -1,6 +1,6 @@
 """The Knight: blackened plate, tarnished-gold crown helm, tattered crimson cape.
 32x32 frames, facing right (the game mirrors it for left).
-Rows: idle(4) walk(6) attack(4) hurt(2) death(4).
+Rows: idle(4) walk(6) attack(5) hurt(2) death(4) attack2(6, the heavy combo finisher).
 """
 import math
 from pix import Img, rgb, line, ellipse
@@ -152,11 +152,23 @@ def frames():
         walk.append(compose(bob=bob, sway=1 if f % 3 else 0, legf=(-fx, lift_b, fx, lift_f),
                             hand=(21, 21 + bob), ang=1.15 + 0.1 * math.sin(a), eye='e'))
     rows['walk'] = walk
+    # COMBO HIT 1: a quick diagonal slash. Draw back, cut down across the body, follow through.
     rows['attack'] = [
-        compose(hand=(18, 14), ang=-2.0, lean=-1, eye='E'),
-        compose(hand=(22, 16), ang=-0.45, lean=1, eye='E', smear_args=(20, 18, -2.0, -0.45)),
-        compose(hand=(23, 19), ang=0.55, lean=1, eye='E', smear_args=(20, 18, -1.2, 0.55)),
-        compose(hand=(22, 21), ang=1.2, lean=0, eye='e'),
+        compose(hand=(17, 13), ang=-2.4, lean=-1, eye='E', legf=(1, 0, -1, 0)),
+        compose(hand=(19, 13), ang=-1.8, lean=0, eye='E'),
+        compose(hand=(23, 15), ang=-0.35, lean=1, eye='E', legf=(-1, 0, 1, 0), smear_args=(20, 18, -2.3, -0.35)),
+        compose(hand=(24, 20), ang=0.8, lean=2, eye='E', legf=(-1, 0, 2, 0), smear_args=(20, 18, -1.3, 0.8)),
+        compose(hand=(22, 21), ang=1.2, lean=1, eye='e', legf=(-1, 0, 1, 0)),
+    ]
+    # COMBO HIT 2: the heavy finisher. Raise the blade high behind the head, then chop it down
+    # with a step forward and hold the impact for a beat.
+    rows['attack2'] = [
+        compose(hand=(17, 11), ang=-2.1, lean=-2, bob=-1, eye='E', legf=(1, 0, -1, 0)),
+        compose(hand=(16, 9), ang=-2.5, lean=-2, bob=-1, eye='E', legf=(1, 0, -1, 0)),
+        compose(hand=(24, 14), ang=-0.3, lean=2, eye='E', legf=(-1, 0, 2, 0), smear_args=(20, 17, -2.6, -0.3, 9, 14)),
+        compose(hand=(25, 22), ang=1.05, lean=3, bob=1, eye='E', legf=(-2, 0, 3, 0), smear_args=(20, 18, -1.4, 1.05, 9, 14)),
+        compose(hand=(25, 22), ang=1.15, lean=3, bob=1, eye='E', legf=(-2, 0, 3, 0)),
+        compose(hand=(22, 21), ang=1.25, lean=1, eye='e', legf=(-1, 0, 1, 0)),
     ]
     h0 = compose(eye='E').shift(-1, 0).tint(rgb('#ff3a2a'), 0.6)
     h1 = compose(eye='E').tint(rgb('#ffffff'), 0.18)

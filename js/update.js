@@ -50,12 +50,14 @@ function update(dt){
     slide(P,P.dash.vx*dt,P.dash.vy*dt,10);P.dash.t-=dt;
     P.ghosts.push({x:P.x,y:P.y,anim:P.anim,animT:P.animT,face:P.face,life:0.22,max:0.22});
   }
+  P.comboT-=dt;if(P.comboT<=0)P.comboStep=0;
+  if(P.lunge&&P.lunge.t>0){P.lunge.t-=dt;slide(P,Math.cos(P.lunge.a)*P.lunge.v*dt,Math.sin(P.lunge.a)*P.lunge.v*dt,10)}
   if(mouse.down&&P.atk<=0)swing();
   P.fireCD-=dt;updateFire(dt);P.spinCD-=dt;updateHeal(dt);
 
   // Choose the player's animation from the current state
   const moving=Math.hypot(P.vx,P.vy)>20;
-  setAnim(P, dead?'death': P.hurtT>0?'hurt': P.atkAnim>0?'attack': moving?'walk':'idle');
+  setAnim(P, dead?'death': P.hurtT>0?'hurt': P.atkAnim>0?(P.atkHeavy?'attack2':'attack'): moving?'walk':'idle');
   if(moving&&!(P.dash&&P.dash.t>0)){
     P.stepT-=dt;
     if(P.stepT<=0){P.stepT=0.26;SFX.play(level&&level.style==='wood'?'stepWood':'step');
