@@ -71,6 +71,13 @@ function killEnemy(e){
       if(o!==e&&!o.dead&&dist(o,e)<100)dealDamage(o,S.damage*0.6);
     }
   }
+  if(e.miniboss){
+    burst(e.x,e.y,'#9ef0ff',30);bloodFx(e.x,e.y,'big',e.x<P.x);shake=0.8;
+    for(let i=0;i<4;i++)oculusImpact(e,e.x+rnd(-30,30),e.y+rnd(-30,30),true);   // it bursts in a shower of sparks
+    for(let k=0;k<2;k++)dropItem(e.x,e.y,2,floor+3);
+    stardust+=25;
+    announce(`${e.bossName.toUpperCase()} IS BLIND`,'#9ef0ff',2.6,'+25 stardust');
+  }
   if(e.boss){
     burst(e.x,e.y,'#ff2b6b',40);
     bloodFx(e.x-14,e.y,'big',true);bloodFx(e.x+14,e.y,'big',false);bloodFx(e.x,e.y-10,'kill',Math.random()<.5);

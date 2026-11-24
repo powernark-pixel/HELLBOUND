@@ -23,22 +23,22 @@ const OC_FLESH=['#12030a','#25060e','#3e0d16','#5e1620','#82242a','#a83a36','#d0
 const OC_SCLERA=['#3a2e28','#6a5a4c','#a2927a','#d0c4a8','#ece2c8','#fff8e8'];
 const OC_IRIS=['#2a0a00','#6a2a04','#b05a0a','#e8901a','#ffd050'];
 const OC_VOLT=['#ffffff','#e8fbff','#9ef0ff','#5ad8ff','#2a7fff'];
-let OCULUS_BODY=null;
+const OCULUS_BODY={};   // baked eyeballs, one per size
 
 function bayer4(x,y){const m=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5];return (m[(y&3)*4+(x&3)]+0.5)/16}
 function ocPick(ramp,v,x,y){const n=ramp.length,f=Math.max(0,Math.min(0.999,v))*(n-1),i=Math.floor(f);return ramp[Math.min(n-1,i+(f-i>bayer4(x,y)?1:0))]}
 
 // ---------- the eyeball, baked once ----------
-function oculusBody(){
-  if(OCULUS_BODY)return OCULUS_BODY;
-  const S=OC.S,c=document.createElement('canvas');c.width=c.height=S;const g=c.getContext('2d');
-  const cx=S/2,cy=S/2,R=OC.R;
+function oculusBody(Z=1){
+  if(OCULUS_BODY[Z])return OCULUS_BODY[Z];
+  const S=Math.ceil(OC.S*Z),c=document.createElement('canvas');c.width=c.height=S;const g=c.getContext('2d');
+  const cx=S/2,cy=S/2,R=OC.R*Z;
   const L=[-0.45,-0.65,0.6],ll=Math.hypot(...L);L[0]/=ll;L[1]/=ll;L[2]/=ll;
   // bloodshot veins: wandering lines that start at the rim and creep toward the middle
   const veins=new Uint8Array(S*S);let seed=11;const r=()=>(seed=(seed*16807)%2147483647)/2147483647;
-  for(let v=0;v<16;v++){
+  for(let v=0;v<16*Z;v++){
     let a=r()*TAU,x=cx+Math.cos(a)*R,y=cy+Math.sin(a)*R,dir=a+Math.PI+(r()-0.5)*0.8;
-    const len=6+r()*9;
+    const len=(6+r()*9)*Z;
     for(let s=0;s<len;s++){
       veins[Math.round(y)*S+Math.round(x)]=s<len*0.5?2:1;
       if(r()<0.25){let bx=x,by=y,bd=dir+(r()<0.5?-1:1)*0.9;for(let b=0;b<3;b++){bx+=Math.cos(bd);by+=Math.sin(bd);veins[Math.round(by)*S+Math.round(bx)]=1}}
@@ -67,7 +67,7 @@ function oculusBody(){
       if(d.data[(yy*S+xx)*4+3]){out.data[k]=8;out.data[k+1]=2;out.data[k+2]=4;out.data[k+3]=255;break}}
   }
   g.putImageData(out,0,0);
-  return OCULUS_BODY=c;
+  return OCULUS_BODY[Z]=c;
 }
 
 // ---------- behaviour (world space) ----------
@@ -76,11 +76,13 @@ function oculusAI(e,d,nx,ny,dt){
   s.t-=dt;s.cd-=dt;
   if(s.mode==='hover'){
     if(s.dart>0){s.dart-=dt;return [s.dvx,s.dvy]}
-    if(s.cd<=0&&d<300){   // pick three exact spots: on you, and two around you
-      s.mode='aim';s.t=s.tMax=0.9;SFX.play('zap');
+    if(s.cd<=0&&d<300*(e.ocZ||1)){   // pick three exact spots: on you, and two around you
+      // the boss version gets angrier below half health: 5 spots, less warning
+      const angry=e.miniboss&&e.hp<e.max*0.5,extra=e.miniboss?(angry?4:3):2;
+      s.mode='aim';s.t=s.tMax=angry?0.75:0.9;SFX.play('zap');
       const a0=rnd(0,TAU);
       s.targets=[{x:P.x,y:P.y}];
-      for(const k of [0,1]){const a=a0+k*Math.PI*0.8;s.targets.push({x:P.x+Math.cos(a)*rnd(42,58),y:P.y+Math.sin(a)*rnd(42,58)})}
+      for(let k=0;k<extra;k++){const a=a0+k*TAU/extra+rnd(-0.3,0.3),r=rnd(42,62)*(e.ocZ||1);s.targets.push({x:P.x+Math.cos(a)*r,y:P.y+Math.sin(a)*r})}
       // each spot gets the tentacle hanging nearest to it
       s.tents=[];const used=new Set();
       for(const tg of s.targets){
@@ -107,13 +109,14 @@ function oculusAI(e,d,nx,ny,dt){
     return [0,0];
   }
   if(s.mode==='hold'){if(s.t<=0){s.mode='retract';s.t=s.tMax=0.35}return [0,0]}
-  if(s.mode==='retract'){if(s.t<=0){s.mode='hover';s.t=rnd(0.2,0.5);s.cd=rnd(2.2,3.4);s.targets=[]}return [0,0]}
+  if(s.mode==='retract'){if(s.t<=0){s.mode='hover';s.t=rnd(0.2,0.5);s.cd=e.miniboss?rnd(1.6,2.4):rnd(2.2,3.4);s.targets=[]}return [0,0]}
   return [0,0];
 }
 // a tentacle lands: damage inside the ring, lightning across the floor, sparks
 const ocSparks=[],ocArcs=[];
-function oculusImpact(e,x,y){
-  if(!dead&&Math.hypot(P.x-x,P.y-y)<OC.STRIKE_R+PLAYER_BODY)hurt(ET.eye.dmg*1.8*e.dmgMul);
+const ocStrikeR=e=>OC.STRIKE_R*(e.ocZ>1?1.2:1);
+function oculusImpact(e,x,y,harmless){
+  if(!harmless&&!dead&&Math.hypot(P.x-x,P.y-y)<ocStrikeR(e)+PLAYER_BODY)hurt(ET.eye.dmg*1.8*e.dmgMul);
   shake=Math.max(shake,0.35);hitStop=Math.max(hitStop,0.04);SFX.play('slam');SFX.play('zap');
   decals.push({x,y,scorch:1});if(decals.length>200)decals.shift();
   for(let i=0;i<26;i++){const a=rnd(0,TAU),sp=rnd(60,220);
@@ -178,12 +181,13 @@ function drawOculusFX(S_){
 function drawOculusMarks(e,proj){
   const s=e.ocs;if(!s||!(s.mode==='aim'||s.mode==='strike'))return;
   const k=s.mode==='aim'?Math.max(0,s.t/s.tMax):0,blink=Math.sin(time*40)>0;
+  const SR=ocStrikeR(e);
   for(const tg of s.targets){
-    ctx.globalAlpha=0.18;polyFill(proj,ringPts(tg.x,tg.y,OC.STRIKE_R,24),'#5ad8ff');
-    ctx.globalAlpha=blink?1:0.6;polyFill(proj,ringPts(tg.x,tg.y,OC.STRIKE_R,24),null,'#9ef0ff');
-    ctx.globalAlpha=0.9;polyFill(proj,ringPts(tg.x,tg.y,Math.max(1,OC.STRIKE_R*k),20),null,'#ffffff');   // closes to a point
+    ctx.globalAlpha=0.18;polyFill(proj,ringPts(tg.x,tg.y,SR,24),'#5ad8ff');
+    ctx.globalAlpha=blink?1:0.6;polyFill(proj,ringPts(tg.x,tg.y,SR,24),null,'#9ef0ff');
+    ctx.globalAlpha=0.9;polyFill(proj,ringPts(tg.x,tg.y,Math.max(1,SR*k),20),null,'#ffffff');   // closes to a point
     const [cx,cy]=proj(tg.x,tg.y);ctx.fillStyle='#e8fbff';ctx.fillRect(cx-3,cy,7,1);ctx.fillRect(cx,cy-2,1,5);  // crosshair
-    if(Math.random()<0.5){const rand=ocRand,a=rand()*TAU,[ex,ey]=proj(tg.x+Math.cos(a)*OC.STRIKE_R,tg.y+Math.sin(a)*OC.STRIKE_R);ocBolt(cx,cy,ex,ey,5,rand)}
+    if(Math.random()<0.5){const rand=ocRand,a=rand()*TAU,[ex,ey]=proj(tg.x+Math.cos(a)*SR,tg.y+Math.sin(a)*SR);ocBolt(cx,cy,ex,ey,5,rand)}
     addLight(tg.x,tg.y,50,0.5);
   }
   ctx.globalAlpha=1;
@@ -191,19 +195,20 @@ function drawOculusMarks(e,proj){
 
 // ---------- drawing the creature (screen space around its ground point sx,sy) ----------
 function oculusInit(e){
+  const Z=e.ocZ||1;
   e.oc={t:time,look:[0,0],lookT:0,tremor:[0,0],jx:0,jy:0,jT:0,zap:-1,zapT:rnd(0.6,1.8),tents:[]};
   for(let i=0;i<OC.TENT;i++){
     const a=(-25+i*(230/(OC.TENT-1)))*Math.PI/180,pts=[];
-    for(let j=0;j<OC.SEG;j++)pts.push([Math.cos(a)*(OC.R-3+j*OC.LEN),Math.sin(a)*(OC.R-3+j*OC.LEN)]);
-    e.oc.tents.push({a,ph:rnd(0,TAU),pts,len:OC.LEN*rnd(0.85,1.15)});
+    for(let j=0;j<OC.SEG;j++)pts.push([Math.cos(a)*(OC.R*Z-3+j*OC.LEN*Z),Math.sin(a)*(OC.R*Z-3+j*OC.LEN*Z)]);
+    e.oc.tents.push({a,ph:rnd(0,TAU),pts,len:OC.LEN*Z*rnd(0.85,1.15)});
   }
 }
 function drawOculus(e,sx,sy){
   if(!e.oc)oculusInit(e);
-  const o=e.oc,s=e.ocs||{mode:'hover'},dt=Math.min(0.05,Math.max(0,time-o.t));o.t=time;
+  const o=e.oc,s=e.ocs||{mode:'hover'},dt=Math.min(0.05,Math.max(0,time-o.t)),Z=e.ocZ||1;o.t=time;
   // STUTTER: the body twitches to a new tiny offset ~12 times a second (more while aiming)
   o.jT-=dt;if(o.jT<=0){const amp=s.mode==='aim'?2:s.mode==='hover'?1:0;o.jx=ri(-amp,amp);o.jy=ri(-amp,amp);o.jT=1/12}
-  const bob=Math.round(Math.sin(time*2+e.x*0.01)*2),cx=sx+o.jx,cy=sy-OC.HOVER+bob+o.jy;
+  const bob=Math.round(Math.sin(time*2+e.x*0.01)*2),cx=sx+o.jx,cy=sy-OC.HOVER*Z+bob+o.jy;
   const px=LW/2,py=LH/2-8;   // the knight's body on screen
   // SACCADES: the pupil jumps to a new spot near you, holds, jumps again. Locks on while aiming.
   o.lookT-=dt;
@@ -223,7 +228,7 @@ function drawOculus(e,sx,sy){
     striking.set(ti,[sx+((tg.x-e.x)-(tg.y-e.y))/2-cx,sy+((tg.x-e.x)+(tg.y-e.y))/4-cy])});
   // simulate the tentacles
   for(let i=0;i<OC.TENT;i++){
-    const tn=o.tents[i],p=tn.pts;p[0]=[Math.cos(tn.a)*(OC.R-3),Math.sin(tn.a)*(OC.R-3)];
+    const tn=o.tents[i],p=tn.pts;p[0]=[Math.cos(tn.a)*(OC.R*Z-3),Math.sin(tn.a)*(OC.R*Z-3)];
     for(let j=1;j<p.length;j++){
       const k=j/(p.length-1);
       // while aiming, the tentacles that will strike coil up and shiver
@@ -244,7 +249,7 @@ function drawOculus(e,sx,sy){
   const flash=e.flash>0;
   const drawTent=(tn,i)=>{
     const p=tn.pts,n=p.length,zap=o.zap===i||(striking.has(i)&&(s.mode==='hold'||s.mode==='strike'));
-    const pt=j=>[cx+p[j][0],cy+p[j][1]],width=j=>Math.max(1.5,5-j*0.4);
+    const pt=j=>[cx+p[j][0],cy+p[j][1]],width=j=>Math.max(1.5,(5-j*0.4)*Z);
     const dots=[];
     for(let j=1;j<n;j++){const [x0,y0]=pt(j-1),[x1,y1]=pt(j),m=Math.max(1,Math.ceil(Math.hypot(x1-x0,y1-y0)));
       for(let q=0;q<m;q++){const f=q/m;dots.push([x0+(x1-x0)*f,y0+(y1-y0)*f,width(j-1+f),j])}}
@@ -264,23 +269,24 @@ function drawOculus(e,sx,sy){
     }
   };
   o.tents.forEach((tn,i)=>{if(Math.sin(tn.a)<0.15)drawTent(tn,i)});   // tentacles reaching up/back go behind
-  const B=oculusBody(),S=OC.S;
+  const B=oculusBody(Z),S=B.width;
   ctx.drawImage(B,Math.round(cx-S/2),Math.round(cy-S/2));
   // the iris: big, ringed, with a slit pupil that narrows to a needle when it's about to strike
-  const ox=Math.round(o.look[0]*5+o.tremor[0]),oy=Math.round(o.look[1]*4+o.tremor[1]),ix=Math.round(cx)+ox,iy=Math.round(cy)-1+oy;
-  const slit=s.mode==='aim'?0:s.mode==='hold'||s.mode==='strike'?2:1;
-  for(let y=-7;y<=7;y++)for(let x=-7;x<=7;x++){
-    const dd=Math.hypot(x,y*1.08);if(dd>6.6)continue;
+  const ox=Math.round((o.look[0]*5+o.tremor[0])*Z),oy=Math.round((o.look[1]*4+o.tremor[1])*Z),ix=Math.round(cx)+ox,iy=Math.round(cy)-1+oy;
+  const slit=Math.round((s.mode==='aim'?0:s.mode==='hold'||s.mode==='strike'?2:1)*Z);
+  const IR=Math.ceil(7*Z);
+  for(let y=-IR;y<=IR;y++)for(let x=-IR;x<=IR;x++){
+    const dd=Math.hypot(x,y*1.08)/Z;if(dd>6.6)continue;
     let c=dd>5.8?'#1a0600':ocPick(OC_IRIS,0.95-dd/7.5+(x<0&&y<0?0.1:0),x+8,y+8);
     if(dd<5.6&&(Math.round(Math.atan2(y,x)*5+dd)%4===0))c=OC_IRIS[1];   // radial fibres in the iris
     ctx.fillStyle=c;ctx.fillRect(ix+x,iy+y,1,1);
   }
-  ctx.fillStyle='#050103';ctx.fillRect(ix-slit,iy-5,1+slit*2,11);ctx.fillRect(ix-slit-1,iy-2,3+slit*2,5);
-  ctx.fillStyle='#fffaf0';ctx.fillRect(ix-3,iy-4,2,1);ctx.fillRect(ix-3,iy-3,1,1);   // catchlight
+  const PH=Math.round(5*Z);ctx.fillStyle='#050103';ctx.fillRect(ix-slit,iy-PH,1+slit*2,PH*2+1);ctx.fillRect(ix-slit-1,iy-Math.round(2*Z),3+slit*2,Math.round(4*Z)+1);
+  ctx.fillStyle='#fffaf0';ctx.fillRect(ix-Math.round(3*Z),iy-Math.round(4*Z),Math.round(2*Z),Math.max(1,Math.round(Z)));ctx.fillRect(ix-Math.round(3*Z),iy-Math.round(3*Z),1,1);   // catchlight
   if(s.mode==='aim'){ctx.globalAlpha=0.5+0.5*Math.sin(time*50);ctx.fillStyle='#9ef0ff';ctx.fillRect(ix-1,iy-6,1,1);ctx.fillRect(ix+1,iy+5,1,1);ctx.globalAlpha=1}
   if(flash){ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=0.55;ctx.drawImage(B,Math.round(cx-S/2),Math.round(cy-S/2));ctx.restore()}
   o.tents.forEach((tn,i)=>{if(Math.sin(tn.a)>=0.15)drawTent(tn,i)});
-  addLight(e.x,e.y,s.mode==='aim'?80:50,s.mode==='aim'?0.6:0.35);
+  addLight(e.x,e.y,(s.mode==='aim'?80:50)*Z,s.mode==='aim'?0.6:0.35);
 }
 // test tool: press O to spawn one beside you
 function spawnOculus(){

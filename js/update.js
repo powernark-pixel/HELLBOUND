@@ -96,6 +96,10 @@ function update(dt){
       log(`${level.areaNames[a.n]}: ${level.hints[a.n]||''}`,'#d9a066');
       if(a.n===7&&boss&&!boss.dead){sealArena();boss.dormant=false;shake=0.6;log('The gate slams shut. The Warden rises from the altar.','#ff4f6e');SFX.play('roar')}
       else SFX.play('area');
+      for(const e of enemies)if(e.miniboss&&e.dormant&&e.wakeArea===a.n){
+        e.dormant=false;shake=0.5;SFX.play('roar');SFX.play('zap');
+        announce(e.bossName.toUpperCase(),'#9ef0ff',3,'It has seen you');log(`${e.bossName} opens its eye.`,'#9ef0ff');
+      }
     }
     if(boss&&boss.dormant&&dist(boss,P)<200){boss.dormant=false;sealArena();SFX.play('roar')}
   }

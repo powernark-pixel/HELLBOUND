@@ -56,7 +56,7 @@ function buildLevel(L){
   seen=Array.from({length:MH},()=>new Uint8Array(MW));
   rooms=[];chests=[];enemies=[];bullets=[];ebullets=[];ground=[];corpses=[];decor=[];decals=[];fxs=[];fireWaves=[];pillars=[];burns=[];
   const faces={},floors={},solid=new Uint8Array(MW*MH),areas=[],foes=[];
-  let start=null,altarAt=null,warden=null,hearth=null,stashAt=null,bedAt=null,engineAt=null;const gates=[];
+  let start=null,altarAt=null,warden=null,hearth=null,stashAt=null,bedAt=null,engineAt=null;const gates=[],minis=[];
   L.map.forEach((row,y)=>{for(let x=0;x<row.length;x++){
     const ch=row[x],k=x+','+y,px=x*T+T/2,py=y*T+T/2;
     if(ch==='#'||FACE_CH[ch]){if(FACE_CH[ch])faces[k]=FACE_CH[ch];continue}   // walls stay 0
@@ -72,6 +72,7 @@ function buildLevel(L){
     if(ch>='2'&&ch<='7')areas.push({x:px,y:py,tx:x,ty:y,n:+ch,done:false});
     if(ENEMY_CH[ch])foes.push({x:px,y:py,tx:x,ty:y,type:ENEMY_CH[ch][0],elite:!!ENEMY_CH[ch][1]});
     if(ch==='W')warden={x:px,y:py};
+    if(ch==='O')minis.push({x:px,y:py,tx:x,ty:y,type:'eye'});
     if(ch==='G')gates.push({tx:x,ty:y});
     if(ch==='F')hearth={tx:x,ty:y};
     if(ch==='Z')stashAt={x:px,y:py,tx:x,ty:y};
@@ -99,6 +100,11 @@ function buildLevel(L){
       spdMul:f.elite?1.15:1,elite:f.elite});
   }
   boss=warden?spawnEnemy('demon',{x:warden.x,y:warden.y,boss:true,dormant:true}):null;
+  // mini-bosses: big, tough, asleep until you walk into their area (see js/eye.js for the Oculus)
+  for(const m of minis){
+    const e=spawnEnemy(m.type,{x:m.x,y:m.y,hpMul:5.5,dmgMul:1.25,dormant:true});
+    e.miniboss=true;e.ocZ=1.6;e.r=22;e.bossName='The Oculus';e.wakeArea=tierAt(m.tx,m.ty);
+  }
   P.x=start.x;P.y=start.y;P.vx=0;P.vy=0;
   level={name:L.name,areaNames:L.areas||{},hints:L.hints||{},faces,floors,solid,areas,altarAt,steps,
     safe:!!L.safe,style:L.style||'stone',hearth,stash:stashAt,bed:bedAt,engine:engineAt,gates,sealed:false};

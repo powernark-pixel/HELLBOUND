@@ -184,7 +184,7 @@ function drawIso(){
       if(e.type==='eye')drawOculus(e,sx,sy);   // drawn live, no sprite sheet (js/eye.js)
       else if(!drawSprite(spriteKey(e),e.anim,e.animT,sx,sy,e.face<0)){ctx.save();ctx.fillStyle=e.flash>0?'#fff':e.c;shape(e.shape,sx,sy-e.r,e.r);ctx.fill();ctx.restore()}
       else if(e.flash>0){ctx.save();ctx.globalAlpha=0.5;ctx.globalCompositeOperation='lighter';drawSprite(spriteKey(e),e.anim,e.animT,sx,sy,e.face<0);ctx.restore()}
-      if(e.hp<e.max&&!e.boss){
+      if(e.hp<e.max&&!e.boss&&!e.miniboss){
         const w=Math.max(14,Math.round(e.r*2)),bx=sx-Math.round(w/2),by=sy-e.r-26;
         pxRect(bx-1,by-1,w+2,4,'#0a0608');pxRect(bx,by,w,2,'#33050a');
         pxRect(bx,by,Math.round(w*Math.max(0,e.hp/e.max)),2,'#c4302c');pxRect(bx,by,Math.round(w*Math.max(0,e.hp/e.max)),1,'#e8564a');
