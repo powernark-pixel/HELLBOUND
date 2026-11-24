@@ -131,6 +131,10 @@ const SFX=(()=>{
       out(chain(osc(ctx,'sine',f,f,tt,.25),env(ctx,tt,.001,.2,.22)),o,.4)})},
     node(o,t){const{ctx}=o;[392,587.3,784].forEach((f,i)=>{const tt=t+i*.05;
       out(chain(osc(ctx,'sine',f,f*1.01,tt,.9),env(ctx,tt,.01,.8,.18)),o,.6)})},
+    fireline(o,t){const{ctx}=o;
+      out(chain(noise(ctx,t,.6),filt(ctx,'bandpass',300,2200,t,.45,1.2),env(ctx,t,.02,.5,.85)),o,.3);
+      out(chain(osc(ctx,'sawtooth',95,45,t,.5),filt(ctx,'lowpass',650,200,t,.5),env(ctx,t,.01,.5,.35)),o,.3);
+      for(let i=0;i<9;i++){const tt=t+.05+i*.045;out(chain(noise(ctx,tt,.03),filt(ctx,'highpass',3000,3000,tt,.03),env(ctx,tt,.001,.03,.28)),o,0)}},
     step(o,t){const{ctx}=o;
       out(chain(noise(ctx,t,.07),filt(ctx,'lowpass',900*R(.8,1.2),350,t,.07),env(ctx,t,.002,.07,.55)),o,.05)},
     heart(o,t){const{ctx}=o;
