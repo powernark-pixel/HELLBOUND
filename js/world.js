@@ -56,7 +56,7 @@ function buildLevel(L){
   seen=Array.from({length:MH},()=>new Uint8Array(MW));
   rooms=[];chests=[];enemies=[];bullets=[];ebullets=[];ground=[];corpses=[];decor=[];decals=[];fxs=[];fireWaves=[];pillars=[];burns=[];
   const faces={},floors={},solid=new Uint8Array(MW*MH),areas=[],foes=[];
-  let start=null,altarAt=null,warden=null,hearth=null,stashAt=null,bedAt=null;
+  let start=null,altarAt=null,warden=null,hearth=null,stashAt=null,bedAt=null;const gates=[];
   L.map.forEach((row,y)=>{for(let x=0;x<row.length;x++){
     const ch=row[x],k=x+','+y,px=x*T+T/2,py=y*T+T/2;
     if(ch==='#'||FACE_CH[ch]){if(FACE_CH[ch])faces[k]=FACE_CH[ch];continue}   // walls stay 0
@@ -72,6 +72,7 @@ function buildLevel(L){
     if(ch>='2'&&ch<='7')areas.push({x:px,y:py,tx:x,ty:y,n:+ch,done:false});
     if(ENEMY_CH[ch])foes.push({x:px,y:py,tx:x,ty:y,type:ENEMY_CH[ch][0],elite:!!ENEMY_CH[ch][1]});
     if(ch==='W')warden={x:px,y:py};
+    if(ch==='G')gates.push({tx:x,ty:y});
     if(ch==='F')hearth={tx:x,ty:y};
     if(ch==='Z')stashAt={x:px,y:py,tx:x,ty:y};
     if(ch==='E')bedAt={x:px,y:py};
@@ -98,9 +99,29 @@ function buildLevel(L){
   boss=warden?spawnEnemy('demon',{x:warden.x,y:warden.y,boss:true,dormant:true}):null;
   P.x=start.x;P.y=start.y;P.vx=0;P.vy=0;
   level={name:L.name,areaNames:L.areas||{},hints:L.hints||{},faces,floors,solid,areas,altarAt,steps,
-    safe:!!L.safe,style:L.style||'stone',hearth,stash:stashAt,bed:bedAt};
+    safe:!!L.safe,style:L.style||'stone',hearth,stash:stashAt,bed:bedAt,gates,sealed:false};
   fillVatNeed();
   if(level.safe)for(let y=0;y<MH;y++)seen[y].fill(1);   // a safe room is fully visible
+}
+/* ----- THE ARENA GATE -----
+   'G' tiles in a level map are open floor until the boss fight starts. Then they become a wall
+   of chains (you're locked in with the Warden) until he dies. */
+function sealArena(){
+  if(!level||!level.gates.length||level.sealed)return;
+  level.sealed=true;
+  for(const g of level.gates){
+    // never trap the knight inside the wall: nudge him into the arena first
+    if(Math.floor(P.x/T)===g.tx&&Math.floor(P.y/T)===g.ty)P.x=(g.tx+1.5)*T;
+    map[g.ty][g.tx]=0;level.faces[g.tx+','+g.ty]='wallChains';
+    for(let i=0;i<10;i++)parts.push({x:(g.tx+.5)*T+rnd(-12,12),y:(g.ty+.5)*T+rnd(-12,12),vx:rnd(-40,40),vy:rnd(-40,40),life:.6,max:.6,c:pick(['#5d5059','#4a3f48']),s:2,ground:1});
+  }
+  shake=Math.max(shake,0.7);SFX.play('slam');SFX.play('descend');
+}
+function openArena(){
+  if(!level||!level.sealed)return;
+  level.sealed=false;
+  for(const g of level.gates){map[g.ty][g.tx]=1;delete level.faces[g.tx+','+g.ty]}
+  SFX.play('descend');log('The arena gate grinds open.','#e0bf68');
 }
 function genFloor(){
   level=null;

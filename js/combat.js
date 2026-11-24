@@ -73,7 +73,7 @@ function killEnemy(e){
   if(e.boss){
     burst(e.x,e.y,'#ff2b6b',40);
     bloodFx(e.x-14,e.y,'big',true);bloodFx(e.x+14,e.y,'big',false);bloodFx(e.x,e.y-10,'kill',Math.random()<.5);
-    shake=1;
+    shake=1;openArena();
     for(let k=0;k<3;k++)dropItem(e.x,e.y,3,floor+3);
     if(vatFull()){announce('THE WARDEN FALLS','#ffe14f',2.5,'The stairs are unsealed. Follow the light');log('The stairs are unsealed. Follow the golden light.','#ffe14f')}
     else{announce('THE WARDEN FALLS','#ffe14f',2.8,'Fill the blood vat to open the stairs');log(`The Warden is dead, but the vat is only ${Math.floor(vat/vatNeed*100)}% full. Kill more.`,'#c4302c')}

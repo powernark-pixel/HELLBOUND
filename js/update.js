@@ -93,10 +93,10 @@ function update(dt){
       a.done=true;
       announce(level.areaNames[a.n].toUpperCase(),a.n===7?'#ff3a2a':'#d9a066',2.8,level.hints[a.n]||'');
       log(`${level.areaNames[a.n]}: ${level.hints[a.n]||''}`,'#d9a066');
-      if(a.n===7&&boss&&boss.dormant){boss.dormant=false;shake=0.6;log('The Warden rises from the altar.','#ff4f6e');SFX.play('roar')}
+      if(a.n===7&&boss&&!boss.dead){sealArena();boss.dormant=false;shake=0.6;log('The gate slams shut. The Warden rises from the altar.','#ff4f6e');SFX.play('roar')}
       else SFX.play('area');
     }
-    if(boss&&boss.dormant&&dist(boss,P)<260){boss.dormant=false;SFX.play('roar')}
+    if(boss&&boss.dormant&&dist(boss,P)<200){boss.dormant=false;sealArena();SFX.play('roar')}
   }
 
   // enemies
