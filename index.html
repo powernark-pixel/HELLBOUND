@@ -1542,6 +1542,62 @@ function drawFireLayer(proj,lightAt){
   for(const p of pillars){const [sx,sy]=proj(p.x,p.y);drawPillar(sx,sy,p);lightAt(p.x,p.y,80,0.9*p.life/p.max)}
 }
 
+/* ----- TELEGRAPHED ENEMY ATTACKS -----
+   Hounds: growl and crouch (a red line shows their path), then lunge fast along it.
+   Demons: raise their fists (a red circle grows on the floor), then slam the ground.
+   The warnings give you time to roll out of the way. */
+const SLAM_R=78;
+function houndAI(e,d,nx,ny,dt){
+  e.lcd=(e.lcd??rnd(0.5,1.5))-dt;
+  if(e.act==='wind'){e.actT-=dt;e.animT=0;if(e.actT<=0){e.act='lunge';e.actT=0.28}return [0,0]}
+  if(e.act==='lunge'){e.actT-=dt;if(e.actT<=0){e.act='rec';e.actT=0.5}return [e.lx*560,e.ly*560]}
+  if(e.act==='rec'){e.actT-=dt;if(e.actT<=0)e.act=null;return [nx*e.spd*0.35,ny*e.spd*0.35]}
+  if(d<170&&e.lcd<=0){e.act='wind';e.actT=0.45;e.lx=nx;e.ly=ny;e.lcd=2.4;SFX.play('growl');return [0,0]}
+  return [nx*e.spd,ny*e.spd];
+}
+function demonAI(e,d,nx,ny,dt){
+  e.scd=(e.scd??1)-dt;
+  if(e.act==='wind'){e.actT-=dt;e.animT=0;if(e.actT<=0){e.act='rec';e.actT=0.6;demonSlam(e)}return [0,0]}
+  if(e.act==='rec'){e.actT-=dt;if(e.actT<=0)e.act=null;return [0,0]}
+  if(d<85&&e.scd<=0){e.act='wind';e.actT=0.7;e.scd=3.2;e.windMax=0.7;SFX.play('growl');return [0,0]}
+  return [nx*e.spd,ny*e.spd];
+}
+function demonSlam(e){
+  shake=Math.max(shake,0.55);hitStop=Math.max(hitStop,0.08);SFX.play('slam');
+  setAnim(e,'attack');e.animT=0.09;
+  if(dist(P,e)<SLAM_R&&!dead)hurt(ET.demon.dmg*1.7*e.dmgMul*(1+(floor-1)*0.15));
+  for(let i=0;i<28;i++){const a=i/28*TAU,sp=rnd(120,220);
+    parts.push({x:e.x,y:e.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:rnd(.25,.5),max:.5,c:pick(['#5d5059','#4a3f48','#ff6a1a']),s:rnd(1,2.5),ground:1})}
+  impacts.push({x:e.x,y:e.y,life:0.12,max:0.12,crit:true});
+  decals.push({x:e.x,y:e.y,scorch:1});decals.push({x:e.x+10,y:e.y+4,scorch:1});decals.push({x:e.x-9,y:e.y-5,scorch:1});
+}
+// Ground warnings, drawn under the fighters. proj turns a world point into a screen point.
+function polyFill(proj,pts,fill,stroke){
+  ctx.beginPath();pts.forEach(([wx,wy],i)=>{const [x,y]=proj(wx,wy);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.closePath();
+  if(fill){ctx.fillStyle=fill;ctx.fill()}
+  if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1;ctx.stroke()}
+}
+function ringPts(cx,cy,r,n=32){const o=[];for(let i=0;i<n;i++){const a=i/n*TAU;o.push([cx+Math.cos(a)*r,cy+Math.sin(a)*r])}return o}
+function drawTelegraphs(proj){
+  const blink=0.55+0.3*Math.sin(time*24);
+  for(const e of enemies){
+    if(e.dead||e.act!=='wind')continue;
+    if(e.type==='hound'){
+      // a red lane the width of the hound, showing exactly where it will run
+      const L=180,w=e.r*0.8,px=-e.ly*w,py=e.lx*w,x0=e.x+e.lx*e.r,y0=e.y+e.ly*e.r,x1=e.x+e.lx*L,y1=e.y+e.ly*L;
+      ctx.globalAlpha=0.28*blink+0.1;polyFill(proj,[[x0+px,y0+py],[x1+px,y1+py],[x1-px,y1-py],[x0-px,y0-py]],'#ff2a1a');
+      ctx.globalAlpha=blink;polyFill(proj,[[x0+px,y0+py],[x1+px,y1+py],[x1-px,y1-py],[x0-px,y0-py]],null,'#ff5a3a');
+    }else if(e.type==='demon'){
+      // the danger zone, filling up from the middle as the fists come down
+      const k=Math.min(1,1-e.actT/(e.windMax||0.7));
+      ctx.globalAlpha=0.16+0.08*blink;polyFill(proj,ringPts(e.x,e.y,SLAM_R),'#ff2a1a');
+      ctx.globalAlpha=0.45;polyFill(proj,ringPts(e.x,e.y,Math.max(2,SLAM_R*k)),'#ff7a2a');
+      ctx.globalAlpha=blink;polyFill(proj,ringPts(e.x,e.y,SLAM_R),null,'#ff5a3a');
+    }
+  }
+  ctx.globalAlpha=1;
+}
+
 function swing(){
   P.atk=1/S.atkRate;P.swings++;
   P.atkAnim=0.25;              // triggers the player's attack animation
@@ -1695,10 +1751,15 @@ function update(dt){
           }
           e.phase+=0.2;
         }
+      }else if(e.type==='hound'){
+        [vx,vy]=houndAI(e,d,nx,ny,dt);
+      }else if(e.type==='demon'){
+        [vx,vy]=demonAI(e,d,nx,ny,dt);
       }else{
         vx=nx*e.spd;vy=ny*e.spd;
       }
     }else{
+      if(e.act)e.act=null;
       e.wt-=dt;
       if(e.wt<=0){e.wt=rnd(1,3);e.wa=rnd(0,TAU)}
       vx=Math.cos(e.wa)*e.spd*.3;vy=Math.sin(e.wa)*e.spd*.3;
@@ -1711,7 +1772,9 @@ function update(dt){
     // Pick an animation from its state
     if(Tt.sprite){
       const mv=Math.hypot(vx,vy)>5;
-      setAnim(e, e.touch>0.5||e.shotAnim>0?'attack': e.flash>0.05?'hurt': mv?'walk':'idle');
+      if(e.act==='wind')setAnim(e,e.type==='demon'?'attack':'idle');
+      else if(e.act==='lunge'||(e.act==='rec'&&e.type==='demon'))setAnim(e,'attack');
+      else setAnim(e, e.touch>0.5||e.shotAnim>0?'attack': e.flash>0.05?'hurt': mv?'walk':'idle');
     }
     if(tileAt(e.x,e.y)===2){
       e.hp-=14*dt;
@@ -1719,7 +1782,7 @@ function update(dt){
     }
     if(d<e.r+10&&e.touch<=0){
       const mult=(1+(floor-1)*0.15)*(e.boss?1.2:1);
-      hurt(Tt.dmg*mult*e.dmgMul);
+      hurt(Tt.dmg*mult*e.dmgMul*(e.act==='lunge'?1.5:1));   // a landed lunge bites harder
       e.touch=0.7;
       burst(e.x,e.y,'#ff4f2b',6);
     }
@@ -1907,6 +1970,7 @@ function draw(){
   for(const c of corpses){if(!drawSprite(c.key,'death',c.animT,c.x,c.y,c.flip)){}}
 
   // --- LIVING ENEMIES ---
+  drawTelegraphs((x,y)=>[Math.round(x),Math.round(y)]);
   for(const e of enemies){
     const tx=Math.floor(e.x/T),ty=Math.floor(e.y/T);
     if(!seen[ty]||!seen[ty][tx])continue;
@@ -2072,6 +2136,53 @@ function isoWall(cx,cy,face,top,showS,showE,alpha,flames,tx,ty){
 }
 function pxEllipse(x,y,rx,ry,c){ctx.fillStyle=c;for(let a=0;a<TAU;a+=0.18)ctx.fillRect(Math.round(x+Math.cos(a)*rx),Math.round(y+Math.sin(a)*ry),1,1)}
 
+/* ----- AMBIENT LIFE -----
+   Fog: soft blobs on a small canvas, tiled across the screen, stuck to the floor so it drifts as you walk.
+   Motes: specks of dust floating around the knight, only visible where the light is.
+   Drips: drops of blood sliding down the bloody wall faces. */
+let fogCv=null;
+function fogCanvas(){
+  if(fogCv)return fogCv;
+  fogCv=document.createElement('canvas');fogCv.width=320;fogCv.height=160;
+  const g=fogCv.getContext('2d');let seed=7;const r=()=>(seed=(seed*16807)%2147483647)/2147483647;
+  for(let i=0;i<46;i++){
+    const x=r()*320,y=r()*160,rad=18+r()*46;
+    for(const ox of [-320,0,320])for(const oy of [-160,0,160]){   // wrap so the tiles join seamlessly
+      const gr=g.createRadialGradient(x+ox,y+oy,0,x+ox,y+oy,rad);
+      gr.addColorStop(0,'rgba(150,120,130,0.22)');gr.addColorStop(1,'rgba(150,120,130,0)');
+      g.fillStyle=gr;g.fillRect(x+ox-rad,y+oy-rad,rad*2,rad*2);
+    }
+  }
+  return fogCv;
+}
+function drawFog(camX,camY,alpha){
+  const f=fogCanvas(),ox=((camX*0.9+time*7)%320+320)%320,oy=((camY*0.9+time*2)%160+160)%160;
+  ctx.save();ctx.globalAlpha=alpha;
+  for(let x=ox-320;x<LW;x+=320)for(let y=oy-160;y<LH;y+=160)ctx.drawImage(f,Math.round(x),Math.round(y));
+  ctx.restore();
+}
+const motes=[];
+function drawMotes(S_,psx,psy){
+  while(motes.length<38)motes.push({x:P.x+rnd(-260,260),y:P.y+rnd(-260,260),z:rnd(4,40),ph:rnd(0,TAU),sp:rnd(0.3,1)});
+  ctx.save();
+  for(const m of motes){
+    m.x+=Math.sin(time*0.4*m.sp+m.ph)*0.15;m.y+=Math.cos(time*0.3*m.sp+m.ph)*0.12;m.z+=Math.sin(time*m.sp+m.ph)*0.05;
+    if(Math.abs(m.x-P.x)>280||Math.abs(m.y-P.y)>280){m.x=P.x+rnd(-240,240);m.y=P.y+rnd(-240,240)}
+    const [sx,sy]=S_(m.x,m.y),d=Math.hypot(sx-psx,sy-psy),glow=Math.max(0,1-d/170);
+    if(glow<=0)continue;
+    ctx.globalAlpha=glow*(0.45+0.35*Math.sin(time*3*m.sp+m.ph));ctx.fillStyle='#ffd9a0';
+    ctx.fillRect(sx,Math.round(sy-m.z),1,1);
+  }
+  ctx.restore();
+}
+function drawDrip(x,y,seed){
+  // x,y: bottom of the wall face where the drip runs. One drop every few seconds, then a tiny splash.
+  const cyc=3+seed*3,t=((time+seed*11)%cyc)/cyc;
+  ctx.fillStyle='#8f1a1f';ctx.fillRect(x,y-WALL_H+8,1,6);             // the stain it runs from
+  if(t<0.55){const k=t/0.55,yy=y-WALL_H+14+k*k*(WALL_H-14);ctx.fillStyle='#c4302c';ctx.fillRect(x,Math.round(yy),1,2)}
+  else if(t<0.7){ctx.fillStyle='#8f1a1f';ctx.fillRect(x-1,y,3,1)}
+}
+
 function drawIso(){
   ctx.setTransform(1,0,0,1,0,0);ctx.imageSmoothingEnabled=false;
   ctx.fillStyle='#050305';ctx.fillRect(0,0,LW,LH);
@@ -2108,7 +2219,9 @@ function drawIso(){
       const showS=open(tx,ty+1),showE=open(tx+1,ty);
       // fade walls that stand in front of the knight so you can always see yourself
       const front=tx+ty+2>pDepth&&Math.abs(cx-psx)<40&&cy+16>psy-44&&cy<psy+8;
-      items.push({d:tx+ty+1.99,draw:()=>isoWall(cx,cy,f,wood?'woodWallTop':'wallTop',showS,showE,front?0.35:1,flames,tx,ty)});
+      const drip=!wood&&!front&&showS&&(f==='wallBlood'||hash(tx*3,ty*7)<0.12);
+      items.push({d:tx+ty+1.99,draw:()=>{isoWall(cx,cy,f,wood?'woodWallTop':'wallTop',showS,showE,front?0.35:1,flames,tx,ty);
+        if(drip){const h=hash(tx+5,ty+9),[dx,dy]=S_(tx*T+T*(0.25+h*0.5),(ty+1)*T);drawDrip(dx,dy,h)}}});
     }else if(t===2){
       if(level){const fr=Math.floor(time*2+ty*0.35)%3;isoFlat('blood'+fr,cx,cy);if((tx+ty)%2===0)light((tx+.5)*T,(ty+.5)*T,34,0.22)}
       else{const fr=Math.floor(time*3+hash(tx,ty)*3)%3;isoFlat('lava'+fr,cx,cy);light((tx+.5)*T,(ty+.5)*T,46,0.55)}
@@ -2139,6 +2252,7 @@ function drawIso(){
   const shadowAt=(x,y,w)=>{const [sx,sy]=S_(x,y);pxShadow(sx,sy,w)};
   for(const e of enemies){const tx=Math.floor(e.x/T),ty=Math.floor(e.y/T);if(seen[ty]&&seen[ty][tx])shadowAt(e.x,e.y,e.r*1.9)}
   shadowAt(P.x,P.y,18);
+  drawTelegraphs(S_);
   for(const c of chests)shadowAt(c.x,c.y,22);
 
   // ---- 3. THINGS THAT STAND UP (depth-sorted) ----
@@ -2175,7 +2289,7 @@ function drawIso(){
   for(const c of corpses){const [sx,sy]=S_(c.x,c.y);items.push({d:(c.x+c.y)/T-0.01,draw:()=>drawSprite(c.key,'death',c.animT,sx,sy,c.flip)})}
   for(const e of enemies){
     const tx=Math.floor(e.x/T),ty=Math.floor(e.y/T);if(!seen[ty]||!seen[ty][tx])continue;
-    const [sx,sy]=S_(e.x,e.y);
+    let [sx,sy]=S_(e.x,e.y);if(e.act==='wind')sx+=Math.random()<0.5?-1:1;   // shivers while winding up
     if(e.elite){light(e.x,e.y,40,0.35);if(Math.random()<0.15)parts.push({x:e.x+rnd(-e.r,e.r),y:e.y+rnd(-4,6),vx:0,vy:rnd(-30,-12),life:0.6,max:0.6,c:'#c4302c',s:1})}
     if(e.boss)light(e.x,e.y,90,0.45);
     items.push({d:(e.x+e.y)/T,draw:()=>{
@@ -2262,6 +2376,8 @@ function drawIso(){
     lctx.fillStyle=g;lctx.fillRect(-lr,-lr,lr*2,lr*2);lctx.restore();
   }
   ctx.drawImage(lc,0,0,LW,LH);
+  if(!(level&&level.safe))drawFog(camX,camY,0.2);
+  drawMotes(S_,psx,psy);
   ctx.save();ctx.globalCompositeOperation='soft-light';ctx.globalAlpha=0.35;
   const wg=ctx.createRadialGradient(LW/2,LH/2,10,LW/2,LH/2,260);
   wg.addColorStop(0,'#ff9a4a');wg.addColorStop(1,'#3a0a10');

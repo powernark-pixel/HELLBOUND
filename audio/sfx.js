@@ -135,6 +135,13 @@ const SFX=(()=>{
       out(chain(noise(ctx,t,.6),filt(ctx,'bandpass',300,2200,t,.45,1.2),env(ctx,t,.02,.5,.85)),o,.3);
       out(chain(osc(ctx,'sawtooth',95,45,t,.5),filt(ctx,'lowpass',650,200,t,.5),env(ctx,t,.01,.5,.35)),o,.3);
       for(let i=0;i<9;i++){const tt=t+.05+i*.045;out(chain(noise(ctx,tt,.03),filt(ctx,'highpass',3000,3000,tt,.03),env(ctx,tt,.001,.03,.28)),o,0)}},
+    growl(o,t){const{ctx}=o;
+      const g=osc(ctx,'sawtooth',72,58,t,.5),lfo=ctx.createOscillator(),lg=ctx.createGain();
+      lfo.frequency.value=23;lg.gain.value=12;lfo.connect(lg);lg.connect(g.frequency);lfo.start(t);lfo.stop(t+.55);
+      out(chain(g,filt(ctx,'lowpass',420,260,t,.5,3),env(ctx,t,.06,.42,.45)),o,.25)},
+    slam(o,t){const{ctx}=o;
+      out(chain(osc(ctx,'sine',85,28,t,.55),env(ctx,t,.003,.55,.9)),o,.35);
+      out(chain(noise(ctx,t,.5),filt(ctx,'lowpass',700,120,t,.45),env(ctx,t,.004,.45,.7)),o,.35)},
     step(o,t){const{ctx}=o;
       out(chain(noise(ctx,t,.07),filt(ctx,'lowpass',900*R(.8,1.2),350,t,.07),env(ctx,t,.002,.07,.55)),o,.05)},
     heart(o,t){const{ctx}=o;
@@ -143,7 +150,7 @@ const SFX=(()=>{
     ui(o,t){const{ctx}=o;out(chain(osc(ctx,'triangle',880,820,t,.06),env(ctx,t,.001,.05,.14)),o,.05)},
     hover(o,t){const{ctx}=o;out(chain(osc(ctx,'sine',1400,1400,t,.04),env(ctx,t,.001,.03,.05)),o,0)}
   };
-  const GAP={step:.15,stepWood:.15,heart:.5,hit:.035,crit:.035,kill:.04,hurt:.12,sizzle:.22,pickup:.05,swing:.05,arrow:.06,bolt:.2,hover:.04};
+  const GAP={growl:.25,slam:.1,step:.15,stepWood:.15,heart:.5,hit:.035,crit:.035,kill:.04,hurt:.12,sizzle:.22,pickup:.05,swing:.05,arrow:.06,bolt:.2,hover:.04};
 
   /* ---------- the mixer: master -> sfx + ambience, with a cathedral reverb ---------- */
   function makeVerb(ctx){
