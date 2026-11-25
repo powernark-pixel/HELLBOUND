@@ -12,6 +12,7 @@ A gothic dark-fantasy dungeon crawler for the browser. Play it at https://powern
   | File | What's in it |
   |---|---|
   | `core.js` | canvas, scaling to the window, small helpers |
+  | `style.js` | the game's colours by name (`COL.blood`, `COL.gold`...) |
   | `assets.js` | loading PNG art, sprite sheets, drawing sprites |
   | `data.js` | item bases, affixes, traits, enemy types |
   | `state.js` | the player, stats, starting a new game |
@@ -23,6 +24,7 @@ A gothic dark-fantasy dungeon crawler for the browser. Play it at https://powern
   | `perks.js` | perks offered by the reward chest |
   | `engine.js` | the Stardust Engine: stardust → +1% weapon stats |
   | `liquids.js` | lava and blood pools |
+  | `blood.js` | blood drops from kills, and the vat vessel on the right edge |
   | `enemies.js` | hound lunge, demon slam, the Warden's fight, ground warnings |
   | `eye.js` | the Oculus, an eye monster drawn live (tentacles move every frame); press O to spawn one |
   | `update.js` | one step of game logic per frame |
@@ -42,6 +44,7 @@ A gothic dark-fantasy dungeon crawler for the browser. Play it at https://powern
   rest, sort loot, and keep items in the stash (saved in your browser, survives death).
 - The game is drawn **isometric** (diagonal, like Path of Exile).
 - `V1`.txt` is an older copy, kept for reference.
+- `docs/STYLE_GUIDE.md` lists the colours, pixel sizes, fonts and art rules, and how to add a monster, level, sound or perk.
 - `tests/smoke.mjs` and `.github/workflows/check.yml` are the automatic game check.
 
 ### Replacing art with an artist's work

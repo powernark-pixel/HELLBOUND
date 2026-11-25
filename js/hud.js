@@ -14,7 +14,7 @@ function updateHUD(){
    $('skFlaskN').textContent=P.flasks;$('skFlask').classList.toggle('empty',P.flasks<1);
    $('skFlaskCd').style.height=(P.flasks>=flaskMax()?0:100-P.flaskProg/FLASK_KILLS*100)*(P.flasks<1?1:0)+'%';
    const ico=$('skSwordIco');const st=iconStyle('blade',eq.blade);if(ico.dataset.st!==st){ico.style.cssText=st;ico.dataset.st=st}}
-  const safe=level&&level.safe;$('vatRow').style.display=safe?'none':'';
+  const safe=level&&level.safe;$('vatRow').style.display='none';   // the vat is the icon on the right edge now (js/blood.js)
   if(!safe){const pct=vatNeed?Math.min(1,vat/vatNeed):1;$('vatb').style.width=(pct*100)+'%';$('vatb').classList.toggle('full',pct>=1);
     $('vatTxt').textContent=pct>=1?'BLOOD VAT FULL':`BLOOD VAT ${Math.floor(pct*100)}%`}
   $('sndHint').style.display=SFX.on&&SFX.vol>0&&!SFX.running?'block':'none';

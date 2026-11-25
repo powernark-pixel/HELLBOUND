@@ -54,7 +54,7 @@ const ENEMY_CH={m:['rat'],i:['imp'],h:['hound'],a:['archer'],d:['demon'],I:['imp
 function buildLevel(L){
   map=Array.from({length:MH},()=>new Uint8Array(MW));
   seen=Array.from({length:MH},()=>new Uint8Array(MW));
-  rooms=[];chests=[];enemies=[];bullets=[];ebullets=[];ground=[];corpses=[];decor=[];decals=[];fxs=[];fireWaves=[];pillars=[];burns=[];
+  rooms=[];bloodDrops=[];vatFlies=[];vatShown=0;chests=[];enemies=[];bullets=[];ebullets=[];ground=[];corpses=[];decor=[];decals=[];fxs=[];fireWaves=[];pillars=[];burns=[];
   const faces={},floors={},solid=new Uint8Array(MW*MH),areas=[],foes=[];
   let start=null,altarAt=null,warden=null,hearth=null,stashAt=null,bedAt=null,engineAt=null;const gates=[],minis=[];
   L.map.forEach((row,y)=>{for(let x=0;x<row.length;x++){
@@ -136,7 +136,7 @@ function genFloor(){
   if(floor===1&&window.LEVEL_BLOOD_ALTAR){buildLevel(window.LEVEL_BLOOD_ALTAR);return}
   map=Array.from({length:MH},()=>new Uint8Array(MW));
   seen=Array.from({length:MH},()=>new Uint8Array(MW));
-  rooms=[];chests=[];enemies=[];bullets=[];ebullets=[];ground=[];corpses=[];fxs=[];fireWaves=[];pillars=[];burns=[];
+  rooms=[];bloodDrops=[];vatFlies=[];vatShown=0;chests=[];enemies=[];bullets=[];ebullets=[];ground=[];corpses=[];fxs=[];fireWaves=[];pillars=[];burns=[];
   for(let i=0;i<80&&rooms.length<11;i++){
     const w=ri(5,11),h=ri(5,10),x=ri(2,MW-w-3),y=ri(2,MH-h-3);
     if(rooms.some(r=>x<r.x+r.w+2&&x+w+2>r.x&&y<r.y+r.h+2&&y+h+2>r.y))continue;
@@ -199,7 +199,7 @@ function newGame(){
   floor=1;
   P={x:0,y:0,vx:0,vy:0,hp:100,sh:0,maxHp:100,maxSh:0,lvl:1,xp:0,xpNext:30,
      atk:0,atkAnim:0,hurtT:0,roll:0,inv:0,sinceHit:9,aim:0,face:1,swings:0,warned:false,
-     anim:'idle',animT:0,bonusHp:0,boons:[],perks:[],dash:null,ghosts:[],stepT:0,hbT:0,fireCD:0,gotAltarBlade:false,flasks:FLASK_MAX,comboStep:0,comboT:0,atkHeavy:false,lunge:null,flaskProg:0,healLeft:0,healT:0,spinCD:0};
+     anim:'idle',animT:0,bonusHp:0,boons:[],perks:[],vessel:0,dash:null,ghosts:[],stepT:0,hbT:0,fireCD:0,gotAltarBlade:false,flasks:FLASK_MAX,comboStep:0,comboT:0,atkHeavy:false,lunge:null,flaskProg:0,healLeft:0,healT:0,spinCD:0};
   eq={blade:makeItem('blade',1,0),helm:null,plate:null,gloves:null,greaves:null,boots:null,ring:null,sigil:null};
   inv=[];stardust=0;filter=0;dead=false;shake=0;parts=[];texts=[];swings=[];invOpen=false;pickupSeq=0;
   closeAllOverlays();
@@ -214,18 +214,11 @@ function newGame(){
    VAT_SHARE of all the blood in the level: most of it, but not every last rat. */
 const VAT_SHARE=0.65;
 let vat=0,vatNeed=0;
-const bloodOf=e=>e.boss?40:(ET[e.type].xp*(e.elite?2:1));
+const bloodOf=e=>e.boss?40:e.miniboss?60:(ET[e.type].xp*(e.elite?2:1));
 function fillVatNeed(){vat=0;vatNeed=Math.round(enemies.reduce((t,e)=>t+bloodOf(e),0)*VAT_SHARE)}
 const vatFull=()=>vat>=vatNeed;
 const stairsLocked=()=>!(level&&level.safe)&&((boss&&!boss.dead)||!vatFull());
-function pourBlood(e){
-  const was=vatFull();vat=Math.min(vatNeed,vat+bloodOf(e));
-  if(!was&&vatFull()){
-    SFX.play('toll');
-    if(boss&&!boss.dead){announce('THE VAT IS FULL','#c4302c',2.6,'Slay the Warden to open the way down');log('The blood vat is full. Only the Warden bars the way.','#c4302c')}
-    else{announce('THE VAT IS FULL','#ffe14f',2.6,'The stairs are open. Follow the light');log('The blood vat is full. The stairs are open.','#ffe14f')}
-  }
-}
+// collecting blood: see js/blood.js (spillBlood, addBlood)
 
 /* ----- THE SHACK: the hideout after every level -----
    The stairs at the end of each level lead here. Finishing a level earns a reward:
@@ -235,6 +228,8 @@ function pourBlood(e){
 const BOON_EVERY=3;
 function completionReward(done){
   P.bonusHp=(P.bonusHp||0)+10;
+  // the blood vat grows: shot glass -> flask -> chalice -> grand goblet (placeholder: one step per level)
+  if((P.vessel||0)<VESSELS.length-1){P.vessel=(P.vessel||0)+1;log(`Your vessel grows: the ${VESSELS[P.vessel].name}.`,'#ff8a7a')}
   let boon=null;
   if(done%BOON_EVERY===0){
     const left=TKEYS.filter(k=>!(P.boons||[]).includes(k));

@@ -159,6 +159,9 @@ const SFX=(()=>{
     zap(o,t){const{ctx}=o;
       out(chain(noise(ctx,t,.16),filt(ctx,'highpass',2500,2500,t,.15,.7),env(ctx,t,.002,.15,.3)),o,.2);
       out(chain(osc(ctx,'square',60,55,t,.15),filt(ctx,'bandpass',900,900,t,.15,2),env(ctx,t,.002,.14,.12)),o,.1)},
+    // collecting a blood drop: a small wet 'blip', pitched a little differently each time
+    drip(o,t){const{ctx}=o;const p=R(.85,1.2);
+      out(chain(osc(ctx,'sine',900*p,260*p,t,.09),env(ctx,t,.002,.09,.35)),o,.25)},
     drink(o,t){const{ctx}=o;
       for(let i=0;i<5;i++){const tt=t+i*.09;out(chain(osc(ctx,'sine',300+Math.random()*250,700+Math.random()*300,tt,.07),env(ctx,tt,.005,.06,.08)),o,.16)}},
     spin(o,t){const{ctx}=o;
@@ -178,7 +181,7 @@ const SFX=(()=>{
     ui(o,t){const{ctx}=o;out(chain(osc(ctx,'triangle',880,820,t,.06),env(ctx,t,.001,.05,.14)),o,.05)},
     hover(o,t){const{ctx}=o;out(chain(osc(ctx,'sine',1400,1400,t,.04),env(ctx,t,.001,.03,.05)),o,0)}
   };
-  const GAP={growl:.25,slam:.1,step:.15,stepWood:.15,heart:.5,hit:.035,crit:.035,kill:.04,hurt:.12,sizzle:.22,pickup:.05,swing:.05,arrow:.06,bolt:.2,hover:.04};
+  const GAP={drip:.03,growl:.25,slam:.1,step:.15,stepWood:.15,heart:.5,hit:.035,crit:.035,kill:.04,hurt:.12,sizzle:.22,pickup:.05,swing:.05,arrow:.06,bolt:.2,hover:.04};
 
   /* ---------- the mixer: master -> sfx + ambience, with a cathedral reverb ---------- */
   function makeVerb(ctx){

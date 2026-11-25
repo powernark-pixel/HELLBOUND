@@ -56,7 +56,7 @@ function killEnemy(e){
   const Tt=ET[e.type];
   // Sprite enemies leave a death animation and a blood stain behind
   corpses.push({key:spriteKey(e),x:e.x,y:e.y,animT:0,life:0.9,flip:e.face<0});
-  pourBlood(e);flaskKill();
+  spillBlood(e);flaskKill();   // blood drops to collect (js/blood.js)
   hitStop=Math.max(hitStop,e.boss?0.3:0.05);shake=Math.max(shake,e.boss?1:0.18);
   decals.push({x:e.x+rnd(-4,4),y:e.y+rnd(2,8),cell:ri(2,5)});
   if(decals.length>160)decals.shift();
@@ -76,6 +76,7 @@ function killEnemy(e){
     for(let i=0;i<4;i++)oculusImpact(e,e.x+rnd(-30,30),e.y+rnd(-30,30),true);   // it bursts in a shower of sparks
     for(let k=0;k<2;k++)dropItem(e.x,e.y,2,floor+3);
     stardust+=25;
+    const next=level&&level.areas.find(a=>a.n===e.wakeArea+1&&!a.done);if(next)level.guide=next;   // light the way on
     announce(`${e.bossName.toUpperCase()} IS BLIND`,'#9ef0ff',2.6,'+25 stardust');
   }
   if(e.boss){

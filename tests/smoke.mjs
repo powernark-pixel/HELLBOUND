@@ -102,9 +102,13 @@ const before = await page.evaluate(() => Math.round(P.maxHp));
 await page.evaluate(() => { killEnemy(boss); P.x = (stairsT.x + .5) * T; P.y = (stairsT.y + .5) * T; });
 await page.waitForTimeout(400);
 (await page.evaluate(() => !!level && circleName() === 'The Blood Altar' && !vatFull())) ? ok('the stairs stay sealed until the blood vat is full') : fail('the stairs opened without filling the blood vat');
-await page.evaluate(() => { for (const e of enemies.slice()) killEnemy(e); P.x = (stairsT.x - 1.5) * T; P.y = (stairsT.y + .5) * T; });
+// kills spill blood drops; the vat only fills as you collect them (js/blood.js)
+const spill = await page.evaluate(() => { for (const e of enemies.slice()) killEnemy(e); P.x = (stairsT.x - 1.5) * T; P.y = (stairsT.y + .5) * T;
+  return { drops: bloodDrops.length, fullBefore: vatFull() }; });
+spill.drops > 0 && !spill.fullBefore ? ok('kills spill blood drops that must be collected') : fail('blood drops did not spill: ' + JSON.stringify(spill));
+await page.evaluate(() => { for (const d of bloodDrops.slice()) collectDrop(d); });
 await page.waitForTimeout(200);
-(await page.evaluate(() => vatFull())) ? ok('killing fills the blood vat') : fail('the blood vat did not fill');
+(await page.evaluate(() => vatFull())) ? ok('collecting the blood fills the vat') : fail('the blood vat did not fill');
 await page.evaluate(() => { P.x = (stairsT.x + .5) * T; P.y = (stairsT.y + .5) * T; });
 await page.waitForTimeout(500);
 const shack = await page.evaluate(() => ({
