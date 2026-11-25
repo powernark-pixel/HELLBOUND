@@ -85,6 +85,7 @@ function drawTelegraphs(proj){
   const blink=0.55+0.3*Math.sin(time*24);
   for(const e of enemies){
     if(e.dead)continue;
+    if(e.type==='eye'){drawOculusMarks(e,proj);continue}
     if(e.boss&&e.act==='rest'){   // a dim gold ring: he's open
       ctx.globalAlpha=0.35+0.2*Math.sin(time*8);polyFill(proj,ringPts(e.x,e.y,e.r+8),null,'#ffe14f');continue}
     if(e.act!=='wind')continue;

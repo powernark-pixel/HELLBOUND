@@ -102,9 +102,17 @@ const before = await page.evaluate(() => Math.round(P.maxHp));
 await page.evaluate(() => { killEnemy(boss); P.x = (stairsT.x + .5) * T; P.y = (stairsT.y + .5) * T; });
 await page.waitForTimeout(400);
 (await page.evaluate(() => !!level && circleName() === 'The Blood Altar' && !vatFull())) ? ok('the stairs stay sealed until the blood vat is full') : fail('the stairs opened without filling the blood vat');
-await page.evaluate(() => { for (const e of enemies.slice()) killEnemy(e); P.x = (stairsT.x - 1.5) * T; P.y = (stairsT.y + .5) * T; });
+// kills spill blood drops; the vat only fills as you collect them (js/blood.js)
+const spill = await page.evaluate(() => { for (const e of enemies.slice()) killEnemy(e); P.x = (stairsT.x - 1.5) * T; P.y = (stairsT.y + .5) * T;
+  return { drops: bloodDrops.length, fullBefore: vatFull() }; });
+spill.drops > 0 && !spill.fullBefore ? ok('kills spill blood drops that must be collected') : fail('blood drops did not spill: ' + JSON.stringify(spill));
+await page.evaluate(() => { for (const d of bloodDrops.slice()) collectDrop(d); });
 await page.waitForTimeout(200);
-(await page.evaluate(() => vatFull())) ? ok('killing fills the blood vat') : fail('the blood vat did not fill');
+(await page.evaluate(() => vatFull())) ? ok('collecting the blood fills the vat') : fail('the blood vat did not fill');
+// blood past a full vat fills the syringe; V injects it for a surge (js/blood.js)
+const surge = await page.evaluate(() => { const d0 = S.damage; addBlood(INJECT_NEED); const filled = P.ichor >= INJECT_NEED; injectBlood();
+  const r = { filled, surging: P.surgeT > 0, stronger: S.damage > d0 }; P.surgeT = 0.001; return r; });
+surge.filled && surge.surging && surge.stronger ? ok('overflow blood fills the syringe and V injects a surge') : fail('blood injection failed: ' + JSON.stringify(surge));
 await page.evaluate(() => { P.x = (stairsT.x + .5) * T; P.y = (stairsT.y + .5) * T; });
 await page.waitForTimeout(500);
 const shack = await page.evaluate(() => ({

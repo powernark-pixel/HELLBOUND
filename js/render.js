@@ -66,11 +66,36 @@ function isoWall(cx,cy,face,top,showS,showE,alpha,flames,tx,ty,torch){
 }
 function pxEllipse(x,y,rx,ry,c){ctx.fillStyle=c;for(let a=0;a<TAU;a+=0.18)ctx.fillRect(Math.round(x+Math.cos(a)*rx),Math.round(y+Math.sin(a)*ry),1,1)}
 
+// the camera from the last frame, so other code can turn a world point into a screen point
+const isoCam={x:0,y:0};
+const isoScreen=(x,y)=>[Math.round((x-y)/2+isoCam.x),Math.round((x+y)/4+isoCam.y)];
+// a golden arrow on the screen edge pointing at something off-screen (bx,by: its screen point)
+function edgeArrow(bx,by,label,col='#ffe14f'){
+  if(!(bx<24||bx>LW-24||by<34||by>LH-24))return;
+  const ang=Math.atan2(by-LH/2,bx-LW/2),k=Math.min((LW/2-34)/Math.abs(Math.cos(ang)||1e-6),(LH/2-34)/Math.abs(Math.sin(ang)||1e-6));
+  const ax=LW/2+Math.cos(ang)*k,ay=LH/2+Math.sin(ang)*k,bob=Math.sin(time*6)*2;
+  ctx.save();ctx.translate(ax+Math.cos(ang)*bob,ay+Math.sin(ang)*bob);ctx.rotate(ang);
+  ctx.fillStyle='#000';ctx.beginPath();ctx.moveTo(10,0);ctx.lineTo(-6,-8);ctx.lineTo(-6,8);ctx.closePath();ctx.fill();
+  ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(8,0);ctx.lineTo(-4,-6);ctx.lineTo(-4,6);ctx.closePath();ctx.fill();
+  ctx.restore();
+  ctx.font=`8px ${PXFONT}`;ctx.textAlign='center';ctx.fillStyle='#000';ctx.fillText(label,ax+1,ay+17);ctx.fillStyle=col;ctx.fillText(label,ax,ay+16);
+}
+// after a mini-boss dies, light the way to the next area until you get there
+function drawGuide(S_){
+  const g=level&&level.guide;if(!g)return;
+  if(g.done){level.guide=null;return}
+  const [bx,by]=S_(g.x,g.y),pulse=0.25+0.12*Math.sin(time*4);
+  ctx.save();ctx.globalAlpha=pulse;ctx.fillStyle='#ffe14f';ctx.fillRect(bx-2,by-70,4,70);ctx.restore();
+  addLight(g.x,g.y,90,0.7);
+  edgeArrow(bx,by,'ONWARD');
+}
+
 function drawIso(){
   ctx.setTransform(1,0,0,1,0,0);ctx.imageSmoothingEnabled=false;
   ctx.fillStyle='#050305';ctx.fillRect(0,0,LW,LH);
   const shx=(Math.random()-.5)*shake*10,shy=(Math.random()-.5)*shake*10;
   const camX=Math.round(LW/2-(P.x-P.y)/2+shx),camY=Math.round(LH/2+12-(P.x+P.y)/4+shy);
+  isoCam.x=camX;isoCam.y=camY;
   const S_=(x,y)=>[Math.round((x-y)/2+camX),Math.round((x+y)/4+camY)];   // world -> screen
   const flick=0.92+Math.sin(time*9)*0.04+Math.sin(time*23)*0.03;
   isoLights.length=0;
@@ -130,6 +155,7 @@ function drawIso(){
     else items.push({d:d.tx+d.ty+1,draw:()=>{const s=tileSrc(d.kind);if(s!=null)ctx.drawImage(TS.img,s,0,TS.size,TS.size,bx-16,by-26,T,T)}});
     if(FLAMES[d.kind]){FLAMES[d.kind].forEach(([fx,fy],i)=>flames.push([bx-16+fx,by-26+fy,d.seed*10+i]));light((d.tx+.5)*T,(d.ty+.5)*T,70,0.75)}
   }
+  drawBloodDrops(S_,light);
   for(const b of decals){
     const [sx,sy]=S_(b.x,b.y);if(sx<-16||sx>LW+16||sy<-16||sy>LH+16)continue;
     if(b.scorch){ctx.fillStyle='rgba(10,4,4,0.55)';ctx.fillRect(sx-6,sy-1,12,3);ctx.fillRect(sx-4,sy-2,8,5);continue}
@@ -181,9 +207,10 @@ function drawIso(){
     if(e.boss)light(e.x,e.y,90,0.45);
     items.push({d:(e.x+e.y)/T,draw:()=>{
       if(e.elite)pxEllipse(sx,sy+2,e.r+4+Math.sin(time*5)*1.5,(e.r+4)/2,'rgba(196,48,44,0.85)');
-      if(!drawSprite(spriteKey(e),e.anim,e.animT,sx,sy,e.face<0)){ctx.save();ctx.fillStyle=e.flash>0?'#fff':e.c;shape(e.shape,sx,sy-e.r,e.r);ctx.fill();ctx.restore()}
+      if(e.type==='eye')drawOculus(e,sx,sy);   // drawn live, no sprite sheet (js/eye.js)
+      else if(!drawSprite(spriteKey(e),e.anim,e.animT,sx,sy,e.face<0)){ctx.save();ctx.fillStyle=e.flash>0?'#fff':e.c;shape(e.shape,sx,sy-e.r,e.r);ctx.fill();ctx.restore()}
       else if(e.flash>0){ctx.save();ctx.globalAlpha=0.5;ctx.globalCompositeOperation='lighter';drawSprite(spriteKey(e),e.anim,e.animT,sx,sy,e.face<0);ctx.restore()}
-      if(e.hp<e.max&&!e.boss){
+      if(e.hp<e.max&&!e.boss&&!e.miniboss){
         const w=Math.max(14,Math.round(e.r*2)),bx=sx-Math.round(w/2),by=sy-e.r-26;
         pxRect(bx-1,by-1,w+2,4,'#0a0608');pxRect(bx,by,w,2,'#33050a');
         pxRect(bx,by,Math.round(w*Math.max(0,e.hp/e.max)),2,'#c4302c');pxRect(bx,by,Math.round(w*Math.max(0,e.hp/e.max)),1,'#e8564a');
@@ -201,6 +228,7 @@ function drawIso(){
 
   // ---- 4. EFFECTS ON TOP: blood sprays, projectiles, swing arcs, particles, flames ----
   drawFireLayer(S_,light);
+  drawOculusFX(S_);
   for(const f of fxs){
     const fr=f.d.from+Math.min(f.d.n-1,Math.floor(f.t*20)),fsx=fr*110,fsy=f.d.row*93,[sx,sy]=S_(f.x,f.y);
     if(f.flip){ctx.save();ctx.translate(sx,0);ctx.scale(-1,1);ctx.drawImage(IMG.bloodfx,fsx,fsy,110,93,-f.d.ox,sy-10-f.d.oy,110,93);ctx.restore()}
@@ -269,6 +297,7 @@ function drawIso(){
   ctx.drawImage(lc,0,0,LW,LH);
   if(!(level&&level.safe))drawFog(camX,camY,0.2);
   drawMotes(S_,psx,psy);
+  drawGuide(S_);      // 'this way' arrow after a mini-boss falls
   drawHitboxes(S_);   // debug view (H), drawn over everything so it's always readable
   ctx.save();ctx.globalCompositeOperation='soft-light';ctx.globalAlpha=0.35;
   const wg=ctx.createRadialGradient(LW/2,LH/2,10,LW/2,LH/2,260);
@@ -300,18 +329,10 @@ function drawIso(){
     rv.addColorStop(0,'rgba(120,0,10,0)');rv.addColorStop(1,`rgba(150,0,15,${beat})`);
     ctx.fillStyle=rv;ctx.fillRect(0,0,LW,LH);
   }
+  drawVatIcon();   // the blood vat at the right edge, drawn last so the vignette doesn't dim it (js/blood.js)
   if(stairsOpen){
     // off-screen stairs: a golden arrow on the screen edge points the way
-    const [bx,by]=S_((stairsT.x+.5)*T,(stairsT.y+.5)*T);
-    if(bx<24||bx>LW-24||by<34||by>LH-24){
-      const ang=Math.atan2(by-LH/2,bx-LW/2),k=Math.min((LW/2-34)/Math.abs(Math.cos(ang)||1e-6),(LH/2-34)/Math.abs(Math.sin(ang)||1e-6));
-      const ax=LW/2+Math.cos(ang)*k,ay=LH/2+Math.sin(ang)*k,bob=Math.sin(time*6)*2;
-      ctx.save();ctx.translate(ax+Math.cos(ang)*bob,ay+Math.sin(ang)*bob);ctx.rotate(ang);
-      ctx.fillStyle='#000';ctx.beginPath();ctx.moveTo(10,0);ctx.lineTo(-6,-8);ctx.lineTo(-6,8);ctx.closePath();ctx.fill();
-      ctx.fillStyle='#ffe14f';ctx.beginPath();ctx.moveTo(8,0);ctx.lineTo(-4,-6);ctx.lineTo(-4,6);ctx.closePath();ctx.fill();
-      ctx.restore();
-      ctx.font=`8px ${PXFONT}`;ctx.textAlign='center';ctx.fillStyle='#000';ctx.fillText('STAIRS',ax+1,ay+17);ctx.fillStyle='#ffe14f';ctx.fillText('STAIRS',ax,ay+16);
-    }
+    const [bx,by]=S_((stairsT.x+.5)*T,(stairsT.y+.5)*T);edgeArrow(bx,by,'STAIRS');
   }
 }
 // lights collected while drawing a frame: screen x, y, radius, strength (4 numbers each)

@@ -67,6 +67,7 @@ function computeStats(eqx){
   s.mag=60+s.magnet;
   s.range=56+s.reach;
   s.arcDeg=70+s.arc;
+  if(P&&P.surgeT>0){s.damage*=SURGE_DMG;s.atkRate*=SURGE_RATE;s.spd*=SURGE_SPD}   // blood injection (js/blood.js)
   s.rollCD=2.2*(1-Math.min(.6,s.warp/100))*(P&&P.perks&&P.perks.includes('shadowstep')?0.65:1);
   return s;
 }

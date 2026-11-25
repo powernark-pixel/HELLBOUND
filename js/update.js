@@ -9,6 +9,8 @@ function update(dt){
   if(scene!=='game'){updateTitle(dt);return}
   updateFX(dt);
   updateBubbles(dt,level?'blood':'lava');
+  updateOculusFX(dt);
+  updateBlood(dt);
   if(Math.random()<dt*8){
     // drifting embers and ash
     const ash=Math.random()<0.35;
@@ -95,6 +97,10 @@ function update(dt){
       log(`${level.areaNames[a.n]}: ${level.hints[a.n]||''}`,'#d9a066');
       if(a.n===7&&boss&&!boss.dead){sealArena();boss.dormant=false;shake=0.6;log('The gate slams shut. The Warden rises from the altar.','#ff4f6e');SFX.play('roar')}
       else SFX.play('area');
+      for(const e of enemies)if(e.miniboss&&e.dormant&&e.wakeArea===a.n){
+        e.dormant=false;shake=0.5;SFX.play('roar');SFX.play('zap');
+        announce(e.bossName.toUpperCase(),'#9ef0ff',3,'It has seen you');log(`${e.bossName} opens its eye.`,'#9ef0ff');
+      }
     }
     if(boss&&boss.dormant&&dist(boss,P)<200){boss.dormant=false;sealArena();SFX.play('roar')}
   }
@@ -122,6 +128,8 @@ function update(dt){
         [vx,vy]=houndAI(e,d,nx,ny,dt);
       }else if(e.type==='demon'){
         [vx,vy]=demonAI(e,d,nx,ny,dt);
+      }else if(e.type==='eye'){
+        [vx,vy]=oculusAI(e,d,nx,ny,dt);
       }else{
         vx=nx*e.spd;vy=ny*e.spd;
       }

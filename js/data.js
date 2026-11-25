@@ -62,6 +62,7 @@ const ET={
  hound:{r:13,hp:40,spd:125,xp:8,drop:.3,c:'#ff3e3e',shape:'diamond',dmg:9,aggro:400,sprite:true},
  archer:{r:13,hp:34,spd:50,xp:9,drop:.4,c:'#e8e0d0',shape:'hex',dmg:5,aggro:460,shoot:2,sprite:true},
  demon:{r:22,hp:170,spd:55,xp:25,drop:.9,c:'#9b3cff',shape:'hex',dmg:14,aggro:380,sprite:true},
- rat:{r:7,hp:10,spd:150,xp:2,drop:.05,c:'#6a5a70',shape:'circle',dmg:3,aggro:300,sprite:true}
+ rat:{r:7,hp:10,spd:150,xp:2,drop:.05,c:'#6a5a70',shape:'circle',dmg:3,aggro:300,sprite:true},
+ eye:{r:14,hp:110,spd:42,xp:18,drop:.6,c:'#c4302c',shape:'circle',dmg:9,aggro:380,sprite:true}   // the Oculus, drawn live by js/eye.js
 };
 const spriteKey=e=>e.boss?'warden':e.type;

@@ -155,6 +155,16 @@ const SFX=(()=>{
       out(chain(noise(ctx,t,.5),filt(ctx,'bandpass',400,3000,t,.45,1.2),env(ctx,t,.05,.45,.6)),o,.3);
       out(chain(osc(ctx,'sawtooth',90,180,t,.5),filt(ctx,'lowpass',600,1200,t,.5),env(ctx,t,.08,.45,.35)),o,.2);
       out(chain(osc(ctx,'triangle',1568,1568,t+.35,.6),env(ctx,t+.35,.003,.6,.25)),o,.6)},
+    // the Oculus's tentacles crackling with electricity
+    zap(o,t){const{ctx}=o;
+      out(chain(noise(ctx,t,.16),filt(ctx,'highpass',2500,2500,t,.15,.7),env(ctx,t,.002,.15,.3)),o,.2);
+      out(chain(osc(ctx,'square',60,55,t,.15),filt(ctx,'bandpass',900,900,t,.15,2),env(ctx,t,.002,.14,.12)),o,.1)},
+    // collecting a blood drop: a small wet 'blip', pitched a little differently each time
+    drip(o,t){const{ctx}=o;const p=R(.85,1.2);
+      out(chain(osc(ctx,'sine',900*p,260*p,t,.09),env(ctx,t,.002,.09,.35)),o,.25)},
+    inject(o,t){const{ctx}=o;   // a hard heartbeat, then a rising rush
+      for(const [d,a] of [[0,.7],[.14,.5]]){const tt=t+d;out(chain(osc(ctx,'sine',70,40,tt,.18),env(ctx,tt,.003,.18,a)),o,.1)}
+      out(chain(osc(ctx,'sawtooth',90,420,t+.2,.5),filt(ctx,'lowpass',300,1800,t+.2,.5,4),env(ctx,t+.2,.05,.4,.18)),o,.3)},
     drink(o,t){const{ctx}=o;
       for(let i=0;i<5;i++){const tt=t+i*.09;out(chain(osc(ctx,'sine',300+Math.random()*250,700+Math.random()*300,tt,.07),env(ctx,tt,.005,.06,.08)),o,.16)}},
     spin(o,t){const{ctx}=o;
@@ -174,7 +184,7 @@ const SFX=(()=>{
     ui(o,t){const{ctx}=o;out(chain(osc(ctx,'triangle',880,820,t,.06),env(ctx,t,.001,.05,.14)),o,.05)},
     hover(o,t){const{ctx}=o;out(chain(osc(ctx,'sine',1400,1400,t,.04),env(ctx,t,.001,.03,.05)),o,0)}
   };
-  const GAP={growl:.25,slam:.1,step:.15,stepWood:.15,heart:.5,hit:.035,crit:.035,kill:.04,hurt:.12,sizzle:.22,pickup:.05,swing:.05,arrow:.06,bolt:.2,hover:.04};
+  const GAP={drip:.03,growl:.25,slam:.1,step:.15,stepWood:.15,heart:.5,hit:.035,crit:.035,kill:.04,hurt:.12,sizzle:.22,pickup:.05,swing:.05,arrow:.06,bolt:.2,hover:.04};
 
   /* ---------- the mixer: master -> sfx + ambience, with a cathedral reverb ---------- */
   function makeVerb(ctx){
