@@ -6,6 +6,7 @@
    Demons: raise their fists (a red circle grows on the floor), then slam the ground.
    The warnings give you time to roll out of the way. */
 const SLAM_R=78;
+const ARCHER_AIM=0.55;   // how long an archer aims (with a warning line) before it shoots
 function houndAI(e,d,nx,ny,dt){
   e.lcd=(e.lcd??rnd(0.5,1.5))-dt;
   if(e.act==='wind'){e.actT-=dt;e.animT=0;if(e.actT<=0){e.act='lunge';e.actT=0.28}return [0,0]}
@@ -31,6 +32,10 @@ const WARDEN_SLAM_R=100;
 function wardenAI(e,d,nx,ny,dt){
   e.act=e.act||'walk';e.actT=(e.actT??1.5)-dt;
   const angry=e.hp<e.max*0.5;
+  if(angry&&!e.enraged){   // phase two: say so, so the faster rhythm doesn't feel like a bug
+    e.enraged=true;shake=Math.max(shake,0.6);SFX.play('roar');
+    announce('THE WARDEN IS ENRAGED','#ff3a2a',2.2,'Faster attacks, more orbs, shorter rests');
+  }
   if(e.act==='walk'){
     if(e.actT<=0||d<70){
       e.act='wind';e.windMax=e.actT=angry?0.75:0.9;SFX.play('growl');
@@ -106,7 +111,11 @@ function drawTelegraphs(proj){
       ctx.globalAlpha=blink;polyFill(proj,ringPts(e.x,e.y,WARDEN_SLAM_R,40),null,'#ff5a3a');
       continue;
     }
-    if(e.type==='hound'){
+    if(e.type==='archer'){
+      // a thin line along the arrow's path, brightening as the bow is drawn
+      const k=Math.min(1,1-e.actT/(e.windMax||ARCHER_AIM)),L=60+k*200,w=1.5,px=-e.ly*w,py=e.lx*w,x0=e.x+e.lx*e.r,y0=e.y+e.ly*e.r,x1=e.x+e.lx*L,y1=e.y+e.ly*L;
+      ctx.globalAlpha=(0.3+0.5*k)*blink;polyFill(proj,[[x0+px,y0+py],[x1+px,y1+py],[x1-px,y1-py],[x0-px,y0-py]],'#ffe6b0');
+    }else if(e.type==='hound'){
       // a red lane the width of the hound, showing exactly where it will run
       const L=180,w=e.r*0.8,px=-e.ly*w,py=e.lx*w,x0=e.x+e.lx*e.r,y0=e.y+e.ly*e.r,x1=e.x+e.lx*L,y1=e.y+e.ly*L;
       ctx.globalAlpha=0.28*blink+0.1;polyFill(proj,[[x0+px,y0+py],[x1+px,y1+py],[x1-px,y1-py],[x0-px,y0-py]],'#ff2a1a');

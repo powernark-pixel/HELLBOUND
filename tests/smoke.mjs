@@ -163,6 +163,42 @@ await page.click('#btnResume');
 await page.mouse.move(800, 360);
 await page.mouse.down(); await page.waitForTimeout(3000); await page.mouse.up();
 
+// 8. the core loop: telegraphs, the Warden's fight, dying and rising again
+await page.evaluate(() => { if (paused) togglePause(); });
+const loop = await page.evaluate(() => {
+  newGame();
+  const r = {};
+  // an archer aims (wind-up with a warning line) before it shoots
+  enemies = []; ebullets = [];
+  const a = spawnEnemy('archer', { x: P.x + 200, y: P.y }); a.fire = 0;
+  update(0.05); r.aims = a.act === 'wind' && ebullets.length === 0;
+  for (let i = 0; i < 14; i++) update(0.05);
+  r.shoots = ebullets.length === 1;
+  // the Warden's bar shows as soon as he wakes; he announces his second phase
+  enemies = []; ebullets = [];
+  boss = spawnEnemy('demon', { x: P.x + 300, y: P.y, boss: true }); boss.dormant = false;
+  updateHUD && updateHUD(); r.bar = getComputedStyle(document.getElementById('bossbar')).display !== 'none';
+  boss.hp = boss.max * 0.4; update(0.016);
+  r.enraged = !!boss.enraged && /ENRAGED/.test(document.getElementById('banner').textContent);
+  // his death draws every blood drop left on the floor into the vat
+  bloodDrops.push({ x: P.x + 900, y: P.y, vx: 0, vy: 0, z: 0, vz: 0, v: 5, ph: 0, age: 9 });
+  killEnemy(boss); r.swept = bloodDrops.every(d => d.got);
+  // dying: Space after a short beat starts a new run
+  P.inv = 0; hurt(99999); r.dead = dead;
+  return r;
+});
+loop.aims ? ok('archers aim with a warning before shooting') : fail('archer did not wind up: ' + JSON.stringify(loop));
+loop.shoots ? ok('archers shoot after aiming') : fail('archer never shot');
+loop.bar ? ok('the Warden\'s bar shows as soon as he wakes') : fail('no Warden bar on waking');
+loop.enraged ? ok('the Warden announces his second phase') : fail('no enrage announcement');
+loop.swept ? ok('the Warden\'s death collects all spilled blood') : fail('blood left on the floor after the Warden');
+await page.keyboard.press(' ');
+const early = await page.evaluate(() => dead);
+await page.waitForTimeout(700);
+await page.keyboard.press(' ');
+const risen = await page.evaluate(() => !dead && P.hp > 0);
+loop.dead && early && risen ? ok('Space rises again after a short beat') : fail(`rise again failed (dead ${loop.dead}, held ${early}, risen ${risen})`);
+
 for (const e of errors) fail(e);
 await browser.close();
 if (!process.exitCode) console.log('PASS: HELLBOUND loads and runs without errors');

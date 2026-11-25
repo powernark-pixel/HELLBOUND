@@ -83,6 +83,7 @@ function killEnemy(e){
     burst(e.x,e.y,'#ff2b6b',40);
     bloodFx(e.x-14,e.y,'big',true);bloodFx(e.x+14,e.y,'big',false);bloodFx(e.x,e.y-10,'kill',Math.random()<.5);
     shake=1;openArena();
+    for(const d of bloodDrops)collectDrop(d);   // the altar drinks every drop you left behind, so no trip back for them
     for(let k=0;k<3;k++)dropItem(e.x,e.y,3,floor+3);
     if(vatFull()){announce('THE WARDEN FALLS','#ffe14f',2.5,'The stairs are unsealed. Follow the light');log('The stairs are unsealed. Follow the golden light.','#ffe14f')}
     else{announce('THE WARDEN FALLS','#ffe14f',2.8,'Fill the blood vat to open the stairs');log(`The Warden is dead, but the vat is only ${Math.floor(vat/vatNeed*100)}% full. Kill more.`,'#c4302c')}
@@ -91,10 +92,14 @@ function killEnemy(e){
   }
 }
 const ENEMY_DMG=0.75;   // all enemy damage is scaled by this (lower = easier)
+let deadAt=0;
+// back into the fight fast: after a short beat (so a held key or a panicked click can't skip the death)
+const RISE_DELAY=600;   // milliseconds (real time, so hit-stop can't stretch it)
+function tryRise(){if(dead&&performance.now()-deadAt>=RISE_DELAY){newGame();for(const k in keys)keys[k]=false;mouse.down=false;return true}return false}
 function hurt(d,noIF){
   if(dead)return;
   if(!noIF&&P.inv>0)return;
-  if(!noIF){d*=ENEMY_DMG*(hasPerk('ironhide')?0.88:1);P.inv=0.35}   // a moment of grace after each hit, so a pack can't shred you in one go
+  if(!noIF){d*=ENEMY_DMG*(hasPerk('ironhide')?0.88:1);P.inv=0.35;P.hitFlash=0.3}   // a moment of grace after each hit, so a pack can't shred you in one go
   P.sinceHit=0;
   P.hurtT=0.3;                 // triggers the player's hurt animation
   let rem=d;
@@ -104,9 +109,9 @@ function hurt(d,noIF){
   if(!noIF)SFX.play('hurt');
   if(d>=4)bloodFx(P.x,P.y-6,'hit',Math.random()<.5);
   if(P.hp<=0){
-    P.hp=0;dead=true;setAnim(P,'death');SFX.play('death');
-    announce('THE KNIGHT FALLS','#c4302c',99,'Press R to rise again · Esc for the menu');
-    log('Press R to begin again','#ff4f6e');
+    P.hp=0;dead=true;deadAt=performance.now();setAnim(P,'death');SFX.play('death');
+    announce('THE KNIGHT FALLS','#c4302c',99,'R, Space or click to rise again · Esc for the menu');
+    log('Press R, Space or click to begin again','#ff4f6e');
   }
 }
 

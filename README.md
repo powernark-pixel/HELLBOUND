@@ -1,5 +1,7 @@
 # HELLBOUND
 
+**Where the game stands, what is being worked on and what is parked: see [STATUS.md](STATUS.md).**
+
 A gothic dark-fantasy dungeon crawler for the browser. Play it at https://powernark-pixel.github.io/HELLBOUND/
 
 ## Files

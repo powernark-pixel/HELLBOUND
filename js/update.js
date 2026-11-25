@@ -18,7 +18,7 @@ function update(dt){
       c:ash?'#5d5059':pick(['#ff7a2b','#ffb347','#ff4f2b']),s:ash?1:rnd(1,2)});
   }
   // Animation timers run even when paused
-  P.animT+=dt;P.atkAnim-=dt;P.hurtT-=dt;
+  P.animT+=dt;P.atkAnim-=dt;P.hurtT-=dt;P.hitFlash=(P.hitFlash||0)-dt;
   if(P.ghosts){for(const g of P.ghosts)g.life-=dt;P.ghosts=P.ghosts.filter(g=>g.life>0)}
   for(const c of corpses){c.animT+=dt;c.life-=dt}
   corpses=corpses.filter(c=>c.life>0);
@@ -115,12 +115,19 @@ function update(dt){
     let vx=0,vy=0;
     if((d<Tt.aggro||e.boss)&&!e.dormant){
       if(e.type==='archer'){
-        if(d>170){vx=nx*e.spd;vy=ny*e.spd}
-        else if(d<120){vx=-nx*e.spd;vy=-ny*e.spd}
-        e.fire-=dt;
-        if(e.fire<=0&&d<620){
-          ebullets.push({x:e.x,y:e.y,vx:nx*190,vy:ny*190,life:3.5,dmg:(9+floor*2)*e.dmgMul,r:4,c:'#ffe6b0'});
-          e.fire=Tt.shoot;e.shotAnim=0.3;if(d<420)SFX.play('arrow');
+        // archers draw and aim first (a thin line shows where the arrow will fly), then loose it
+        // along that line. Step sideways while it aims and the arrow misses.
+        if(e.act==='wind'){
+          e.actT-=dt;
+          if(e.actT<=0){
+            ebullets.push({x:e.x,y:e.y,vx:e.lx*190,vy:e.ly*190,life:3.5,dmg:(9+floor*2)*e.dmgMul,r:4,c:'#ffe6b0'});
+            e.act=null;e.fire=Tt.shoot;e.shotAnim=0.3;if(d<420)SFX.play('arrow');
+          }
+        }else{
+          if(d>170){vx=nx*e.spd;vy=ny*e.spd}
+          else if(d<120){vx=-nx*e.spd;vy=-ny*e.spd}
+          e.fire-=dt;
+          if(e.fire<=0&&d<620){e.act='wind';e.actT=e.windMax=ARCHER_AIM;e.lx=nx;e.ly=ny;if(d<420)SFX.play('chest')}
         }
       }else if(e.boss){
         [vx,vy]=wardenAI(e,d,nx,ny,dt);

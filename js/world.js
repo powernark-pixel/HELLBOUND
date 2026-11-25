@@ -212,7 +212,7 @@ function newGame(){
    Every kill pours blood into the vat (tougher foes give more). The stairs stay sealed until
    the vat is full AND the Warden is dead, so you can't rush past a level. The vat needs
    VAT_SHARE of all the blood in the level: most of it, but not every last rat. */
-const VAT_SHARE=0.65;
+const VAT_SHARE=0.6;
 let vat=0,vatNeed=0;
 const bloodOf=e=>e.boss?40:e.miniboss?60:(ET[e.type].xp*(e.elite?2:1));
 function fillVatNeed(){vat=0;vatNeed=Math.round(enemies.reduce((t,e)=>t+bloodOf(e),0)*VAT_SHARE)}

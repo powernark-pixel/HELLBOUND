@@ -238,7 +238,7 @@ function drawIso(){
     const [x1,y1]=S_(b.x,b.y),[x0,y0]=S_(b.x-b.vx*0.03,b.y-b.vy*0.03);
     pxRect(x0,y0-10,2,2,'#a12a06');pxRect((x0+x1)/2,(y0+y1)/2-10,2,2,'#ff6a1a');pxRect(x1,y1-10,2,2,'#ffd27a');light(b.x,b.y,20,0.4);
   }
-  for(const b of ebullets){const [sx,sy]=S_(b.x,b.y);pxOrb(sx,sy-10,b.r,b.c==='#ffe6b0'?'#c9b48a':'#c4302c');light(b.x,b.y,b.r*5,0.35)}
+  for(const b of ebullets){const [sx,sy]=S_(b.x,b.y);pxOrb(sx,sy-10,b.r+1,'#0a0608');pxOrb(sx,sy-10,b.r,b.c==='#ffe6b0'?'#c9b48a':'#c4302c');light(b.x,b.y,b.r*5,0.35)}
   // the sword trail: a thick glowing crescent that sweeps out and fades (gold edge, blood-red tail)
   const TRAIL=['#fff6d8','#ffe2a0','#ffb347','#ff7a2b','#c4302c','#8f1a1f'];
   for(const s of swings){
@@ -322,6 +322,12 @@ function drawIso(){
   const v=ctx.createRadialGradient(LW/2,LH/2,LH*0.32,LW/2,LH/2,LW*0.66);
   v.addColorStop(0,'rgba(0,0,0,0)');v.addColorStop(1,'rgba(0,0,0,0.75)');
   ctx.fillStyle=v;ctx.fillRect(0,0,LW,LH);
+  if(P.hitFlash>0){
+    // you got hit: a quick red flash at the screen edges, so you notice it even in a crowd
+    const hf=ctx.createRadialGradient(LW/2,LH/2,LH*0.25,LW/2,LH/2,LW*0.6);
+    hf.addColorStop(0,'rgba(196,48,44,0)');hf.addColorStop(1,`rgba(196,48,44,${0.55*P.hitFlash/0.3})`);
+    ctx.fillStyle=hf;ctx.fillRect(0,0,LW,LH);
+  }
   if(P.hp<P.maxHp*0.3&&!dead){
     // low health: the screen edges pulse red with the heartbeat
     const beat=Math.max(0,Math.sin((0.85-P.hbT)/0.85*Math.PI*2*1.0))*0.35+0.15;
