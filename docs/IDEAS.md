@@ -172,6 +172,21 @@ as its own focused piece of work.
 - Ties in with the Stardust Engine (stardust empowers your weapon by +1% per feeding), so each tier you push
   needs a stronger weapon. "Speed for example": every weapon stat grows, attack speed included.
 
+### 23. Blood harvest: a button-mashing minigame
+- A short **arcade-style cutscene / minigame**: a captured monster is **strapped to a chair** and you
+  **drain its blood**, mashing buttons (or hitting timed prompts) to drain it faster and cleaner.
+- The blood you drain can be **injected** for a **brief boost** (for example a few seconds of extra
+  damage or speed): a burst ability fuelled by what you harvested.
+- Ties into the blood vat and the flasks: blood as the currency for healing, boosts and progress.
+- Loose idea, to shape later.
+
+### 24. Goals to work towards (still within level 1 for now)
+- **The vat as a vessel that grows**: a chipped shot glass at the start, upgraded over the run to a
+  grand gold goblet, Path of Exile-style in its ornament. *(Built: four vessels, one step per level.)*
+- **Flasks** as a progression track: more flasks, bigger flasks, flasks with effects.
+- Keep stacking clear, visible goals: vessel upgrades, flask upgrades, weapon empowering
+  (the Stardust Engine), perks.
+
 ---
 
 ## Questions to answer before building any of this
