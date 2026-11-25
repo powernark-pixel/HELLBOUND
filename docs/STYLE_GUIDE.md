@@ -24,6 +24,7 @@ When something new is added, it should follow these. When a rule changes, change
 | Demon | 40 × 40 | |
 | The Warden | 56 × 56 | |
 | The Oculus | no sheet: drawn live | 40 px eyeball (64 px as the mini-boss) |
+| The vat vessel | drawn live | shot glass 12 px wide, up to the Grand Goblet: 34 × 40 px with handles, stem and foot |
 | Item icons | 16 × 16 (Momentary Unicorn's are 32 × 32, drawn at half size) | |
 | Props: hearth 64 × 64, engine 48 × 64, altar 96 × 80 | | `tools/art/` |
 

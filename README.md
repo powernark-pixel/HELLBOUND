@@ -26,7 +26,7 @@ A gothic dark-fantasy dungeon crawler for the browser. Play it at https://powern
   | `perks.js` | perks offered by the reward chest |
   | `engine.js` | the Stardust Engine: stardust → +1% weapon stats |
   | `liquids.js` | lava and blood pools |
-  | `blood.js` | blood drops from kills, and the vat vessel on the right edge |
+  | `blood.js` | blood drops from kills, the vat vessel on the right edge, and the blood syringe (V to inject a surge) |
   | `enemies.js` | hound lunge, demon slam, the Warden's fight, ground warnings |
   | `eye.js` | the Oculus, an eye monster drawn live (tentacles move every frame); press O to spawn one |
   | `update.js` | one step of game logic per frame |

@@ -31,6 +31,7 @@ addEventListener('keydown',e=>{
   if(k==='q'||k==='1')castFireLine();
   if(k==='3')castSpin();
   if((k==='r'&&!dead)||k==='2')drinkFlask();
+  if(k==='v')injectBlood();   // inject the syringe (js/blood.js)
   if(k==='f'){filter=(filter+1)%FILTERS.length;log(`Loot filter: ${FILTERS[filter]}`,'#ffb347');renderInv()}
   if(dead&&(k==='r'||k===' '||k==='enter'))tryRise();   // R is the flask while alive, "rise again" once dead
   if(k==='m'){const on=SFX.toggle();log(on?'Sound on':'Sound muted (M)','#c9a99a');soundLabel()}
