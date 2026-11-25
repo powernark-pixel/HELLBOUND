@@ -96,9 +96,14 @@ let deadAt=0;
 // back into the fight fast: after a short beat (so a held key or a panicked click can't skip the death)
 const RISE_DELAY=600;   // milliseconds (real time, so hit-stop can't stretch it)
 function tryRise(){if(dead&&performance.now()-deadAt>=RISE_DELAY){newGame();for(const k in keys)keys[k]=false;mouse.down=false;return true}return false}
+// a hit that the roll's untouchable moment swallowed: say so, so you learn the roll works
+function rollDodged(){
+  if(time-(P.dodgeAt||-9)<0.5)return;P.dodgeAt=time;
+  addText(P.x,P.y-28,'DODGE',COL.bone,1);burst(P.x,P.y,COL.bone,8);
+}
 function hurt(d,noIF){
   if(dead)return;
-  if(!noIF&&P.inv>0)return;
+  if(!noIF&&P.inv>0){if(P.rollIF>0)rollDodged();return}
   if(!noIF){d*=ENEMY_DMG*(hasPerk('ironhide')?0.88:1);P.inv=0.35;P.hitFlash=0.3}   // a moment of grace after each hit, so a pack can't shred you in one go
   P.sinceHit=0;
   P.hurtT=0.3;                 // triggers the player's hurt animation

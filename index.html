@@ -28,7 +28,7 @@
     <div id="tr"></div>
     <div id="bossbar"><div class="name" id="bossName">The Warden</div><div class="bar"><i id="bossb"></i></div></div>
     <div id="log"></div>
-    <div id="skills"><div class="skill slotf" id="skSword"><div class="ico" id="skSwordIco"></div><div class="cd" id="skSwordCd"></div><div class="key">L-CLICK</div></div><div class="skill slotf" id="skFire"><canvas id="skFireIco" width="16" height="16"></canvas><div class="cd" id="skFireCd"></div><div class="key">Q</div></div><div class="skill slotf" id="skSpin"><canvas id="skSpinIco" width="16" height="16"></canvas><div class="cd" id="skSpinCd"></div><div class="key">E</div></div><div class="skill slotf" id="skFlask"><div class="ico" id="skFlaskIco"></div><div class="cd" id="skFlaskCd"></div><div class="cnt" id="skFlaskN">3</div><div class="key">R</div></div></div>
+    <div id="skills"><div class="skill slotf" id="skSword"><div class="ico" id="skSwordIco"></div><div class="cd" id="skSwordCd"></div><div class="pip" id="skSwordPip" title="finisher ready"></div><div class="key">L-CLICK</div></div><div class="skill slotf" id="skRoll"><canvas id="skRollIco" width="16" height="16"></canvas><div class="cd" id="skRollCd"></div><div class="sec" id="skRollS"></div><div class="key">SPACE</div></div><div class="skill slotf" id="skFire"><canvas id="skFireIco" width="16" height="16"></canvas><div class="cd" id="skFireCd"></div><div class="sec" id="skFireS"></div><div class="key">Q</div></div><div class="skill slotf" id="skSpin"><canvas id="skSpinIco" width="16" height="16"></canvas><div class="cd" id="skSpinCd"></div><div class="sec" id="skSpinS"></div><div class="key">E</div></div><div class="skill slotf" id="skFlask"><div class="ico" id="skFlaskIco"></div><div class="cd" id="skFlaskCd"></div><div class="prog"><div id="skFlaskProg"></div></div><div class="cnt" id="skFlaskN">3</div><div class="key">R</div></div></div>
     <div id="hint">ESC menu · I reliquary · F filter</div>
     <div id="sndHint" style="position:absolute;left:0;right:0;bottom:calc(var(--u)*22);text-align:center;font-family:var(--f-pixel);font-size:calc(var(--u)*5);color:#e0bf68;text-shadow:0 calc(var(--u)*1) 0 #000;display:none">♪ CLICK THE GAME TO TURN ON SOUND</div>
     <div id="banner"></div>
@@ -51,11 +51,11 @@
       <div class="divider"></div>
       <div class="keys">
         <span class="kbd">W A S D</span><span>Move (arrow keys work too)</span>
-        <span class="kbd">MOUSE</span><span>Aim. Hold left click to swing your blade</span>
-        <span class="kbd">SPACE</span><span>Roll. Brief invulnerability</span>
-        <span class="kbd">Q · R-CLICK</span><span>Fire Line: a wave of fire in a straight line (cooldown)</span>
-        <span class="kbd">E</span><span>Cleave: spin and hit everything around you, knocking it back. In the shack, E uses things</span>
-        <span class="kbd">R</span><span>Blood Flask: heal almost half your health. Kills refill flasks</span>
+        <span class="kbd">MOUSE</span><span>Aim. Click to slash; click again quickly for a heavy CHOP. Hold to keep swinging</span>
+        <span class="kbd">SPACE</span><span>Roll through attacks: nothing can hurt you mid-roll (hound lunges, slams, arrows)</span>
+        <span class="kbd">Q · R-CLICK</span><span>Fire Line: fire that pierces a whole line and spoils an archer's shot</span>
+        <span class="kbd">E</span><span>Cleave: when surrounded. Spin, throw the crowd back and stagger it. In the shack, E uses things</span>
+        <span class="kbd">R</span><span>Blood Flask: heal almost half your health when low. Kills refill flasks</span>
         <span class="kbd">I</span><span>Reliquary: equip, compare, sort, salvage</span>
         <span class="kbd">RIGHT CLICK</span><span>Salvage an item in the reliquary</span>
         <span class="kbd">F</span><span>Cycle the loot filter</span>

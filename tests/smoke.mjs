@@ -154,6 +154,33 @@ sk.fire ? ok('Q casts Fire Line') : fail('Q did not cast Fire Line');
 sk.flasks === 2 && sk.healed ? ok('R drinks a Blood Flask and heals') : fail('the Blood Flask did not work: ' + JSON.stringify(sk));
 sk.spin ? ok('E spins a Cleave') : fail('E did not Cleave');
 
+// 5c. every button has a reason: Cleave staggers a crowd, Fire Line spoils an archer's shot,
+//     the roll dodges, and the skill bar shows seconds left / shakes when a skill isn't ready
+const why = await page.evaluate(async () => {
+  const r = {};
+  r.secs = document.getElementById('skFireS').textContent !== '' && parseFloat(document.getElementById('skFireCd').style.height) > 0;
+  castFireLine(); r.deny = document.getElementById('skFire').classList.contains('deny');
+  P.flasks = 1; P.hp = P.maxHp * 0.2; P.healT = 0; updateHUD(); r.urge = document.getElementById('skFlask').classList.contains('urge');
+  enemies.length = 0; P.spinCD = 0; P.fireCD = 0;
+  const hound = spawnEnemy('hound', { x: P.x + 16, y: P.y, hpMul: 50 }); hound.act = 'wind'; hound.actT = 0.4;
+  castSpin(); r.stagger = hound.act === null && hound.touch >= 0.7 && hound.kbT > 0.2;
+  enemies.length = 0;
+  const archer = spawnEnemy('archer', { x: P.x + 60, y: P.y, hpMul: 50 }); archer.act = 'wind'; archer.actT = 0.6; archer.windMax = 0.6;
+  P.aim = Math.atan2(archer.y - P.y, archer.x - P.x); castFireLine();
+  await new Promise(res => setTimeout(res, 250));
+  r.spoiled = archer.act !== 'wind' && archer.fire > 0.5;
+  enemies.length = 0;
+  const hp = P.hp; P.rollIF = 0.3; P.inv = 0.3; hurt(10); r.dodge = P.hp === hp;
+  P.rollIF = 0; P.inv = 0; P.hp = P.maxHp;
+  return r;
+});
+why.secs ? ok('the skill bar shows a cooldown sweep and seconds left') : fail('no cooldown seconds on the skill bar');
+why.deny ? ok('pressing a skill on cooldown shakes its slot') : fail('no "not ready" feedback');
+why.urge ? ok('the flask slot pulses when health is low') : fail('flask slot did not pulse at low health');
+why.stagger ? ok('Cleave shoves, staggers and cancels a hound\'s lunge') : fail('Cleave did not stagger');
+why.spoiled ? ok('Fire Line spoils an archer\'s shot') : fail('Fire Line did not spoil the archer: ' + JSON.stringify(why));
+why.dodge ? ok('a hit during a roll is dodged') : fail('the roll did not dodge');
+
 // 6. pause menu
 await page.keyboard.press('Escape');
 (await page.isVisible('#pausePanel')) ? ok('Escape opens the pause menu') : fail('Escape did not open the pause menu');

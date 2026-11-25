@@ -4,6 +4,7 @@
 /* =====================================================================
    9. UPDATE (one step of game logic per frame)
    ===================================================================== */
+const ROLL_IFRAMES=0.35;   // seconds you're untouchable from the start of a roll: covers a hound's whole lunge (0.28 s)
 function update(dt){
   time+=dt;
   if(scene!=='game'){updateTitle(dt);return}
@@ -39,12 +40,12 @@ function update(dt){
   {const dsx=mouse.x-LW/2,dsy=mouse.y-(LH/2+2);
    P.aim=Math.atan2(2*dsy-dsx,dsx+2*dsy);P.face=dsx<0?-1:1;}
 
-  P.roll-=dt;P.inv-=dt;P.atk-=dt;P.sinceHit+=dt;
+  P.roll-=dt;P.inv-=dt;P.atk-=dt;P.sinceHit+=dt;P.rollIF-=dt;
   if(keys[' ']&&P.roll<=0){
     let dx=ux,dy=uy;
     if(!mx&&!my){dx=Math.cos(P.aim);dy=Math.sin(P.aim)}
     P.dash={vx:dx*870,vy:dy*870,t:0.15};   // ~130px over 0.15s
-    P.roll=S.rollCD;P.inv=0.3;SFX.play('roll');
+    P.roll=S.rollCD;P.inv=Math.max(P.inv,ROLL_IFRAMES);P.rollIF=ROLL_IFRAMES;SFX.play('roll');
     burst(P.x,P.y,'#5d5059',16);burst(P.x,P.y,'#ffb347',6);
     keys[' ']=false;
   }
