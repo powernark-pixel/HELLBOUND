@@ -109,6 +109,10 @@ spill.drops > 0 && !spill.fullBefore ? ok('kills spill blood drops that must be 
 await page.evaluate(() => { for (const d of bloodDrops.slice()) collectDrop(d); });
 await page.waitForTimeout(200);
 (await page.evaluate(() => vatFull())) ? ok('collecting the blood fills the vat') : fail('the blood vat did not fill');
+// blood past a full vat fills the syringe; V injects it for a surge (js/blood.js)
+const surge = await page.evaluate(() => { const d0 = S.damage; addBlood(INJECT_NEED); const filled = P.ichor >= INJECT_NEED; injectBlood();
+  const r = { filled, surging: P.surgeT > 0, stronger: S.damage > d0 }; P.surgeT = 0.001; return r; });
+surge.filled && surge.surging && surge.stronger ? ok('overflow blood fills the syringe and V injects a surge') : fail('blood injection failed: ' + JSON.stringify(surge));
 await page.evaluate(() => { P.x = (stairsT.x + .5) * T; P.y = (stairsT.y + .5) * T; });
 await page.waitForTimeout(500);
 const shack = await page.evaluate(() => ({

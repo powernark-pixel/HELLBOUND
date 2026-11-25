@@ -162,6 +162,9 @@ const SFX=(()=>{
     // collecting a blood drop: a small wet 'blip', pitched a little differently each time
     drip(o,t){const{ctx}=o;const p=R(.85,1.2);
       out(chain(osc(ctx,'sine',900*p,260*p,t,.09),env(ctx,t,.002,.09,.35)),o,.25)},
+    inject(o,t){const{ctx}=o;   // a hard heartbeat, then a rising rush
+      for(const [d,a] of [[0,.7],[.14,.5]]){const tt=t+d;out(chain(osc(ctx,'sine',70,40,tt,.18),env(ctx,tt,.003,.18,a)),o,.1)}
+      out(chain(osc(ctx,'sawtooth',90,420,t+.2,.5),filt(ctx,'lowpass',300,1800,t+.2,.5,4),env(ctx,t+.2,.05,.4,.18)),o,.3)},
     drink(o,t){const{ctx}=o;
       for(let i=0;i<5;i++){const tt=t+i*.09;out(chain(osc(ctx,'sine',300+Math.random()*250,700+Math.random()*300,tt,.07),env(ctx,tt,.005,.06,.08)),o,.16)}},
     spin(o,t){const{ctx}=o;
