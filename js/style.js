@@ -42,6 +42,12 @@ const COL={
   voidC:    '#b46bff',   // deeper circles
   danger:   '#ff4f6e',   // warnings, damage taken
 
+  // ENEMY WARNINGS: the red shapes on the floor that say "an attack lands here"
+  warnDeep: '#ff2a1a',   // the faint fill of a danger zone
+  warn:     '#ff5a3a',   // the blinking edge of a danger zone, archer aim lines
+  warnHi:   '#ff7a2a',   // the core that fills up as the attack gets closer
+  arrow:    '#ffe6b0',   // archer arrows (pale, so they stand out from red orbs)
+
   // OUTLINES
   ink:      '#0a0608',   // the 1px dark outline around every sprite
   white:    '#ffffff',

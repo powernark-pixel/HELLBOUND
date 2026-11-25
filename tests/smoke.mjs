@@ -201,6 +201,15 @@ const loop = await page.evaluate(() => {
   update(0.05); r.aims = a.act === 'wind' && ebullets.length === 0;
   for (let i = 0; i < 14; i++) update(0.05);
   r.shoots = ebullets.length === 1;
+  // a rat flashes red before its bite lands; the knight shows through an enemy in front of him
+  enemies = []; ebullets = []; P.inv = 0; P.sh = 0;
+  const rat = spawnEnemy('rat', { x: P.x + 6, y: P.y + 6 }), hp0 = P.hp;
+  P.sinceHit = 9; update(0.016); r.biteTell = rat.bite > 0 && P.hp === hp0 && P.sinceHit > 1;
+  for (let i = 0; i < 15; i++) update(0.016);
+  r.bites = P.sinceHit < 0.5;   // hurt() was called
+  enemies = []; spawnEnemy('demon', { x: P.x + 10, y: P.y + 10 }); draw(); r.xray = knightHidden;
+  enemies = []; draw(); r.noXray = !knightHidden;
+  enemies = []; P.hp = P.maxHp; P.inv = 0;
   // the Warden's bar shows as soon as he wakes; he announces his second phase
   enemies = []; ebullets = [];
   boss = spawnEnemy('demon', { x: P.x + 300, y: P.y, boss: true }); boss.dormant = false;
@@ -216,6 +225,8 @@ const loop = await page.evaluate(() => {
 });
 loop.aims ? ok('archers aim with a warning before shooting') : fail('archer did not wind up: ' + JSON.stringify(loop));
 loop.shoots ? ok('archers shoot after aiming') : fail('archer never shot');
+loop.biteTell && loop.bites ? ok('rats flash red before a bite, then bite') : fail('bite tell broken: ' + JSON.stringify(loop));
+loop.xray && loop.noXray ? ok('the knight shows through an enemy standing in front of him') : fail('knight outline broken: ' + JSON.stringify(loop));
 loop.bar ? ok('the Warden\'s bar shows as soon as he wakes') : fail('no Warden bar on waking');
 loop.enraged ? ok('the Warden announces his second phase') : fail('no enrage announcement');
 loop.swept ? ok('the Warden\'s death collects all spilled blood') : fail('blood left on the floor after the Warden');
