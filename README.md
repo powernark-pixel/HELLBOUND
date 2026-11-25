@@ -48,6 +48,7 @@ A gothic dark-fantasy dungeon crawler for the browser. Play it at https://powern
 - `V1`.txt` is an older copy, kept for reference.
 - `docs/STYLE_GUIDE.md` lists the colours, pixel sizes, fonts and art rules, and how to add a monster, level, sound or perk.
 - `tests/smoke.mjs` and `.github/workflows/check.yml` are the automatic game check.
+- `tests/playtest.mjs` is a bot that plays The Blood Altar 3 times (plus 20 quick extra runs) and writes a plain-language report: time and damage per area, the vat, how long the Oculus and the Warden take.
 
 ### Replacing art with an artist's work
 
