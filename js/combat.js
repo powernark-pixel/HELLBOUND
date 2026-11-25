@@ -71,6 +71,7 @@ function killEnemy(e){
       if(o!==e&&!o.dead&&dist(o,e)<100)dealDamage(o,S.damage*0.6);
     }
   }
+  if(isBig(e))trialEvent('bigDeath',e);   // js/trials.js
   // big deaths: the Oculus bursts in sparks, the Warden in blood
   if(isBig(e)&&e.type==='eye'){
     burst(e.x,e.y,'#9ef0ff',30);bloodFx(e.x,e.y,'big',e.x<P.x);shake=0.8;

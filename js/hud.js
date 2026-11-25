@@ -21,14 +21,14 @@ function updateHUD(){
   const hp=P.hp/P.maxHp*100;
   $('hpb').style.width=hp+'%';$('hpLag').style.width=hp+'%';
   $('shb').style.width=(P.maxSh?P.sh/P.maxSh*100:0)+'%';
-  const key=[Math.ceil(P.hp),Math.round(P.maxHp),Math.ceil(P.sh),Math.round(P.maxSh),P.bonusHp,(P.boons||[]).length,stardust,floor,filter,enemies.length,inv.length,boss&&!boss.dead,boss&&Math.ceil(boss.hp),enemies.filter(e=>isBig(e)&&!e.dormant).map(e=>Math.ceil(e.hp)).join('/')].join();
+  const key=[Math.ceil(P.hp),Math.round(P.maxHp),Math.ceil(P.sh),Math.round(P.maxSh),P.bonusHp,(P.boons||[]).length,stardust,floor,filter,enemies.length,inv.length,boss&&!boss.dead,boss&&Math.ceil(boss.hp),enemies.filter(e=>isBig(e)&&!e.dormant).map(e=>Math.ceil(e.hp)).join('/'),trials?trials.list.map(t=>t.state).join():''].join();
   if(key===hudCache)return;hudCache=key;
   $('hudName').textContent='THE KNIGHT';
   $('hpTxt').textContent=`HULL ${Math.ceil(P.hp)}/${Math.round(P.maxHp)}`;
   $('shTxt').textContent=P.maxSh?`WARD ${Math.ceil(P.sh)}/${Math.round(P.maxSh)}`:'WARD —';
   $('hudSub').innerHTML=`★ <b>${stardust}</b> STARDUST · <b>+${P.bonusHp||0}</b> HEALTH FROM ${Math.round((P.bonusHp||0)/10)>0?'COMPLETED LEVELS':'LEVELS (FINISH ONE!)'}`+((P.boons||[]).length?` · <b style="color:#ff8ad8">${P.boons.length} BOON${P.boons.length>1?'S':''}</b>`:'');
   $('circle').textContent=level&&level.safe?`The Shack · next: Circle ${floor}`:`Circle ${floor} · ${circleName()}`;
-  $('tr').innerHTML=`FILTER: ${FILTERS[filter]}<br>FOES: ${enemies.length}<br>RELICS: ${inv.length}/60<br>${level&&level.safe?'<span style="color:#8fe07a">SAFE</span>':boss&&!boss.dead?`<span style="color:#ff6a5a">${boss.bossName.toUpperCase()} LIVES</span>`:!vatFull()?'<span style="color:#ff6a5a">FILL THE VAT</span>':'<span style="color:#e0bf68">STAIRS OPEN</span>'}`;
+  $('tr').innerHTML=`FILTER: ${FILTERS[filter]}<br>FOES: ${enemies.length}<br>RELICS: ${inv.length}/60<br>${trials?`<span style="color:#e0bf68">TRIALS ${trials.list.filter(t=>t.state==='pass').length}/${trials.list.length}</span> <span style="color:#a89a84">(ESC)</span><br>`:''}${level&&level.safe?'<span style="color:#8fe07a">SAFE</span>':boss&&!boss.dead?`<span style="color:#ff6a5a">${boss.bossName.toUpperCase()} LIVES</span>`:!vatFull()?'<span style="color:#ff6a5a">FILL THE VAT</span>':'<span style="color:#e0bf68">STAIRS OPEN</span>'}`;
   // the big bar at the top: whichever boss or mini-boss is awake (a final boss without an area shows once hurt)
   const big=enemies.find(e=>isBig(e)&&!e.dead&&!e.dormant&&(e.wakeArea||e.hp<e.max));
   $('bossbar').style.display=big?'block':'none';

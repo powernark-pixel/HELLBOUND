@@ -80,4 +80,5 @@ pale blue means stardust, pink means perks. Don't reuse a meaning colour for som
 - **A boss or mini-boss:** put a big foe's letter in the map (`W` the Warden, `O` the Oculus; see `BIGS` in `js/world.js`). The level's `finalBoss` names which one waits behind the arena gate; any other is a mini-boss that wakes when you enter its area.
 - **A sound:** write a synth recipe in `audio/sfx.js`, or list recorded files in `SOUND_FILES` there (see `audio/README.md`).
 - **A perk:** add a line to `PERKS` in `js/perks.js`, then put its effect where it matters using `hasPerk('name')`.
+- **A trial:** add it to `TRIAL_BOOK` in `js/trials.js` (what events pass or fail it), then list its id in `LEVEL_TRIALS` for the levels that have it. If it needs a new event, call `trialEvent('name')` where that thing happens.
 - **A colour:** add it to `COL` in `js/style.js` and to the table above.
