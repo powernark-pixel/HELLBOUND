@@ -4,9 +4,26 @@
 /* ----- TELEGRAPHED ENEMY ATTACKS -----
    Hounds: growl and crouch (a red line shows their path), then lunge fast along it.
    Demons: raise their fists (a red circle grows on the floor), then slam the ground.
-   The warnings give you time to roll out of the way. */
+   The warnings give you time to roll out of the way.
+   Every enemy has one warning and one counter (docs/STYLE_GUIDE.md lists them). */
 const SLAM_R=78;
 const ARCHER_AIM=0.55;   // how long an archer aims (with a warning line) before it shoots
+const BITE_TELL=0.16;    // rats, imps and other biters flash red and crouch this long before a bite lands
+const TELEGRAPH_OVER=0.45;   // how strongly a warning's edge shows on top of enemies standing in it
+
+/* ----- BITES -----
+   Contact damage used to land the instant a foe touched you, so in a crowd hits came
+   from nowhere. Now a biter flashes red and crouches first (e.bite counts down); step
+   away or roll during the flash and the bite misses. A hound's lunge needs no flash:
+   the red lane was its warning. Returns true when the bite lands. */
+function biteLands(e,d,reach,dt){
+  if(e.act==='lunge')return d<reach;
+  if(!(e.bite>0)){if(d<reach+4)e.bite=BITE_TELL;return false}
+  e.bite-=dt;if(e.bite>0)return false;
+  e.bite=0;
+  if(d<reach+2)return true;
+  e.touch=0.3;return false;   // missed: a short breather before it tries again
+}
 function houndAI(e,d,nx,ny,dt){
   e.lcd=(e.lcd??rnd(0.5,1.5))-dt;
   if(e.act==='wind'){e.actT-=dt;e.animT=0;if(e.actT<=0){e.act='lunge';e.actT=0.28}return [0,0]}
@@ -86,46 +103,62 @@ function polyFill(proj,pts,fill,stroke){
   if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1;ctx.stroke()}
 }
 function ringPts(cx,cy,r,n=32){const o=[];for(let i=0;i<n;i++){const a=i/n*TAU;o.push([cx+Math.cos(a)*r,cy+Math.sin(a)*r])}return o}
-function drawTelegraphs(proj){
-  const blink=0.55+0.3*Math.sin(time*24);
+// a flat lane on the floor from the enemy's edge out to length L, w wide on each side
+function lanePts(e,dx,dy,L,w){
+  const px=-dy*w,py=dx*w,x0=e.x+dx*e.r,y0=e.y+dy*e.r,x1=e.x+dx*L,y1=e.y+dy*L;
+  return [[x0+px,y0+py],[x1+px,y1+py],[x1-px,y1-py],[x0-px,y0-py]];
+}
+/* Two passes. The floor pass (over=false) paints the full warning under everyone.
+   The over pass (over=true) runs after the fighters are drawn and repeats just the
+   edges, faintly, so a warning still reads when a crowd is standing on it. */
+function drawTelegraphs(proj,over=false){
+  const blink=0.55+0.3*Math.sin(time*24),OV=TELEGRAPH_OVER;
   for(const e of enemies){
     if(e.dead)continue;
-    if(e.type==='eye'){drawOculusMarks(e,proj);continue}
+    if(e.type==='eye'){
+      if(!over){drawOculusMarks(e,proj);continue}
+      const s=e.ocs;if(!s||!(s.mode==='aim'||s.mode==='strike'))continue;
+      ctx.globalAlpha=OV;for(const tg of s.targets)polyFill(proj,ringPts(tg.x,tg.y,ocStrikeR(e),24),null,COL.volt);
+      continue;
+    }
     if(e.boss&&e.act==='rest'){   // a dim gold ring: he's open
-      ctx.globalAlpha=0.35+0.2*Math.sin(time*8);polyFill(proj,ringPts(e.x,e.y,e.r+8),null,'#ffe14f');continue}
+      if(!over){ctx.globalAlpha=0.35+0.2*Math.sin(time*8);polyFill(proj,ringPts(e.x,e.y,e.r+8),null,COL.gold)}
+      continue;
+    }
     if(e.act!=='wind')continue;
     if(e.boss&&e.atk==='burst'){
+      if(over)continue;   // the lanes fan out past the crowd anyway
       const k=Math.min(1,1-e.actT/e.windMax);
       for(const a of e.lanes){
-        const L=60+k*200,w=5,px=-Math.sin(a)*w,py=Math.cos(a)*w,x0=e.x+Math.cos(a)*e.r,y0=e.y+Math.sin(a)*e.r,x1=e.x+Math.cos(a)*L,y1=e.y+Math.sin(a)*L;
-        ctx.globalAlpha=0.35+0.2*blink;polyFill(proj,[[x0+px,y0+py],[x1+px,y1+py],[x1-px,y1-py],[x0-px,y0-py]],'#ff2b6b');
+        const L=60+k*200;
+        ctx.globalAlpha=0.35+0.2*blink;polyFill(proj,lanePts(e,Math.cos(a),Math.sin(a),L,5),'#ff2b6b');
         addLight(e.x+Math.cos(a)*L*0.6,e.y+Math.sin(a)*L*0.6,50,0.35);   // light the lanes so they read in the dark
       }
       continue;
     }
-    if(e.boss&&e.atk==='slam'){
-      const k=Math.min(1,1-e.actT/e.windMax);
-      ctx.globalAlpha=0.16+0.08*blink;polyFill(proj,ringPts(e.x,e.y,WARDEN_SLAM_R,40),'#ff2a1a');
-      addLight(e.x,e.y,WARDEN_SLAM_R*2.4,0.6);
-      ctx.globalAlpha=0.45;polyFill(proj,ringPts(e.x,e.y,Math.max(2,WARDEN_SLAM_R*k),40),'#ff7a2a');
-      ctx.globalAlpha=blink;polyFill(proj,ringPts(e.x,e.y,WARDEN_SLAM_R,40),null,'#ff5a3a');
-      continue;
-    }
     if(e.type==='archer'){
-      // a thin line along the arrow's path, brightening as the bow is drawn
-      const k=Math.min(1,1-e.actT/(e.windMax||ARCHER_AIM)),L=60+k*200,w=1.5,px=-e.ly*w,py=e.lx*w,x0=e.x+e.lx*e.r,y0=e.y+e.ly*e.r,x1=e.x+e.lx*L,y1=e.y+e.ly*L;
-      ctx.globalAlpha=(0.3+0.5*k)*blink;polyFill(proj,[[x0+px,y0+py],[x1+px,y1+py],[x1-px,y1-py],[x0-px,y0-py]],'#ffe6b0');
+      // a red line along the arrow's path, brightening as the bow is drawn. A dark halo
+      // under it keeps it readable on blood and carpet.
+      const k=Math.min(1,1-e.actT/(e.windMax||ARCHER_AIM)),L=60+k*200;
+      if(!over){ctx.globalAlpha=0.6;polyFill(proj,lanePts(e,e.lx,e.ly,L,4),COL.ink)}
+      ctx.globalAlpha=(over?OV:1)*(0.45+0.55*k)*blink;polyFill(proj,lanePts(e,e.lx,e.ly,L,2),COL.warn);
+      if(!over)addLight(e.x+e.lx*L*0.6,e.y+e.ly*L*0.6,40,0.25);
     }else if(e.type==='hound'){
       // a red lane the width of the hound, showing exactly where it will run
-      const L=180,w=e.r*0.8,px=-e.ly*w,py=e.lx*w,x0=e.x+e.lx*e.r,y0=e.y+e.ly*e.r,x1=e.x+e.lx*L,y1=e.y+e.ly*L;
-      ctx.globalAlpha=0.28*blink+0.1;polyFill(proj,[[x0+px,y0+py],[x1+px,y1+py],[x1-px,y1-py],[x0-px,y0-py]],'#ff2a1a');
-      ctx.globalAlpha=blink;polyFill(proj,[[x0+px,y0+py],[x1+px,y1+py],[x1-px,y1-py],[x0-px,y0-py]],null,'#ff5a3a');
-    }else if(e.type==='demon'){
+      const pts=lanePts(e,e.lx,e.ly,180,e.r*0.8);
+      if(over){ctx.globalAlpha=OV*blink;polyFill(proj,pts,null,COL.warn);continue}
+      ctx.globalAlpha=0.5;polyFill(proj,lanePts(e,e.lx,e.ly,182,e.r*0.8+3),null,COL.ink);
+      ctx.globalAlpha=0.28*blink+0.1;polyFill(proj,pts,COL.warnDeep);
+      ctx.globalAlpha=blink;polyFill(proj,pts,null,COL.warn);
+    }else if(e.type==='demon'||(e.boss&&e.atk==='slam')){
       // the danger zone, filling up from the middle as the fists come down
-      const k=Math.min(1,1-e.actT/(e.windMax||0.7));
-      ctx.globalAlpha=0.16+0.08*blink;polyFill(proj,ringPts(e.x,e.y,SLAM_R),'#ff2a1a');
-      ctx.globalAlpha=0.45;polyFill(proj,ringPts(e.x,e.y,Math.max(2,SLAM_R*k)),'#ff7a2a');
-      ctx.globalAlpha=blink;polyFill(proj,ringPts(e.x,e.y,SLAM_R),null,'#ff5a3a');
+      const R=e.boss?WARDEN_SLAM_R:SLAM_R,n=e.boss?40:32,k=Math.min(1,1-e.actT/(e.windMax||0.7));
+      if(over){ctx.globalAlpha=OV*blink;polyFill(proj,ringPts(e.x,e.y,R,n),null,COL.warn);continue}
+      if(e.boss)addLight(e.x,e.y,R*2.4,0.6);
+      ctx.globalAlpha=0.5;polyFill(proj,ringPts(e.x,e.y,R+3,n),null,COL.ink);
+      ctx.globalAlpha=0.16+0.08*blink;polyFill(proj,ringPts(e.x,e.y,R,n),COL.warnDeep);
+      ctx.globalAlpha=0.45;polyFill(proj,ringPts(e.x,e.y,Math.max(2,R*k),n),COL.warnHi);
+      ctx.globalAlpha=blink;polyFill(proj,ringPts(e.x,e.y,R,n),null,COL.warn);
     }
   }
   ctx.globalAlpha=1;

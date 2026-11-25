@@ -120,7 +120,7 @@ function update(dt){
         if(e.act==='wind'){
           e.actT-=dt;
           if(e.actT<=0){
-            ebullets.push({x:e.x,y:e.y,vx:e.lx*190,vy:e.ly*190,life:3.5,dmg:(9+floor*2)*e.dmgMul,r:4,c:'#ffe6b0'});
+            ebullets.push({x:e.x,y:e.y,vx:e.lx*190,vy:e.ly*190,life:3.5,dmg:(9+floor*2)*e.dmgMul,r:4,c:COL.arrow});
             e.act=null;e.fire=Tt.shoot;e.shotAnim=0.3;if(d<420)SFX.play('arrow');
           }
         }else{
@@ -165,7 +165,7 @@ function update(dt){
     }
     if(e.boss){
       const reach=bodyR(e)+PLAYER_BODY;if(d<reach&&!e.dormant)slide(P,nx*(reach-d),ny*(reach-d),10);
-    }else if(d<bodyR(e)+PLAYER_BODY&&e.touch<=0){
+    }else if(e.touch<=0&&biteLands(e,d,bodyR(e)+PLAYER_BODY,dt)){   // biters flash red first (js/enemies.js)
       const mult=(1+(floor-1)*0.15)*(e.boss?1.2:1);
       hurt(Tt.dmg*mult*e.dmgMul*(e.act==='lunge'?1.3:1));   // a landed lunge bites harder
       e.touch=0.7;

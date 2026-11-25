@@ -8,6 +8,63 @@
    light (torch, candles, sconces, lava, stairs), drawn over the world.
    ===================================================================== */
 const lc=mk(LW/2,LH/2),lctx=lc.getContext('2d');
+
+// ----- READING A CROWD -----
+const XRAY_ALPHA=1;          // how solid the knight's outline is when an enemy stands in front of him
+const BITE_FLASH=0.6;        // how red a biter glows just before it bites
+const SMALL_HIT_SCATTER=5;   // small damage numbers shift up to this many pixels sideways so they don't stack
+const SMALL_HIT_GONE=0.4;    // small numbers vanish with this much of their life left (big ones stay full time)
+const KNIGHT_BAR_W=20;       // width of the little health bar under the knight's feet
+let knightHidden=false;      // true this frame when an enemy covers the knight (the smoke test reads it)
+
+// A sprite frame filled with one colour (for the bite flash and the knight's outline).
+const silC=mk(64,64),silX=silC.getContext('2d'),xrC=mk(66,66),xrX=xrC.getContext('2d');
+function silFrame(key,anim,at,col){   // paints the frame into silC; returns its size and anchor
+  const sd=SD[key],img=IMG[key];if(!img||!sd)return null;
+  const A=sd.anims[anim]||sd.anims.idle,f=animIndex(at,A),k=sd.scale||1,w=sd.fw*k,h=sd.fh*k;
+  silX.globalCompositeOperation='source-over';silX.imageSmoothingEnabled=false;silX.clearRect(0,0,64,64);
+  silX.drawImage(img,f*sd.fw,A.row*sd.fh,sd.fw,sd.fh,0,0,w,h);
+  silX.globalCompositeOperation='source-in';silX.fillStyle=col;silX.fillRect(0,0,w,h);
+  return {w,h,ax:sd.ax*k,ay:sd.ay*k};
+}
+// draw canvas c (w x h, anchor ax,ay) at screen x,y like drawSprite does, mirrored if flip
+function blitAt(c,w,h,ax,ay,x,y,flip,alpha){
+  ctx.save();ctx.globalAlpha=alpha;
+  if(flip){ctx.translate(Math.round(x),0);ctx.scale(-1,1);ctx.drawImage(c,0,0,w,h,-ax,Math.round(y-ay),w,h)}
+  else ctx.drawImage(c,0,0,w,h,Math.round(x-ax),Math.round(y-ay),w,h);
+  ctx.restore();
+}
+function drawSilhouette(key,anim,at,x,y,flip,col,alpha){
+  const s=silFrame(key,anim,at,col);if(!s)return false;
+  blitAt(silC,s.w,s.h,s.ax,s.ay,x,y,flip,alpha);return true;
+}
+// the knight seen through whatever covers him: a pale 1px rim around a dark body
+function drawXray(key,anim,at,x,y,flip){
+  let s=silFrame(key,anim,at,COL.bone);if(!s)return;
+  xrX.globalCompositeOperation='source-over';xrX.clearRect(0,0,66,66);
+  for(const [ox,oy] of [[0,1],[2,1],[1,0],[1,2]])xrX.drawImage(silC,ox,oy);
+  xrX.globalCompositeOperation='destination-out';xrX.drawImage(silC,1,1);   // hollow out the body...
+  s=silFrame(key,anim,at,COL.ink);xrX.globalCompositeOperation='source-over';
+  xrX.globalAlpha=0.45;xrX.drawImage(silC,1,1);xrX.globalAlpha=1;            // ...and shade it in lightly
+  blitAt(xrC,s.w+2,s.h+2,s.ax+1,s.ay+1,x,y,flip,XRAY_ALPHA);
+}
+// the screen box a sprite covers, trimmed a little because frames have empty edges
+function sprBox(key,x,y,r){
+  const sd=SD[key];if(!sd)return [x-r,y-r*2,x+r,y];
+  const k=sd.scale||1,x0=x-sd.ax*k,y0=y-sd.ay*k,w=sd.fw*k,h=sd.fh*k;
+  return [x0+w*0.2,y0+h*0.2,x0+w*0.8,y0+h*0.95];
+}
+// is an enemy standing in front of the knight (nearer the camera) and over his body?
+function knightCovered(S_,psx,psy){
+  const pd=(P.x+P.y)/T,[a0,b0,a1,b1]=sprBox('player',psx,psy,8);
+  for(const e of enemies){
+    const tx=Math.floor(e.x/T),ty=Math.floor(e.y/T);
+    if(e.dead||(e.x+e.y)/T<=pd||!seen[ty]||!seen[ty][tx])continue;   // only enemies actually drawn
+    const [sx,sy]=S_(e.x,e.y),[c0,d0,c1,d1]=sprBox(e.type==='eye'?'':spriteKey(e),sx,sy,e.r);
+    if(c0<a1&&c1>a0&&d0<b1&&d1>b0)return true;
+  }
+  return false;
+}
 function floorTile(x,y){
   const h=hash(x,y);
   return h<0.4?'floor0':h<0.65?'floor1':h<0.85?'floor2':h<0.95?'floorCrack':'floorBlood';
@@ -203,6 +260,7 @@ function drawIso(){
   for(const e of enemies){
     const tx=Math.floor(e.x/T),ty=Math.floor(e.y/T);if(!seen[ty]||!seen[ty][tx])continue;
     let [sx,sy]=S_(e.x,e.y);if(e.act==='wind')sx+=Math.random()<0.5?-1:1;   // shivers while winding up
+    if(e.bite>0)sy+=1;   // crouches before a bite
     if(e.elite){light(e.x,e.y,40,0.35);if(Math.random()<0.15)parts.push({x:e.x+rnd(-e.r,e.r),y:e.y+rnd(-4,6),vx:0,vy:rnd(-30,-12),life:0.6,max:0.6,c:'#c4302c',s:1})}
     if(e.boss)light(e.x,e.y,90,0.45);
     items.push({d:(e.x+e.y)/T,draw:()=>{
@@ -210,6 +268,7 @@ function drawIso(){
       if(e.type==='eye')drawOculus(e,sx,sy);   // drawn live, no sprite sheet (js/eye.js)
       else if(!drawSprite(spriteKey(e),e.anim,e.animT,sx,sy,e.face<0)){ctx.save();ctx.fillStyle=e.flash>0?'#fff':e.c;shape(e.shape,sx,sy-e.r,e.r);ctx.fill();ctx.restore()}
       else if(e.flash>0){ctx.save();ctx.globalAlpha=0.5;ctx.globalCompositeOperation='lighter';drawSprite(spriteKey(e),e.anim,e.animT,sx,sy,e.face<0);ctx.restore()}
+      if(e.bite>0&&e.type!=='eye')drawSilhouette(spriteKey(e),e.anim,e.animT,sx,sy,e.face<0,COL.danger,BITE_FLASH);   // about to bite!
       if(e.hp<e.max&&!e.boss&&!e.miniboss){
         const w=Math.max(14,Math.round(e.r*2)),bx=sx-Math.round(w/2),by=sy-e.r-26;
         pxRect(bx-1,by-1,w+2,4,'#0a0608');pxRect(bx,by,w,2,'#33050a');
@@ -225,6 +284,10 @@ function drawIso(){
   }});
   items.sort((a,b)=>a.d-b.d);
   for(const it of items)it.draw();
+  drawTelegraphs(S_,true);   // warning edges again, over anyone standing in them
+  // the knight behind an enemy: draw him again as a pale outline so you never lose yourself in a crowd
+  knightHidden=!dead&&knightCovered(S_,psx,psy);
+  if(knightHidden)drawXray('player',P.anim,P.animT,psx,psy,P.face<0);
 
   // ---- 4. EFFECTS ON TOP: blood sprays, projectiles, swing arcs, particles, flames ----
   drawFireLayer(S_,light);
@@ -238,7 +301,7 @@ function drawIso(){
     const [x1,y1]=S_(b.x,b.y),[x0,y0]=S_(b.x-b.vx*0.03,b.y-b.vy*0.03);
     pxRect(x0,y0-10,2,2,'#a12a06');pxRect((x0+x1)/2,(y0+y1)/2-10,2,2,'#ff6a1a');pxRect(x1,y1-10,2,2,'#ffd27a');light(b.x,b.y,20,0.4);
   }
-  for(const b of ebullets){const [sx,sy]=S_(b.x,b.y);pxOrb(sx,sy-10,b.r+1,'#0a0608');pxOrb(sx,sy-10,b.r,b.c==='#ffe6b0'?'#c9b48a':'#c4302c');light(b.x,b.y,b.r*5,0.35)}
+  for(const b of ebullets){const [sx,sy]=S_(b.x,b.y);pxOrb(sx,sy-10,b.r+1,COL.ink);pxOrb(sx,sy-10,b.r,b.c===COL.arrow?COL.bone:COL.bloodHi);light(b.x,b.y,b.r*5,0.35)}
   // the sword trail: a thick glowing crescent that sweeps out and fades (gold edge, blood-red tail)
   const TRAIL=['#fff6d8','#ffe2a0','#ffb347','#ff7a2b','#c4302c','#8f1a1f'];
   for(const s of swings){
@@ -306,10 +369,25 @@ function drawIso(){
 
   // ---- 6. TEXT ABOVE THE DARKNESS: damage numbers and shack prompts ----
   ctx.save();ctx.textAlign='center';
-  for(const t of texts){
-    const [sx,sy]=S_(t.x,t.y),age=t.max-t.life;
-    ctx.globalAlpha=Math.max(0,t.life/t.max);ctx.font=`${(t.s>1?16:8)+(age<0.08?8:0)}px ${PXFONT}`;   // numbers pop, then settle
-    ctx.fillStyle='#000';ctx.fillText(t.t,sx+1,sy-11);ctx.fillStyle=t.c;ctx.fillText(t.t,sx,sy-12);
+  // Small white hits are quieter: no pop, a little scatter so they don't stack, gone in
+  // about half a second, so a crowd of numbers can't hide a warning. Crits stay big and
+  // gold. Damage YOU take is drawn last, on top of everything.
+  for(let pass=0;pass<2;pass++)for(const t of texts){
+    const mine=t.c===COL.danger;if(mine!==(pass===1))continue;
+    const small=t.s<=1&&t.c===COL.white,age=t.max-t.life,f=t.life/t.max;
+    if(small&&t.jx==null)t.jx=Math.round(rnd(-SMALL_HIT_SCATTER,SMALL_HIT_SCATTER));
+    const [sx0,sy]=S_(t.x,t.y),sx=sx0+(t.jx||0);
+    ctx.globalAlpha=small?Math.max(0,Math.min(1,(f-SMALL_HIT_GONE)/(1-SMALL_HIT_GONE)))*0.85:Math.max(0,f);
+    ctx.font=`${(t.s>1?16:8)+(!small&&age<0.08?8:0)}px ${PXFONT}`;   // numbers pop, then settle
+    ctx.fillStyle=COL.ink;ctx.fillText(t.t,sx+1,sy-11);ctx.fillStyle=small?COL.bone:t.c;ctx.fillText(t.t,sx,sy-12);
+  }
+  ctx.globalAlpha=1;
+  // a small health bar under the knight once he's hurt, so you can read it without looking away from the fight
+  if(!dead&&P.hp<P.maxHp&&!(level&&level.safe)){
+    const w=KNIGHT_BAR_W,bx=psx-w/2,by=psy+6,fill=Math.round(w*Math.max(0,P.hp/P.maxHp));
+    pxRect(bx-1,by-1,w+2,4,COL.ink);pxRect(bx,by,w,2,COL.bloodDark);
+    pxRect(bx,by,fill,2,COL.bloodHi);pxRect(bx,by,fill,1,COL.bloodLit);
+    if(P.sh>0&&P.maxSh>0)pxRect(bx,by+2,Math.round(w*P.sh/P.maxSh),1,COL.goldWarm);   // the ward
   }
   if(level&&level.safe){
     ctx.font=`8px ${PXFONT}`;ctx.globalAlpha=1;
@@ -325,8 +403,8 @@ function drawIso(){
   if(P.hitFlash>0){
     // you got hit: a quick red flash at the screen edges, so you notice it even in a crowd
     const hf=ctx.createRadialGradient(LW/2,LH/2,LH*0.25,LW/2,LH/2,LW*0.6);
-    hf.addColorStop(0,'rgba(196,48,44,0)');hf.addColorStop(1,`rgba(196,48,44,${0.55*P.hitFlash/0.3})`);
-    ctx.fillStyle=hf;ctx.fillRect(0,0,LW,LH);
+    hf.addColorStop(0,COL.bloodHi+'00');hf.addColorStop(1,COL.bloodHi);
+    ctx.globalAlpha=0.55*P.hitFlash/0.3;ctx.fillStyle=hf;ctx.fillRect(0,0,LW,LH);ctx.globalAlpha=1;
   }
   if(P.hp<P.maxHp*0.3&&!dead){
     // low health: the screen edges pulse red with the heartbeat
