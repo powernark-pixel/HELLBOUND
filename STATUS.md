@@ -18,7 +18,7 @@ playing that one run and tuning it.
 | # | Item | State |
 |---|---|---|
 | 1 | Play the run start to finish 3 times; write down the 3 worst moments. Those go first. | To do (needs Dave) |
-| 2 | Lock the enemy list (rat, imp, hound, archer, demon, Oculus, Warden). Each gets a clear warning before it attacks and one clear way to beat it. No new enemies. | **Archers now aim with a warning line**. Hounds, demons, the Oculus and the Warden already warn. Rats and imps just bite. |
+| 2 | Lock the enemy list (rat, imp, hound, archer, demon, Oculus, Warden). Each gets a clear warning before it attacks and one clear way to beat it. No new enemies. | **Done:** archers aim with a warning line, rats and imps flash before biting; hounds, demons, the Oculus and the Warden already warned. See the "one warning, one counter" table in docs/STYLE_GUIDE.md. |
 | 3 | Every button has a reason: combo, dash, Fire Line, Flask, Cleave. | **Done, needs a feel check:** Cleave staggers a crowd, Fire Line spoils archers' shots, rolls show DODGE, the skill bar shows cooldowns and flashes when ready. |
 | 4 | Each of the 7 areas teaches one thing; the vat fills naturally on the way, no grinding at the stairs. | **The Warden's death pulls in every drop left on the floor.** The bot playtest showed the vat filling easily, so it now needs 70%. 23 of 23 bot runs reached the Shack. |
 | 5 | The Warden is the payoff: about 60 to 90 seconds on a first try, hard but fair. | **Bar on waking, enrage announcement, gate bugs fixed, health 900 → 1600.** Bot fight went from ~19 s to ~34 s, which should be roughly 60 to 90 s for a person. |
