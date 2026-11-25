@@ -179,6 +179,8 @@ as its own focused piece of work.
   damage or speed): a burst ability fuelled by what you harvested.
 - Ties into the blood vat and the flasks: blood as the currency for healing, boosts and progress.
 - Loose idea, to shape later.
+- *(Built: blood collected after the vat is full fills a syringe; V injects it for a 6-second surge.
+  The chair minigame itself is still to come.)*
 
 ### 24. Goals to work towards (still within level 1 for now)
 - **The vat as a vessel that grows**: a chipped shot glass at the start, upgraded over the run to a
@@ -186,6 +188,24 @@ as its own focused piece of work.
 - **Flasks** as a progression track: more flasks, bigger flasks, flasks with effects.
 - Keep stacking clear, visible goals: vessel upgrades, flask upgrades, weapon empowering
   (the Stardust Engine), perks.
+
+### 25. Boss order in the Blood Altar (built)
+- The **Warden** is now an earlier fight: a mini-boss in the Blood Nave, across the bridge after the second room.
+- The **Oculus** is the final boss, behind the arena gate at the altar. It's tougher there and marks more spots.
+- A level file names its final boss (`finalBoss`), so later levels can mix and match big foes.
+
+### 26. Exanima as a reference: murky, heavy and grindy
+- *Exanima* (Bare Mettle) is a dark, murky dungeon crawler where every fight is slow and dangerous.
+  It **is** physics-based: the bodies are simulated (active ragdolls), so momentum, weight and footing
+  decide each swing. HELLBOUND isn't, and doesn't need to be, to borrow its **feel**:
+  - **Murk:** darker levels where your light really matters, with things only half seen at its edge.
+  - **Weight without physics:** heavier swings that commit you (wind-up, follow-through, a stagger
+    if you whiff), stamina for attacks and rolls, enemies that stumble when hit hard.
+  - **Grind:** slow, earned progress: gear that wears down and needs repairing in the shack, skills
+    that improve with use (swing a lot, get better at swinging), a rare find feeling rare.
+  - **Few enemies, each a threat:** fewer foes, but each one able to kill you if you're careless.
+- Question: how far toward this? A full "slow and heavy" mode would change the whole game; a darker,
+  heavier level (a crypt or catacomb) could try it out first.
 
 ---
 
