@@ -59,6 +59,11 @@ lv.areas === '234567' ? ok('all six area entrances are in the map') : fail('area
 lv.stairs && lv.allAreas && lv.allEnemies && lv.allChests ? ok('stairs, areas, enemies and chests are all reachable from the start') : fail('part of the Blood Altar cannot be reached: ' + JSON.stringify(lv));
 lv.bossWaits ? ok('the Oculus waits at the altar as the final boss') : fail('the Oculus is not waiting at the altar');
 lv.wardenMid ? ok('the Warden waits in the Blood Nave as a mini-boss') : fail('the Warden is not in the Blood Nave');
+// trials: drinking a flask while the Warden lives fails "Unflinching"; filling the vat passes "Bleed the Altar"
+const tri = await page.evaluate(() => { const s0 = P.sigils; P.hp = 5; drinkFlask(); addBlood(vatNeed);
+  const st = id => trials.list.find(t => t.id === id).state; const r = { dry: st('dry'), vat: st('vat'), sigils: P.sigils - s0 };
+  vat = 0; P.flasks = flaskMax(); P.hp = P.maxHp; return r; });
+tri.dry === 'fail' && tri.vat === 'pass' && tri.sigils === 1 ? ok('trials pass and fail as you play, and passing earns a blood sigil') : fail('trials are wrong: ' + JSON.stringify(tri));
 // entering the arena must never leave the knight inside the gate wall
 const gate = await page.evaluate(() => { const g = level.gates[1]; P.x = (g.tx + .5) * T + 10; P.y = (g.ty + .5) * T; sealArena();
   const stuck = [[1,0],[-1,0],[0,1],[0,-1]].some(([dx, dy]) => tileAt(P.x + dx * PLAYER_BODY, P.y + dy * PLAYER_BODY) === 0);

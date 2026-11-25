@@ -9,7 +9,7 @@ function drinkFlask(){
   if(scene!=='game'||dead||paused||anyPanelOpen())return;
   if(P.flasks<1){log('No blood flasks left. Kill to refill them.','#c4302c');return}
   if(P.hp>=P.maxHp){log('Already at full health.','#c9a99a');return}
-  P.flasks--;P.healLeft+=P.maxHp*FLASK_HEAL;P.healT=1;
+  P.flasks--;trialEvent('flask');P.healLeft+=P.maxHp*FLASK_HEAL;P.healT=1;
   SFX.play('drink');addText(P.x,P.y-30,'FLASK','#ff6a6a',1);
   for(let i=0;i<14;i++)parts.push({x:P.x+rnd(-8,8),y:P.y+rnd(-4,4),vx:rnd(-12,12),vy:rnd(-60,-25),life:rnd(.4,.8),max:.8,c:pick(['#c4302c','#ff6a6a','#8f1a1f']),s:rnd(1,2)});
 }

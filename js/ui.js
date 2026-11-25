@@ -58,6 +58,7 @@ function openControls(){setOverlay('controls',true)}
 function closeControls(){setOverlay('controls',false)}
 function togglePause(on){
   paused=on??!paused;setOverlay('pause',paused);mouse.down=false;
+  if(paused)renderTrials();
   if(!paused){quitArmed=false;$('btnQuit').textContent='Abandon Run'}
 }
 let menuSel=0,quitArmed=false;

@@ -10,7 +10,7 @@ function update(dt){
   updateFX(dt);
   updateBubbles(dt,level?'blood':'lava');
   updateOculusFX(dt);
-  updateBlood(dt);
+  updateBlood(dt);updateTrials(dt);
   if(Math.random()<dt*8){
     // drifting embers and ash
     const ash=Math.random()<0.35;

@@ -116,7 +116,7 @@ function oculusAI(e,d,nx,ny,dt){
 const ocSparks=[],ocArcs=[];
 const ocStrikeR=e=>OC.STRIKE_R*(e.ocZ>1?1.2:1);
 function oculusImpact(e,x,y,harmless){
-  if(!harmless&&!dead&&Math.hypot(P.x-x,P.y-y)<ocStrikeR(e)+PLAYER_BODY)hurt(ET.eye.dmg*1.8*e.dmgMul);
+  if(!harmless&&!dead&&Math.hypot(P.x-x,P.y-y)<ocStrikeR(e)+PLAYER_BODY){hurt(ET.eye.dmg*1.8*e.dmgMul);trialEvent('struck')}
   shake=Math.max(shake,0.35);hitStop=Math.max(hitStop,0.04);SFX.play('slam');SFX.play('zap');
   decals.push({x,y,scorch:1});if(decals.length>200)decals.shift();
   for(let i=0;i<26;i++){const a=rnd(0,TAU),sp=rnd(60,220);
