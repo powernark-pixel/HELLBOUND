@@ -40,7 +40,7 @@ function castSpin(){
   for(const e of enemies){
     if(e.dead||dist(e,P)>R+hurtR(e))continue;
     dealDamage(e,S.damage*1.6);
-    if(!e.boss&&!e.dead){const a=Math.atan2(e.y-P.y,e.x-P.x),k=e.type==='demon'?200:420;e.kbx=Math.cos(a)*k;e.kby=Math.sin(a)*k;e.kbT=0.16;e.act=null}
+    if(!isBig(e)&&!e.dead){const a=Math.atan2(e.y-P.y,e.x-P.x),k=e.type==='demon'?200:420;e.kbx=Math.cos(a)*k;e.kby=Math.sin(a)*k;e.kbT=0.16;e.act=null}
   }
   for(let i=0;i<24;i++){const a=i/24*TAU;parts.push({x:P.x+Math.cos(a)*R*0.7,y:P.y+Math.sin(a)*R*0.7,vx:Math.cos(a)*90,vy:Math.sin(a)*90,life:.3,max:.3,c:pick(['#fff1c2','#ffd27a','#5d5059']),s:1,ground:1})}
 }

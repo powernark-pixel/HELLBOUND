@@ -12,8 +12,8 @@
      body, so a swing that visibly reaches an enemy lands.
    The knight's own body is PLAYER_BODY (cyan). */
 const PLAYER_BODY=8;
-const bodyR=e=>e.boss?24:e.r*0.75;
-const hurtR=e=>e.boss?32:e.r+3;
+const bodyR=e=>e.warden?24:e.r*0.75;
+const hurtR=e=>e.warden?32:e.r+3;
 let showHitboxes=false;
 function drawHitboxes(proj){
   if(!showHitboxes)return;
@@ -30,11 +30,11 @@ function drawHitboxes(proj){
 function dealDamage(e,base,opt={}){
   if(e.dead)return;
   let dmg=base,crit=false;
-  if(e.boss&&e.act==='rest')dmg*=1.3;   // the Warden's opening
+  if(e.warden&&e.act==='rest')dmg*=1.3;   // the Warden's opening
   if(Math.random()*100<S.critC){dmg*=S.critM/100;crit=true}
   e.hp-=dmg;e.flash=0.08;
   hitStop=Math.max(hitStop,crit?0.06:0.03);shake=Math.max(shake,crit?0.22:0.1);
-  if(!e.boss){
+  if(!isBig(e)){
     // knockback away from the knight (heavy demons barely move)
     const a=Math.atan2(e.y-P.y,e.x-P.x),k=(e.type==='demon'?110:260)*(crit?1.4:1)*(opt.kb||1);
     e.kbx=Math.cos(a)*k;e.kby=Math.sin(a)*k;e.kbT=0.12;
@@ -57,35 +57,40 @@ function killEnemy(e){
   // Sprite enemies leave a death animation and a blood stain behind
   corpses.push({key:spriteKey(e),x:e.x,y:e.y,animT:0,life:0.9,flip:e.face<0});
   spillBlood(e);flaskKill();   // blood drops to collect (js/blood.js)
-  hitStop=Math.max(hitStop,e.boss?0.3:0.05);shake=Math.max(shake,e.boss?1:0.18);
+  hitStop=Math.max(hitStop,isBig(e)?0.3:0.05);shake=Math.max(shake,isBig(e)?1:0.18);
   decals.push({x:e.x+rnd(-4,4),y:e.y+rnd(2,8),cell:ri(2,5)});
   if(decals.length>160)decals.shift();
   stardust+=ri(1,3);
   if(hasPerk('bloodthirst'))P.hp=Math.min(P.maxHp,P.hp+P.maxHp*0.03);
   burst(e.x,e.y,'#8f1a1f',8);
-  bloodFx(e.x,e.y,e.boss?'big':e.r<9?'hit':'kill',e.x<P.x);   // small foes get a small spray
-  SFX.play(e.boss?'bigkill':'kill');
+  bloodFx(e.x,e.y,isBig(e)?'big':e.r<9?'hit':'kill',e.x<P.x);   // small foes get a small spray
+  SFX.play(isBig(e)?'bigkill':'kill');
   if(hasTrait('inferno')){
     burst(e.x,e.y,'#ff7a2b',24);
     for(const o of enemies){
       if(o!==e&&!o.dead&&dist(o,e)<100)dealDamage(o,S.damage*0.6);
     }
   }
-  if(e.miniboss){
+  // big deaths: the Oculus bursts in sparks, the Warden in blood
+  if(isBig(e)&&e.type==='eye'){
     burst(e.x,e.y,'#9ef0ff',30);bloodFx(e.x,e.y,'big',e.x<P.x);shake=0.8;
-    for(let i=0;i<4;i++)oculusImpact(e,e.x+rnd(-30,30),e.y+rnd(-30,30),true);   // it bursts in a shower of sparks
+    for(let i=0;i<4;i++)oculusImpact(e,e.x+rnd(-30,30),e.y+rnd(-30,30),true);
+  }
+  if(e.warden){
+    burst(e.x,e.y,'#ff2b6b',40);
+    bloodFx(e.x-14,e.y,'big',true);bloodFx(e.x+14,e.y,'big',false);bloodFx(e.x,e.y-10,'kill',Math.random()<.5);shake=1;
+  }
+  const B=BIGS[e.big]||BIGS.warden,title=`${(e.bossName||B.name).toUpperCase()} ${B.death}`;
+  if(e===boss){
+    openArena();
+    for(let k=0;k<3;k++)dropItem(e.x,e.y,3,floor+3);
+    if(vatFull()){announce(title,'#ffe14f',2.5,'The stairs are unsealed. Follow the light');log('The stairs are unsealed. Follow the golden light.','#ffe14f')}
+    else{announce(title,'#ffe14f',2.8,'Fill the blood vat to open the stairs');log(`${e.bossName} is dead, but the vat is only ${Math.floor(vat/vatNeed*100)}% full. Kill more.`,'#c4302c')}
+  }else if(e.miniboss){
     for(let k=0;k<2;k++)dropItem(e.x,e.y,2,floor+3);
     stardust+=25;
     const next=level&&level.areas.find(a=>a.n===e.wakeArea+1&&!a.done);if(next)level.guide=next;   // light the way on
-    announce(`${e.bossName.toUpperCase()} IS BLIND`,'#9ef0ff',2.6,'+25 stardust');
-  }
-  if(e.boss){
-    burst(e.x,e.y,'#ff2b6b',40);
-    bloodFx(e.x-14,e.y,'big',true);bloodFx(e.x+14,e.y,'big',false);bloodFx(e.x,e.y-10,'kill',Math.random()<.5);
-    shake=1;openArena();
-    for(let k=0;k<3;k++)dropItem(e.x,e.y,3,floor+3);
-    if(vatFull()){announce('THE WARDEN FALLS','#ffe14f',2.5,'The stairs are unsealed. Follow the light');log('The stairs are unsealed. Follow the golden light.','#ffe14f')}
-    else{announce('THE WARDEN FALLS','#ffe14f',2.8,'Fill the blood vat to open the stairs');log(`The Warden is dead, but the vat is only ${Math.floor(vat/vatNeed*100)}% full. Kill more.`,'#c4302c')}
+    announce(title,B.col,2.6,'+25 stardust');
   }else if(Math.random()<Tt.drop*1.3){
     dropItem(e.x,e.y,e.type==='demon'?2:0,floor+ri(0,3));
   }

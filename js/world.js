@@ -34,11 +34,27 @@ function pickType(){
   return pick(['hound','archer','demon','imp']);
 }
 // o.hpMul / o.dmgMul / o.spdMul scale an enemy (used by handcrafted levels for tougher areas and elites)
+/* ----- BIG FOES: the Warden and the Oculus -----
+   Either can be a level's final boss or a mini-boss on the way. A final boss is tougher. */
+const BIG_CH={W:'warden',O:'oculus'};   // map letters for big foes
+const WARDEN_MINI_HP=0.65;              // the Warden as a mini-boss has this share of his boss health
+const BIGS={
+  warden:{name:'The Warden',col:'#ff4f6e',wake:'He rises in chains. Roll out of the red lanes',death:'FALLS'},
+  oculus:{name:'The Oculus',col:'#9ef0ff',wake:'It has seen you. Step out of the blue rings',death:'IS BLIND'},
+};
+function spawnBig(ch,x,y,fin){
+  const kind=BIG_CH[ch];let e;
+  if(kind==='warden')e=spawnEnemy('demon',{x,y,warden:true,hpMul:fin?1:WARDEN_MINI_HP});
+  else{e=spawnEnemy('eye',{x,y,hpMul:fin?9:5.5,dmgMul:fin?1.4:1.25});e.ocZ=fin?1.9:1.6;e.r=fin?26:22}
+  e.big=kind;e.bossName=BIGS[kind].name;
+  return e;
+}
+const isBig=e=>!!e.big||e===boss;   // bosses and mini-bosses: no knockback, no small hp bar, big death
 function spawnEnemy(type,o={}){
   const Tt=ET[type],mult=1+(floor-1)*0.3;
-  const hp=(o.boss?900:Tt.hp)*mult*(o.hpMul||1);
-  const e={type,x:o.x,y:o.y,hp,max:hp,r:o.boss?34:Tt.r,spd:Tt.spd*(o.spdMul||1),fire:0,touch:0,flash:0,
-    boss:!!o.boss,c:o.boss?'#ff2b6b':Tt.c,shape:Tt.shape,wt:0,wa:0,shot:2.4,phase:0,
+  const hp=(o.warden?900:Tt.hp)*mult*(o.hpMul||1);
+  const e={type,x:o.x,y:o.y,hp,max:hp,r:o.warden?34:Tt.r,spd:Tt.spd*(o.spdMul||1),fire:0,touch:0,flash:0,
+    warden:!!o.warden,c:o.warden?'#ff2b6b':Tt.c,shape:Tt.shape,wt:0,wa:0,shot:2.4,phase:0,
     anim:'idle',animT:Math.random(),face:1,dmgMul:o.dmgMul||1,elite:!!o.elite,dormant:!!o.dormant};
   enemies.push(e);
   return e;
@@ -56,7 +72,7 @@ function buildLevel(L){
   seen=Array.from({length:MH},()=>new Uint8Array(MW));
   rooms=[];bloodDrops=[];vatFlies=[];vatShown=0;chests=[];enemies=[];bullets=[];ebullets=[];ground=[];corpses=[];decor=[];decals=[];fxs=[];fireWaves=[];pillars=[];burns=[];
   const faces={},floors={},solid=new Uint8Array(MW*MH),areas=[],foes=[];
-  let start=null,altarAt=null,warden=null,hearth=null,stashAt=null,bedAt=null,engineAt=null;const gates=[],minis=[];
+  let start=null,altarAt=null,hearth=null,stashAt=null,bedAt=null,engineAt=null;const gates=[],bigs=[];
   L.map.forEach((row,y)=>{for(let x=0;x<row.length;x++){
     const ch=row[x],k=x+','+y,px=x*T+T/2,py=y*T+T/2;
     if(ch==='#'||FACE_CH[ch]){if(FACE_CH[ch])faces[k]=FACE_CH[ch];continue}   // walls stay 0
@@ -71,8 +87,7 @@ function buildLevel(L){
     if(DECO_CH[ch])decor.push({tx:x,ty:y,kind:DECO_CH[ch],seed:hash(x,y)});
     if(ch>='2'&&ch<='7')areas.push({x:px,y:py,tx:x,ty:y,n:+ch,done:false});
     if(ENEMY_CH[ch])foes.push({x:px,y:py,tx:x,ty:y,type:ENEMY_CH[ch][0],elite:!!ENEMY_CH[ch][1]});
-    if(ch==='W')warden={x:px,y:py};
-    if(ch==='O')minis.push({x:px,y:py,tx:x,ty:y,type:'eye'});
+    if(BIG_CH[ch])bigs.push({ch,x:px,y:py,tx:x,ty:y});
     if(ch==='G')gates.push({tx:x,ty:y});
     if(ch==='F')hearth={tx:x,ty:y};
     if(ch==='Z')stashAt={x:px,y:py,tx:x,ty:y};
@@ -99,11 +114,13 @@ function buildLevel(L){
     spawnEnemy(f.type,{x:f.x,y:f.y,hpMul:(1+0.22*(t-1))*(f.elite?1.8:1),dmgMul:(1+0.12*(t-1))*(f.elite?1.35:1),
       spdMul:f.elite?1.15:1,elite:f.elite});
   }
-  boss=warden?spawnEnemy('demon',{x:warden.x,y:warden.y,boss:true,dormant:true}):null;
-  // mini-bosses: big, tough, asleep until you walk into their area (see js/eye.js for the Oculus)
-  for(const m of minis){
-    const e=spawnEnemy(m.type,{x:m.x,y:m.y,hpMul:5.5,dmgMul:1.25,dormant:true});
-    e.miniboss=true;e.ocZ=1.6;e.r=22;e.bossName='The Oculus';e.wakeArea=tierAt(m.tx,m.ty);
+  // Big foes sleep until you walk into their area. The one named by L.finalBoss is the level's
+  // BOSS: it waits behind the arena gate and must die before the stairs open. The rest are mini-bosses.
+  boss=null;
+  for(const b of bigs){
+    const fin=b.ch===(L.finalBoss||'W');
+    const e=spawnBig(b.ch,b.x,b.y,fin);e.dormant=true;e.wakeArea=tierAt(b.tx,b.ty);
+    if(fin)boss=e;else e.miniboss=true;
   }
   P.x=start.x;P.y=start.y;P.vx=0;P.vy=0;
   level={name:L.name,areaNames:L.areas||{},hints:L.hints||{},faces,floors,solid,areas,altarAt,steps,
@@ -113,13 +130,19 @@ function buildLevel(L){
 }
 /* ----- THE ARENA GATE -----
    'G' tiles in a level map are open floor until the boss fight starts. Then they become a wall
-   of chains (you're locked in with the Warden) until he dies. */
+   of chains (you're locked in with the level's boss) until it dies. */
 function sealArena(){
   if(!level||!level.gates.length||level.sealed)return;
   level.sealed=true;
   for(const g of level.gates){
-    // never trap the knight inside the wall: nudge him into the arena first
-    if(Math.floor(P.x/T)===g.tx&&Math.floor(P.y/T)===g.ty)P.x=(g.tx+1.5)*T;
+    // never trap the knight inside the wall: if any part of his body touches the gate tile,
+    // push him clear on the boss's side (the inside of the arena)
+    const gx=(g.tx+.5)*T,gy=(g.ty+.5)*T,pad=T/2+PLAYER_BODY+2;
+    if(Math.abs(P.x-gx)<pad&&Math.abs(P.y-gy)<pad){
+      const bx=boss?boss.x-gx:1,by=boss?boss.y-gy:0;
+      if(Math.abs(bx)>=Math.abs(by))P.x=gx+Math.sign(bx||1)*pad;else P.y=gy+Math.sign(by||1)*pad;
+      P.vx=P.vy=0;P.dash=null;
+    }
     map[g.ty][g.tx]=0;level.faces[g.tx+','+g.ty]='wallChains';
     for(let i=0;i<10;i++)parts.push({x:(g.tx+.5)*T+rnd(-12,12),y:(g.ty+.5)*T+rnd(-12,12),vx:rnd(-40,40),vy:rnd(-40,40),life:.6,max:.6,c:pick(['#5d5059','#4a3f48']),s:2,ground:1});
   }
@@ -168,7 +191,7 @@ function genFloor(){
       spawnEnemy(pickType(),p);
     }
   }
-  boss=spawnEnemy('demon',{x:(L.x+L.w/2)*T,y:(L.y+L.h/2)*T,boss:true});
+  boss=spawnBig('W',(L.x+L.w/2)*T,(L.y+L.h/2)*T,true);
   const s0=rooms[0];
   P.x=(s0.x+s0.w/2)*T;P.y=(s0.y+s0.h/2)*T;P.vx=0;P.vy=0;
   decorate();
@@ -210,11 +233,11 @@ function newGame(){
 }
 /* ----- THE BLOOD VAT -----
    Every kill pours blood into the vat (tougher foes give more). The stairs stay sealed until
-   the vat is full AND the Warden is dead, so you can't rush past a level. The vat needs
+   the vat is full AND the boss is dead, so you can't rush past a level. The vat needs
    VAT_SHARE of all the blood in the level: most of it, but not every last rat. */
 const VAT_SHARE=0.65;
 let vat=0,vatNeed=0;
-const bloodOf=e=>e.boss?40:e.miniboss?60:(ET[e.type].xp*(e.elite?2:1));
+const bloodOf=e=>e===boss?60:e.miniboss?50:(ET[e.type].xp*(e.elite?2:1));
 function fillVatNeed(){vat=0;vatNeed=Math.round(enemies.reduce((t,e)=>t+bloodOf(e),0)*VAT_SHARE)}
 const vatFull=()=>vat>=vatNeed;
 const stairsLocked=()=>!(level&&level.safe)&&((boss&&!boss.dead)||!vatFull());

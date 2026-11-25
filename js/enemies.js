@@ -86,10 +86,10 @@ function drawTelegraphs(proj){
   for(const e of enemies){
     if(e.dead)continue;
     if(e.type==='eye'){drawOculusMarks(e,proj);continue}
-    if(e.boss&&e.act==='rest'){   // a dim gold ring: he's open
+    if(e.warden&&e.act==='rest'){   // a dim gold ring: he's open
       ctx.globalAlpha=0.35+0.2*Math.sin(time*8);polyFill(proj,ringPts(e.x,e.y,e.r+8),null,'#ffe14f');continue}
     if(e.act!=='wind')continue;
-    if(e.boss&&e.atk==='burst'){
+    if(e.warden&&e.atk==='burst'){
       const k=Math.min(1,1-e.actT/e.windMax);
       for(const a of e.lanes){
         const L=60+k*200,w=5,px=-Math.sin(a)*w,py=Math.cos(a)*w,x0=e.x+Math.cos(a)*e.r,y0=e.y+Math.sin(a)*e.r,x1=e.x+Math.cos(a)*L,y1=e.y+Math.sin(a)*L;
@@ -98,7 +98,7 @@ function drawTelegraphs(proj){
       }
       continue;
     }
-    if(e.boss&&e.atk==='slam'){
+    if(e.warden&&e.atk==='slam'){
       const k=Math.min(1,1-e.actT/e.windMax);
       ctx.globalAlpha=0.16+0.08*blink;polyFill(proj,ringPts(e.x,e.y,WARDEN_SLAM_R,40),'#ff2a1a');
       addLight(e.x,e.y,WARDEN_SLAM_R*2.4,0.6);

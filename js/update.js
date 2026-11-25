@@ -75,7 +75,7 @@ function update(dt){
   if(tileAt(P.x,P.y)===3&&level&&level.safe){leaveShack();return}
   if(tileAt(P.x,P.y)===3){
     if(stairsLocked()){
-      if(!P.warned){log(boss&&!boss.dead?'The Warden seals the stairs. Slay him!':`The stairs are sealed until the blood vat is full (${Math.floor(vat/vatNeed*100)}%). Kill more.`,'#ff4f6e');P.warned=true}
+      if(!P.warned){log(boss&&!boss.dead?`${boss.bossName} seals the stairs. Slay it!`:`The stairs are sealed until the blood vat is full (${Math.floor(vat/vatNeed*100)}%). Kill more.`,'#ff4f6e');P.warned=true}
     }else{
       descend();return;
     }
@@ -88,21 +88,17 @@ function update(dt){
     if(dx*dx+dy*dy<=64&&x>=0&&y>=0&&x<MW&&y<MH)seen[y][x]=1;
   }
 
-  // Handcrafted level: announce each area as you reach it; the Warden wakes at the altar
+  // Handcrafted level: announce each area as you reach it; big foes wake in their own area (wakeBig)
   if(level){
     for(const a of level.areas){
       if(a.done||Math.hypot(P.x-a.x,P.y-a.y)>T*2.4)continue;
       a.done=true;
       announce(level.areaNames[a.n].toUpperCase(),a.n===7?'#ff3a2a':'#d9a066',2.8,level.hints[a.n]||'');
       log(`${level.areaNames[a.n]}: ${level.hints[a.n]||''}`,'#d9a066');
-      if(a.n===7&&boss&&!boss.dead){sealArena();boss.dormant=false;shake=0.6;log('The gate slams shut. The Warden rises from the altar.','#ff4f6e');SFX.play('roar')}
-      else SFX.play('area');
-      for(const e of enemies)if(e.miniboss&&e.dormant&&e.wakeArea===a.n){
-        e.dormant=false;shake=0.5;SFX.play('roar');SFX.play('zap');
-        announce(e.bossName.toUpperCase(),'#9ef0ff',3,'It has seen you');log(`${e.bossName} opens its eye.`,'#9ef0ff');
-      }
+      SFX.play('area');
+      for(const e of enemies)if(isBig(e)&&!e.dead&&e.dormant&&e.wakeArea===a.n)wakeBig(e);
     }
-    if(boss&&boss.dormant&&dist(boss,P)<200){boss.dormant=false;sealArena();SFX.play('roar')}
+    if(boss&&boss.dormant&&!boss.dead&&dist(boss,P)<200)wakeBig(boss);
   }
 
   // enemies
@@ -113,7 +109,7 @@ function update(dt){
     const nx=dx/d,ny=dy/d;
     e.touch-=dt;e.flash-=dt;e.animT+=dt;
     let vx=0,vy=0;
-    if((d<Tt.aggro||e.boss)&&!e.dormant){
+    if((d<Tt.aggro||e.warden)&&!e.dormant){
       if(e.type==='archer'){
         if(d>170){vx=nx*e.spd;vy=ny*e.spd}
         else if(d<120){vx=-nx*e.spd;vy=-ny*e.spd}
@@ -122,7 +118,7 @@ function update(dt){
           ebullets.push({x:e.x,y:e.y,vx:nx*190,vy:ny*190,life:3.5,dmg:(9+floor*2)*e.dmgMul,r:4,c:'#ffe6b0'});
           e.fire=Tt.shoot;e.shotAnim=0.3;if(d<420)SFX.play('arrow');
         }
-      }else if(e.boss){
+      }else if(e.warden){
         [vx,vy]=wardenAI(e,d,nx,ny,dt);
       }else if(e.type==='hound'){
         [vx,vy]=houndAI(e,d,nx,ny,dt);
@@ -142,12 +138,12 @@ function update(dt){
     if(e.kbT>0){e.kbT-=dt;slide(e,e.kbx*dt,e.kby*dt,e.r*0.8);vx*=0.2;vy*=0.2}   // knocked back: barely steers
     slide(e,vx*dt,vy*dt,e.r*0.8);
     // Face the player when hunting, otherwise face the way it walks
-    if(Math.abs(vx)>2||Math.abs(vy)>2){const sdx=dx-dy,svx=vx-vy;e.face=(d<Tt.aggro||e.boss)?(sdx<0?-1:1):(svx<0?-1:1)}
+    if(Math.abs(vx)>2||Math.abs(vy)>2){const sdx=dx-dy,svx=vx-vy;e.face=(d<Tt.aggro||e.warden)?(sdx<0?-1:1):(svx<0?-1:1)}
     e.shotAnim=(e.shotAnim||0)-dt;
     // Pick an animation from its state
     if(Tt.sprite){
       const mv=Math.hypot(vx,vy)>5;
-      if(e.boss&&e.act==='rest')setAnim(e,'idle');
+      if(e.warden&&e.act==='rest')setAnim(e,'idle');
       else if(e.act==='wind')setAnim(e,e.type==='demon'?'attack':'idle');
       else if(e.act==='lunge'||(e.act==='rec'&&e.type==='demon'))setAnim(e,'attack');
       else setAnim(e, e.touch>0.5||e.shotAnim>0?'attack': e.flash>0.05?'hurt': mv?'walk':'idle');
@@ -156,10 +152,10 @@ function update(dt){
       e.hp-=14*dt;
       if(e.hp<=0){killEnemy(e);continue}
     }
-    if(e.boss){
+    if(e.warden){
       const reach=bodyR(e)+PLAYER_BODY;if(d<reach&&!e.dormant)slide(P,nx*(reach-d),ny*(reach-d),10);
     }else if(d<bodyR(e)+PLAYER_BODY&&e.touch<=0){
-      const mult=(1+(floor-1)*0.15)*(e.boss?1.2:1);
+      const mult=1+(floor-1)*0.15;
       hurt(Tt.dmg*mult*e.dmgMul*(e.act==='lunge'?1.3:1));   // a landed lunge bites harder
       e.touch=0.7;
       burst(e.x,e.y,'#ff4f2b',6);
@@ -202,4 +198,13 @@ function update(dt){
   ground=ground.filter(g=>!g.dead&&g.age<120);
   enemies=enemies.filter(e=>!e.dead);
   calc();
+}
+
+// a big foe wakes: its name is announced; a final boss also slams the arena gate shut
+function wakeBig(e){
+  const B=BIGS[e.big]||BIGS.warden;
+  e.dormant=false;shake=Math.max(shake,0.6);SFX.play('roar');if(e.type==='eye')SFX.play('zap');
+  announce(e.bossName.toUpperCase(),B.col,3,B.wake);
+  if(e===boss){sealArena();log(`The gate slams shut. ${e.bossName} wakes.`,'#ff4f6e')}
+  else log(`${e.bossName} wakes.`,B.col);
 }
