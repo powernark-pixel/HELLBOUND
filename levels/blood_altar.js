@@ -8,14 +8,16 @@
    S  start             X  stairs down          A  the altar        C  chest
    c  candles  k  skulls  b  bones  p  pillar  x  fallen crucifix  u  blood pool  g  blood sigil
    m rat  i imp  h hound  a archer  d demon   (CAPITALS = elite: tougher, faster, hit harder)
-   W  the Warden of the altar (boss)
-   O  the Oculus (mini-boss): sleeps until you enter its area, then wakes
-   G  arena gate: open floor until the Warden wakes, then it slams shut until he dies
+   W  the Warden      O  the Oculus
+      Big foes sleep until you enter their area. The one named in finalBoss below is the
+      level's boss (behind the arena gate); any other is a mini-boss on the way.
+   G  arena gate: open floor until the boss wakes, then it slams shut until the boss dies
    2-7  area entrances: the area's name is announced when you reach it */
 window.LEVEL_BLOOD_ALTAR={
   name:'The Blood Altar',
+  finalBoss:'O',   // the Oculus waits at the altar; the Warden guards the Blood Nave
   areas:{1:'The Narthex',2:'The Bone Corridor',3:'The Blood Nave',4:'The Ossuary Gallery',5:'The Chapel of Chains',6:"The Penitent's Gauntlet",7:'The Blood Altar'},
-  hints:{1:'Rats gnaw at the dead. Follow the carpet down.',2:'Imps and rats nest in the bones',3:'Something vast is watching from across the bridge. Step out of the blue rings',4:'Archers on the ledge. Cross the moat at the gaps',5:'A brute in chains guards the chapel',6:'Elite hounds. Roll through them',7:'The gate seals behind you. Hide behind the pillars from his orbs'},
+  hints:{1:'Rats gnaw at the dead. Follow the carpet down.',2:'Imps and rats nest in the bones',3:'Something vast stirs across the bridge. Roll out of the red lanes',4:'Archers on the ledge. Cross the moat at the gaps',5:'A brute in chains guards the chapel',6:'Elite hounds. Roll through them',7:'The gate seals behind you. Its tentacles strike where the blue rings glow'},
   // area boundaries in tiles [area, left, top, right, bottom]: enemies inside get that area's toughness
   zones:[[1,3,43,14,52],[2,15,47,27,49],[3,28,31,51,53],[4,20,15,22,22],[4,20,23,57,30],[5,6,3,23,14],[6,24,5,40,10],[7,41,1,60,19]],
   map:[
@@ -28,7 +30,7 @@ window.LEVEL_BLOOD_ALTAR={
     "######...p......p...........~~......~~a..#...##........##...##",
     "######......d.................H..........G...ss........ss...##",
     "######...................6.....p....d....G..7=====.........k##",
-    "######.....u......................H......G.~......W.......~.##",
+    "######.....u......................H......G.~......O.......~.##",
     "######...p......p..........p....~~.p..a..#.~......gg......~.##",
     "######...i....x.........##################.~..............~.##",
     "######..................##################..................##",
@@ -66,7 +68,7 @@ window.LEVEL_BLOOD_ALTAR={
     "###.c.....m..c.#############..p..p.~~~.p...p..################",
     "###...p....p...#############.......~~~........################",
     "###.........m..#s#o#s#o#s#o#.3.u...~~~........################",
-    "###.b................i.b.k.........===...O....################",
+    "###.b................i.b.k.........===...W....################",
     "###..S.========.2..m......i.==========........################",
     "###..........m....k.b.m.i..........~~~...u....################",
     "###............#############..m....~~~........################",

@@ -77,6 +77,7 @@ pale blue means stardust, pink means perks. Don't reuse a meaning colour for som
 
 - **A monster:** add its stats to `ET` in `js/data.js`; give it a sprite sheet (`tools/art/monsters.py`) or a live drawing (like `js/eye.js`); give it an AI function in `js/enemies.js` and hook it up in the enemy loop in `js/update.js`; give it a letter in the level legend (`ENEMY_CH` in `js/world.js`).
 - **A level:** copy `levels/blood_altar.js`; the map is plain text, one character per tile, with the legend at the top of that file.
+- **A boss or mini-boss:** put a big foe's letter in the map (`W` the Warden, `O` the Oculus; see `BIGS` in `js/world.js`). The level's `finalBoss` names which one waits behind the arena gate; any other is a mini-boss that wakes when you enter its area.
 - **A sound:** write a synth recipe in `audio/sfx.js`, or list recorded files in `SOUND_FILES` there (see `audio/README.md`).
 - **A perk:** add a line to `PERKS` in `js/perks.js`, then put its effect where it matters using `hasPerk('name')`.
 - **A colour:** add it to `COL` in `js/style.js` and to the table above.
