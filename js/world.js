@@ -34,9 +34,12 @@ function pickType(){
   return pick(['hound','archer','demon','imp']);
 }
 // o.hpMul / o.dmgMul / o.spdMul scale an enemy (used by handcrafted levels for tougher areas and elites)
+// The Warden's health. 900 made the fight last ~19 s for the bot playtest (tests/playtest.mjs);
+// the target is 60 to 90 s for a person on a first try, so he's tougher now.
+const WARDEN_HP=1600;
 function spawnEnemy(type,o={}){
   const Tt=ET[type],mult=1+(floor-1)*0.3;
-  const hp=(o.boss?900:Tt.hp)*mult*(o.hpMul||1);
+  const hp=(o.boss?WARDEN_HP:Tt.hp)*mult*(o.hpMul||1);
   const e={type,x:o.x,y:o.y,hp,max:hp,r:o.boss?34:Tt.r,spd:Tt.spd*(o.spdMul||1),fire:0,touch:0,flash:0,
     boss:!!o.boss,c:o.boss?'#ff2b6b':Tt.c,shape:Tt.shape,wt:0,wa:0,shot:2.4,phase:0,
     anim:'idle',animT:Math.random(),face:1,dmgMul:o.dmgMul||1,elite:!!o.elite,dormant:!!o.dormant};
@@ -114,6 +117,19 @@ function buildLevel(L){
 /* ----- THE ARENA GATE -----
    'G' tiles in a level map are open floor until the boss fight starts. Then they become a wall
    of chains (you're locked in with the Warden) until he dies. */
+// The gate only shuts once the knight is fully through it, on the Warden's side. Shutting it
+// while any part of him overlapped a gate tile froze him in the wall (found by the bot playtest).
+function readyToSeal(){
+  if(!level||!level.gates.length||!boss)return true;
+  let gx=0;
+  for(const g of level.gates){
+    const cx=Math.max(g.tx*T,Math.min(P.x,(g.tx+1)*T)),cy=Math.max(g.ty*T,Math.min(P.y,(g.ty+1)*T));
+    if(Math.hypot(P.x-cx,P.y-cy)<PLAYER_BODY+2)return false;   // still touching the gate
+    gx+=(g.tx+.5)*T;
+  }
+  gx/=level.gates.length;
+  return Math.sign(P.x-gx)===Math.sign(boss.x-gx);   // on the same side of the gate as the Warden
+}
 function sealArena(){
   if(!level||!level.gates.length||level.sealed)return;
   level.sealed=true;
@@ -212,7 +228,7 @@ function newGame(){
    Every kill pours blood into the vat (tougher foes give more). The stairs stay sealed until
    the vat is full AND the Warden is dead, so you can't rush past a level. The vat needs
    VAT_SHARE of all the blood in the level: most of it, but not every last rat. */
-const VAT_SHARE=0.6;
+const VAT_SHARE=0.7;   // the bot playtest filled 60% by area 5 or 6; 70% still fills before the Warden without grinding
 let vat=0,vatNeed=0;
 const bloodOf=e=>e.boss?40:e.miniboss?60:(ET[e.type].xp*(e.elite?2:1));
 function fillVatNeed(){vat=0;vatNeed=Math.round(enemies.reduce((t,e)=>t+bloodOf(e),0)*VAT_SHARE)}

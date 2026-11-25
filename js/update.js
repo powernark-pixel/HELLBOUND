@@ -93,6 +93,7 @@ function update(dt){
   if(level){
     for(const a of level.areas){
       if(a.done||Math.hypot(P.x-a.x,P.y-a.y)>T*2.4)continue;
+      if(a.n===7&&boss&&!boss.dead&&!readyToSeal())continue;   // wait until he's through the gate
       a.done=true;
       announce(level.areaNames[a.n].toUpperCase(),a.n===7?'#ff3a2a':'#d9a066',2.8,level.hints[a.n]||'');
       log(`${level.areaNames[a.n]}: ${level.hints[a.n]||''}`,'#d9a066');
@@ -103,7 +104,7 @@ function update(dt){
         announce(e.bossName.toUpperCase(),'#9ef0ff',3,'It has seen you');log(`${e.bossName} opens its eye.`,'#9ef0ff');
       }
     }
-    if(boss&&boss.dormant&&dist(boss,P)<200){boss.dormant=false;sealArena();SFX.play('roar')}
+    if(boss&&boss.dormant&&dist(boss,P)<200&&readyToSeal()){boss.dormant=false;sealArena();SFX.play('roar')}
   }
 
   // enemies
@@ -145,7 +146,8 @@ function update(dt){
       if(e.act)e.act=null;
       e.wt-=dt;
       if(e.wt<=0){e.wt=rnd(1,3);e.wa=rnd(0,TAU)}
-      vx=Math.cos(e.wa)*e.spd*.3;vy=Math.sin(e.wa)*e.spd*.3;
+      // sleeping bosses stay put (a wandering Warden could wake through the gate and lock you out)
+      if(!e.dormant){vx=Math.cos(e.wa)*e.spd*.3;vy=Math.sin(e.wa)*e.spd*.3}
     }
     if(e.kbT>0){e.kbT-=dt;slide(e,e.kbx*dt,e.kby*dt,e.r*0.8);vx*=0.2;vy*=0.2}   // knocked back: barely steers
     slide(e,vx*dt,vy*dt,e.r*0.8);

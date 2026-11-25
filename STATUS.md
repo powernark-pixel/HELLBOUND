@@ -19,11 +19,11 @@ playing that one run and tuning it.
 |---|---|---|
 | 1 | Play the run start to finish 3 times; write down the 3 worst moments. Those go first. | To do (needs Dave) |
 | 2 | Lock the enemy list (rat, imp, hound, archer, demon, Oculus, Warden). Each gets a clear warning before it attacks and one clear way to beat it. No new enemies. | **Archers now aim with a warning line**. Hounds, demons, the Oculus and the Warden already warn. Rats and imps just bite. |
-| 3 | Every button has a reason: combo, dash, Fire Line, Flask, Cleave. | To do (needs play) |
-| 4 | Each of the 7 areas teaches one thing; the vat fills naturally on the way, no grinding at the stairs. | **Vat needs 60% (was 65%), and the Warden's death pulls in every drop left on the floor.** Area tuning needs play. |
-| 5 | The Warden is the payoff: about 60 to 90 seconds on a first try, hard but fair. | **His health bar shows as soon as he wakes, and he announces his second phase.** Length needs play. |
+| 3 | Every button has a reason: combo, dash, Fire Line, Flask, Cleave. | **Done, needs a feel check:** Cleave staggers a crowd, Fire Line spoils archers' shots, rolls show DODGE, the skill bar shows cooldowns and flashes when ready. |
+| 4 | Each of the 7 areas teaches one thing; the vat fills naturally on the way, no grinding at the stairs. | **The Warden's death pulls in every drop left on the floor.** The bot playtest showed the vat filling easily, so it now needs 70%. 23 of 23 bot runs reached the Shack. |
+| 5 | The Warden is the payoff: about 60 to 90 seconds on a first try, hard but fair. | **Bar on waking, enrage announcement, gate bugs fixed, health 900 → 1600.** Bot fight went from ~19 s to ~34 s, which should be roughly 60 to 90 s for a person. |
 | 6 | Death back to fighting in under 10 seconds. | **Done: R, Space, Enter or a click rises you again after 0.6 s.** |
-| 7 | You can always read your health, incoming hits and warnings in a crowd. | **Enemy shots have a dark outline; the screen edges flash red when you're hit.** |
+| 7 | You can always read your health, incoming hits and warnings in a crowd. | **Done:** the knight shows through enemies, a health bar under his feet, warnings drawn over crowds, rats and imps flash before biting, quieter small damage numbers. Next: hide enemy health bars except the one you last hit. |
 | 8 | One strong reward choice in the Shack (perks or the Engine, not both). Don't add more reward systems. | To decide |
 
 ## Parked (log ideas in `docs/IDEAS.md`, don't build them)
@@ -36,6 +36,12 @@ playing that one run and tuning it.
 - Story, the mind and visions
 - The Unreal Engine question
 - The art and style overhaul
+
+## Measuring it
+
+`tests/playtest.mjs` plays the run with a bot and writes a report (time, damage and deaths per area,
+vat %, boss fight lengths). Run it before and after a tuning change. A bot plays faster than a person,
+so compare numbers, don't treat them as what a player feels.
 
 ## Loose ends
 
