@@ -22,7 +22,7 @@ function drinkFlask(){
   if(scene!=='game'||dead||paused||anyPanelOpen())return;
   if(P.flasks<1){skillDeny('skFlask','No blood flasks left. Kill to refill them.');return}
   if(P.hp>=P.maxHp){skillDeny('skFlask');log('Already at full health.',COL.text);return}
-  P.flasks--;P.healLeft+=P.maxHp*FLASK_HEAL;P.healT=1;
+  P.flasks--;trialEvent('flask');P.healLeft+=P.maxHp*FLASK_HEAL;P.healT=1;
   SFX.play('drink');addText(P.x,P.y-30,'FLASK','#ff6a6a',1);
   for(let i=0;i<14;i++)parts.push({x:P.x+rnd(-8,8),y:P.y+rnd(-4,4),vx:rnd(-12,12),vy:rnd(-60,-25),life:rnd(.4,.8),max:.8,c:pick(['#c4302c','#ff6a6a','#8f1a1f']),s:rnd(1,2)});
 }
@@ -58,7 +58,7 @@ function castSpin(){
   for(const e of enemies){
     if(e.dead||dist(e,P)>R+hurtR(e))continue;
     dealDamage(e,S.damage*1.6);
-    if(!e.boss&&!e.dead){
+    if(!isBig(e)&&!e.dead){
       const a=Math.atan2(e.y-P.y,e.x-P.x),k=CLEAVE_SHOVE*(e.type==='demon'?0.5:1);
       e.kbx=Math.cos(a)*k;e.kby=Math.sin(a)*k;e.kbT=CLEAVE_SHOVE_T;
       e.act=null;e.touch=Math.max(e.touch,CLEAVE_STAGGER);   // the stagger: wind-up cancelled, no bite for a moment

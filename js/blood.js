@@ -36,8 +36,8 @@ function addBlood(v){
     if(P.ichor>=INJECT_NEED){SFX.play('pickup');log('The syringe is full. Press V to inject the blood.',COL.bloodPale)}
   }
   if(!was&&vatFull()){
-    SFX.play('toll');
-    if(boss&&!boss.dead){announce('THE VAT IS FULL',COL.bloodHi,2.6,'Slay the Warden to open the way down');log('The blood vat is full. Only the Warden bars the way.',COL.bloodHi)}
+    SFX.play('toll');trialEvent('vatFull');
+    if(boss&&!boss.dead){announce('THE VAT IS FULL',COL.bloodHi,2.6,`Slay ${boss.bossName} to open the way down`);log(`The blood vat is full. Only ${boss.bossName} bars the way.`,COL.bloodHi)}
     else{announce('THE VAT IS FULL',COL.gold,2.6,'The stairs are open. Follow the light');log('The blood vat is full. The stairs are open.',COL.gold)}
   }
 }

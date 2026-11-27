@@ -66,7 +66,7 @@
         <span class="kbd">H</span><span>Show hitboxes: your body (blue), enemy bodies (red), what your blade can hit (yellow)</span>
         <span class="kbd">M</span><span>Mute or unmute sound</span>
       </div>
-      <div class="small muted">Slay the Warden of each circle to unseal the stairs, then step onto them to descend.</div>
+      <div class="small muted">Slay the boss of each circle to unseal the stairs, then step onto them to descend.</div>
       <div class="small muted" style="margin-top:calc(var(--u)*3)">Art credits: Blood FX by jasontomlee · Rat by WilliamQM (Dark Enemies Pack) · Weapons, armour &amp; flask by Momentary Unicorn · Wall torches from Dungeon Tileset II Extended by Niji · Sounds by Kenney</div>
       <div style="text-align:center;margin-top:calc(var(--u)*4)"><button class="gbtn" data-close="controls">Back</button></div>
     </div>
@@ -76,6 +76,9 @@
   <div id="pause" class="overlay shade">
     <div class="panel frame" id="pausePanel">
       <h2>Paused</h2>
+      <div class="divider"></div>
+      <div class="trialHead">Trials</div>
+      <div id="trialList"></div>
       <div class="divider"></div>
       <button class="gbtn" id="btnResume">Resume</button>
       <button class="gbtn" id="btnPauseControls">Controls</button>
@@ -149,6 +152,7 @@
 <script src="js/render.js"></script>
 <script src="js/liquids.js"></script>
 <script src="js/blood.js"></script>
+<script src="js/trials.js"></script>
 <script src="js/ambience.js"></script>
 <script src="js/title.js"></script>
 <script src="js/hud.js"></script>

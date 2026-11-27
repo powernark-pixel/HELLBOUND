@@ -52,7 +52,7 @@ hurt=function(d,noIF){const before=P.hp+P.sh;_hurt(d,noIF);const lost=before-(P.
   if(lost>0&&B.att){B.cur().dmg+=lost;B.att.lastHit={src:noIF?'blood river':B.nearestType(),t:B.simT}}};
 killEnemy=function(e){const was=e.dead;_kill(e);if(!was&&e.dead&&B.att){B.cur().kills++;
   if(e.miniboss&&B.att.ocWake!=null&&B.att.ocDead==null)B.att.ocDead=B.simT;
-  if(e.boss&&B.att.wardenDead==null){B.att.wardenDead=B.simT;B.att.vatAtWarden=vatPct()}}};
+  if((e===boss)&&B.att.wardenDead==null){B.att.wardenDead=B.simT;B.att.vatAtWarden=vatPct()}}};
 drinkFlask=function(){const f=P.flasks;_flask();if(P.flasks<f&&B.att)B.cur().flasks++};
 const vatPct=()=>vatNeed?Math.min(100,Math.round(vat/vatNeed*100)):100;
 B.nearestType=()=>{let best=null,bd=1e9;for(const e of enemies){if(e.dead)continue;const d=dist(e,P);if(d<bd){bd=d;best=e}}
@@ -125,7 +125,7 @@ function danger(){
     if(e.type==='eye'&&e.ocs&&(e.ocs.mode==='aim'||e.ocs.mode==='strike')&&noticed(e.ocs,true)){
       for(const tg of e.ocs.targets)if(Math.hypot(P.x-tg.x,P.y-tg.y)<ocStrikeR(e)+PLAYER_BODY+8)away(tg.x,tg.y,1,e.ocs.t+(e.ocs.mode==='aim'?0.1:0))}
     if((e.act!=='wind'&&e.act!=='lunge')||!noticed(e,true))continue;
-    if(e.boss){
+    if((e===boss)){
       if(e.atk==='slam'&&d<WARDEN_SLAM_R+12)away(e.x,e.y,1,e.actT);
       if(e.atk==='burst'&&e.lanes)for(const a of e.lanes)if(lane(e.x,e.y,Math.cos(a),Math.sin(a),600,6+PLAYER_BODY+6,e.actT+0.3))break;
     }else if(e.type==='demon'){if(d<SLAM_R+PLAYER_BODY+8)away(e.x,e.y,1,e.actT)}
@@ -168,9 +168,9 @@ function nextGoal(){
 function pickTarget(){
   let best=null,bs=1e9;
   for(const e of enemies){
-    if(e.dead||e.dormant)continue;const d=dist(e,P);if(d>(e.boss||e.miniboss?600:300))continue;
-    const l=pathLen(Math.floor(e.x/T),Math.floor(e.y/T));if(l<0||l>12&&!e.boss&&!e.miniboss)continue;
-    const s=d+(e.boss?-80:0);if(s<bs){bs=s;best=e}
+    if(e.dead||e.dormant)continue;const d=dist(e,P);if(d>((e===boss)||e.miniboss?600:300))continue;
+    const l=pathLen(Math.floor(e.x/T),Math.floor(e.y/T));if(l<0||l>12&&!(e===boss)&&!e.miniboss)continue;
+    const s=d+((e===boss)?-80:0);if(s<bs){bs=s;best=e}
   }
   return best;
 }

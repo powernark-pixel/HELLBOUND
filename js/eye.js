@@ -78,7 +78,7 @@ function oculusAI(e,d,nx,ny,dt){
     if(s.dart>0){s.dart-=dt;return [s.dvx,s.dvy]}
     if(s.cd<=0&&d<300*(e.ocZ||1)){   // pick three exact spots: on you, and two around you
       // the boss version gets angrier below half health: 5 spots, less warning
-      const angry=e.miniboss&&e.hp<e.max*0.5,extra=e.miniboss?(angry?4:3):2;
+      const angry=isBig(e)&&e.hp<e.max*0.5,extra=e===boss?(angry?5:4):isBig(e)?(angry?4:3):2;
       s.mode='aim';s.t=s.tMax=angry?0.75:0.9;SFX.play('zap');
       const a0=rnd(0,TAU);
       s.targets=[{x:P.x,y:P.y}];
@@ -109,14 +109,14 @@ function oculusAI(e,d,nx,ny,dt){
     return [0,0];
   }
   if(s.mode==='hold'){if(s.t<=0){s.mode='retract';s.t=s.tMax=0.35}return [0,0]}
-  if(s.mode==='retract'){if(s.t<=0){s.mode='hover';s.t=rnd(0.2,0.5);s.cd=e.miniboss?rnd(1.6,2.4):rnd(2.2,3.4);s.targets=[]}return [0,0]}
+  if(s.mode==='retract'){if(s.t<=0){s.mode='hover';s.t=rnd(0.2,0.5);s.cd=e===boss?rnd(1.3,2):isBig(e)?rnd(1.6,2.4):rnd(2.2,3.4);s.targets=[]}return [0,0]}
   return [0,0];
 }
 // a tentacle lands: damage inside the ring, lightning across the floor, sparks
 const ocSparks=[],ocArcs=[];
 const ocStrikeR=e=>OC.STRIKE_R*(e.ocZ>1?1.2:1);
 function oculusImpact(e,x,y,harmless){
-  if(!harmless&&!dead&&Math.hypot(P.x-x,P.y-y)<ocStrikeR(e)+PLAYER_BODY)hurt(ET.eye.dmg*1.8*e.dmgMul);
+  if(!harmless&&!dead&&Math.hypot(P.x-x,P.y-y)<ocStrikeR(e)+PLAYER_BODY){hurt(ET.eye.dmg*1.8*e.dmgMul);trialEvent('struck')}
   shake=Math.max(shake,0.35);hitStop=Math.max(hitStop,0.04);SFX.play('slam');SFX.play('zap');
   decals.push({x,y,scorch:1});if(decals.length>200)decals.shift();
   for(let i=0;i<26;i++){const a=rnd(0,TAU),sp=rnd(60,220);

@@ -262,14 +262,14 @@ function drawIso(){
     let [sx,sy]=S_(e.x,e.y);if(e.act==='wind')sx+=Math.random()<0.5?-1:1;   // shivers while winding up
     if(e.bite>0)sy+=1;   // crouches before a bite
     if(e.elite){light(e.x,e.y,40,0.35);if(Math.random()<0.15)parts.push({x:e.x+rnd(-e.r,e.r),y:e.y+rnd(-4,6),vx:0,vy:rnd(-30,-12),life:0.6,max:0.6,c:'#c4302c',s:1})}
-    if(e.boss)light(e.x,e.y,90,0.45);
+    if(e.warden)light(e.x,e.y,90,0.45);
     items.push({d:(e.x+e.y)/T,draw:()=>{
       if(e.elite)pxEllipse(sx,sy+2,e.r+4+Math.sin(time*5)*1.5,(e.r+4)/2,'rgba(196,48,44,0.85)');
       if(e.type==='eye')drawOculus(e,sx,sy);   // drawn live, no sprite sheet (js/eye.js)
       else if(!drawSprite(spriteKey(e),e.anim,e.animT,sx,sy,e.face<0)){ctx.save();ctx.fillStyle=e.flash>0?'#fff':e.c;shape(e.shape,sx,sy-e.r,e.r);ctx.fill();ctx.restore()}
       else if(e.flash>0){ctx.save();ctx.globalAlpha=0.5;ctx.globalCompositeOperation='lighter';drawSprite(spriteKey(e),e.anim,e.animT,sx,sy,e.face<0);ctx.restore()}
       if(e.bite>0&&e.type!=='eye')drawSilhouette(spriteKey(e),e.anim,e.animT,sx,sy,e.face<0,COL.danger,BITE_FLASH);   // about to bite!
-      if(e.hp<e.max&&!e.boss&&!e.miniboss){
+      if(e.hp<e.max&&!isBig(e)){
         const w=Math.max(14,Math.round(e.r*2)),bx=sx-Math.round(w/2),by=sy-e.r-26;
         pxRect(bx-1,by-1,w+2,4,'#0a0608');pxRect(bx,by,w,2,'#33050a');
         pxRect(bx,by,Math.round(w*Math.max(0,e.hp/e.max)),2,'#c4302c');pxRect(bx,by,Math.round(w*Math.max(0,e.hp/e.max)),1,'#e8564a');

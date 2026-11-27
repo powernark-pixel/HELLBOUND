@@ -49,14 +49,26 @@ const lv = await page.evaluate(() => {
     allAreas: level && level.areas.every(a => reach(a.tx, a.ty)),
     allEnemies: enemies.every(e => reach(Math.floor(e.x / T), Math.floor(e.y / T))),
     allChests: chests.every(c => reach(Math.floor(c.x / T), Math.floor(c.y / T))),
-    wardenWaits: !!boss && boss.dormant === true,
+    bossWaits: !!boss && boss.dormant === true && boss.type === 'eye' && boss.wakeArea === 7,
+    wardenMid: enemies.some(e => e.warden && e.miniboss && e.dormant && e.wakeArea === 3),
     harderLater: (() => { const imps = enemies.filter(e => e.type === 'imp' && !e.elite); return Math.max(...imps.map(e => e.max)) > Math.min(...imps.map(e => e.max)); })()
   };
 });
 lv.loaded ? ok('New Game starts in Circle 1, The Blood Altar') : fail('the Blood Altar level did not load');
 lv.areas === '234567' ? ok('all six area entrances are in the map') : fail('area entrances missing: got ' + lv.areas);
 lv.stairs && lv.allAreas && lv.allEnemies && lv.allChests ? ok('stairs, areas, enemies and chests are all reachable from the start') : fail('part of the Blood Altar cannot be reached: ' + JSON.stringify(lv));
-lv.wardenWaits ? ok('the Warden waits at the altar until you arrive') : fail('the Warden is not waiting at the altar');
+lv.bossWaits ? ok('the Oculus waits at the altar as the final boss') : fail('the Oculus is not waiting at the altar');
+lv.wardenMid ? ok('the Warden waits in the Blood Nave as a mini-boss') : fail('the Warden is not in the Blood Nave');
+// trials: drinking a flask while the Warden lives fails "Unflinching"; filling the vat passes "Bleed the Altar"
+const tri = await page.evaluate(() => { const s0 = P.sigils; P.hp = 5; drinkFlask(); addBlood(vatNeed);
+  const st = id => trials.list.find(t => t.id === id).state; const r = { dry: st('dry'), vat: st('vat'), sigils: P.sigils - s0 };
+  vat = 0; P.flasks = flaskMax(); P.hp = P.maxHp; return r; });
+tri.dry === 'fail' && tri.vat === 'pass' && tri.sigils === 1 ? ok('trials pass and fail as you play, and passing earns a blood sigil') : fail('trials are wrong: ' + JSON.stringify(tri));
+// entering the arena must never leave the knight inside the gate wall
+const gate = await page.evaluate(() => { const g = level.gates[1]; P.x = (g.tx + .5) * T + 10; P.y = (g.ty + .5) * T; sealArena();
+  const stuck = [[1,0],[-1,0],[0,1],[0,-1]].some(([dx, dy]) => tileAt(P.x + dx * PLAYER_BODY, P.y + dy * PLAYER_BODY) === 0);
+  openArena(); return { stuck, inside: P.x > (g.tx + 1) * T }; });
+!gate.stuck && gate.inside ? ok('the arena gate pushes the knight inside, clear of the wall') : fail('the knight got stuck in the arena gate: ' + JSON.stringify(gate));
 lv.harderLater ? ok('enemies get tougher further along the path') : fail('enemy toughness does not rise along the path');
 
 // 2c. sound engine is loaded and has every sound
@@ -216,7 +228,7 @@ const loop = await page.evaluate(() => {
   enemies = []; P.hp = P.maxHp; P.inv = 0;
   // the Warden's bar shows as soon as he wakes; he announces his second phase
   enemies = []; ebullets = [];
-  boss = spawnEnemy('demon', { x: P.x + 300, y: P.y, boss: true }); boss.dormant = false;
+  boss = spawnBig('W', P.x + 300, P.y, true); boss.dormant = false;
   updateHUD && updateHUD(); r.bar = getComputedStyle(document.getElementById('bossbar')).display !== 'none';
   boss.hp = boss.max * 0.4; update(0.016);
   r.enraged = !!boss.enraged && /ENRAGED/.test(document.getElementById('banner').textContent);

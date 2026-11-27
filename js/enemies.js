@@ -121,12 +121,12 @@ function drawTelegraphs(proj,over=false){
       ctx.globalAlpha=OV;for(const tg of s.targets)polyFill(proj,ringPts(tg.x,tg.y,ocStrikeR(e),24),null,COL.volt);
       continue;
     }
-    if(e.boss&&e.act==='rest'){   // a dim gold ring: he's open
+    if(e.warden&&e.act==='rest'){   // a dim gold ring: he's open
       if(!over){ctx.globalAlpha=0.35+0.2*Math.sin(time*8);polyFill(proj,ringPts(e.x,e.y,e.r+8),null,COL.gold)}
       continue;
     }
     if(e.act!=='wind')continue;
-    if(e.boss&&e.atk==='burst'){
+    if(e.warden&&e.atk==='burst'){
       if(over)continue;   // the lanes fan out past the crowd anyway
       const k=Math.min(1,1-e.actT/e.windMax);
       for(const a of e.lanes){
@@ -150,11 +150,11 @@ function drawTelegraphs(proj,over=false){
       ctx.globalAlpha=0.5;polyFill(proj,lanePts(e,e.lx,e.ly,182,e.r*0.8+3),null,COL.ink);
       ctx.globalAlpha=0.28*blink+0.1;polyFill(proj,pts,COL.warnDeep);
       ctx.globalAlpha=blink;polyFill(proj,pts,null,COL.warn);
-    }else if(e.type==='demon'||(e.boss&&e.atk==='slam')){
+    }else if(e.type==='demon'||(e.warden&&e.atk==='slam')){
       // the danger zone, filling up from the middle as the fists come down
-      const R=e.boss?WARDEN_SLAM_R:SLAM_R,n=e.boss?40:32,k=Math.min(1,1-e.actT/(e.windMax||0.7));
+      const R=e.warden?WARDEN_SLAM_R:SLAM_R,n=e.warden?40:32,k=Math.min(1,1-e.actT/(e.windMax||0.7));
       if(over){ctx.globalAlpha=OV*blink;polyFill(proj,ringPts(e.x,e.y,R,n),null,COL.warn);continue}
-      if(e.boss)addLight(e.x,e.y,R*2.4,0.6);
+      if(e.warden)addLight(e.x,e.y,R*2.4,0.6);
       ctx.globalAlpha=0.5;polyFill(proj,ringPts(e.x,e.y,R+3,n),null,COL.ink);
       ctx.globalAlpha=0.16+0.08*blink;polyFill(proj,ringPts(e.x,e.y,R,n),COL.warnDeep);
       ctx.globalAlpha=0.45;polyFill(proj,ringPts(e.x,e.y,Math.max(2,R*k),n),COL.warnHi);

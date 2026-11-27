@@ -65,4 +65,4 @@ const ET={
  rat:{r:7,hp:10,spd:150,xp:2,drop:.05,c:'#6a5a70',shape:'circle',dmg:3,aggro:300,sprite:true},
  eye:{r:14,hp:110,spd:42,xp:18,drop:.6,c:'#c4302c',shape:'circle',dmg:9,aggro:380,sprite:true}   // the Oculus, drawn live by js/eye.js
 };
-const spriteKey=e=>e.boss?'warden':e.type;
+const spriteKey=e=>e.warden?'warden':e.type;
