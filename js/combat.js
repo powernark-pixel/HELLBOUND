@@ -135,18 +135,27 @@ function hurt(d,noIF){
    After the finisher there's a short recovery, then the combo starts over.
    Holding the mouse button chains them automatically: slash, CHOP, slash, CHOP... */
 const COMBO_WINDOW=0.6;
+const CHOP_DASH_V=560,CHOP_DASH_T=0.14;   // the heavy chop's dash: speed and duration (~78 px)
 const COMBO=[
-  {anim:'attack', anim_t:0.25,dmg:1,  arc:1,   reach:0, kb:1,  lunge:70, cd:0.8, trail:.18,grunt:'grunt',     whoosh:'swing'},
-  {anim:'attack2',anim_t:0.38,dmg:1.6,arc:1.25,reach:12,kb:1.7,lunge:190,cd:1.5,trail:.26,grunt:'gruntHeavy',whoosh:'swingHeavy'},
+  {anim:'attack', anim_t:0.25,dmg:1,  arc:1,   reach:0, kb:1,  lunge:70, lt:0.09,cd:0.8, trail:.18,grunt:'grunt',     whoosh:'swing'},
+  // the CHOP dashes forward first (about 2.5 tiles) and lands where the dash ends
+  {anim:'attack2',anim_t:0.38,dmg:1.6,arc:1.25,reach:12,kb:1.7,lunge:CHOP_DASH_V,lt:CHOP_DASH_T,cd:1.5,trail:.26,grunt:'gruntHeavy',whoosh:'swingHeavy'},
 ];
 function swing(){
   const step=P.comboStep===1&&P.comboT>0?1:0,c=COMBO[step];
   P.comboStep=step===0?1:0;P.comboT=step===0?COMBO_WINDOW+1/S.atkRate:0;
   P.atk=c.cd/S.atkRate;P.swings++;
   P.atkAnim=c.anim_t;P.atkHeavy=step===1;setAnim(P,c.anim);P.animT=0;
-  P.lunge={a:P.aim,v:c.lunge,t:0.09};   // a small step into the swing
   SFX.play(c.whoosh);SFX.play(c.grunt);
-  const oath=hasTrait('oath')&&P.swings%5===0;
+  const oath=hasTrait('oath')&&P.swings%5===0,aim=P.aim;
+  if(step===1){
+    // dash, then strike from where you land (brief i-frames so the dash can carry you through a bite)
+    P.lunge={a:aim,v:c.lunge,t:c.lt,dash:true,then:()=>strike(step,c,oath,aim)};P.inv=Math.max(P.inv,c.lt+0.05);
+    SFX.play('roll');
+  }else{P.lunge={a:aim,v:c.lunge,t:c.lt};strike(step,c,oath,aim)}   // a small step into the swing
+}
+function strike(step,c,oath,aim){
+  P.aim=aim;
   const R=S.range+c.reach,arc=S.arcDeg*c.arc;
   // the finisher sweeps the other way, so the two hits read as one flowing combo
   swings.push({x:P.x,y:P.y,a:P.aim,life:c.trail,max:c.trail,r:R,arc:arc*Math.PI/180,oath,dir:step?-1:1,heavy:step===1});

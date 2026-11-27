@@ -279,6 +279,7 @@ function drawIso(){
   for(const g of P.ghosts||[]){const [gx,gy]=S_(g.x,g.y);items.push({d:(g.x+g.y)/T-0.02,draw:()=>{
     ctx.save();ctx.globalAlpha=0.4*g.life/g.max;ctx.globalCompositeOperation='lighter';drawSprite('player',g.anim,g.animT,gx,gy,g.face<0);ctx.restore()}})}
   items.push({d:pDepth,draw:()=>{
+    drawSpeedLines(S_,psx,psy);
     if(P.sh>0&&P.maxSh>0)pxEllipse(psx,psy-1,15,8,`rgba(224,191,104,${0.25+0.45*(P.sh/P.maxSh)})`);
     ctx.save();ctx.globalAlpha=P.inv>0?0.55:1;drawSprite('player',P.anim,P.animT,psx,psy,P.face<0);ctx.restore();
   }});
@@ -304,11 +305,21 @@ function drawIso(){
   for(const b of ebullets){const [sx,sy]=S_(b.x,b.y);pxOrb(sx,sy-10,b.r+1,COL.ink);pxOrb(sx,sy-10,b.r,b.c===COL.arrow?COL.bone:COL.bloodHi);light(b.x,b.y,b.r*5,0.35)}
   // the sword trail: a thick glowing crescent that sweeps out and fades (gold edge, blood-red tail)
   const TRAIL=['#fff6d8','#ffe2a0','#ffb347','#ff7a2b','#c4302c','#8f1a1f'];
+  const up9=(x,y)=>{const [a,b]=S_(x,y);return [a,b-9]};
   for(const s of swings){
     const mx=s.max||.18,dir=s.dir||1;
     // the blade sweeps from one side of the arc to the other (the finisher sweeps back the other way)
     const a0=s.a-dir*s.arc/2,a1=s.a+dir*s.arc/2,prog=Math.min(1,(1-s.life/mx)*1.8),f=Math.max(0,s.life/mx);
     const end=a0+(a1-a0)*prog,steps=Math.ceil(s.r*s.arc*prog);
+    // a solid smear of the blade's path, so a swing reads as a heavy sweep, not a thin line
+    if(s.arc<6){
+      const n=Math.max(4,Math.ceil(steps/6)),out=[],inn=[],ri=s.r*(s.heavy?0.35:0.5);
+      for(let i=0;i<=n;i++){const a=a0+(end-a0)*i/n;out.push([s.x+Math.cos(a)*s.r,s.y+Math.sin(a)*s.r]);inn.push([s.x+Math.cos(a)*ri,s.y+Math.sin(a)*ri])}
+      ctx.globalCompositeOperation='lighter';
+      ctx.globalAlpha=(s.heavy?0.5:0.35)*f;polyFill(up9,out.concat(inn.reverse()),s.oath?COL.ember:COL.fireDeep);
+      ctx.globalAlpha=(s.heavy?0.45:0.3)*f;polyFill(up9,out.slice(Math.floor(n*0.5)).concat(out.slice(Math.floor(n*0.5)).map(([x,y])=>[s.x+(x-s.x)*0.8,s.y+(y-s.y)*0.8]).reverse()),COL.fireHi);
+      ctx.globalCompositeOperation='source-over';
+    }
     const layers=s.heavy?TRAIL.length+3:TRAIL.length;   // the heavy chop leaves a thicker trail
     for(let k=0;k<layers;k++){
       const kk=Math.min(TRAIL.length-1,s.heavy?Math.max(0,k-1):k);

@@ -53,8 +53,13 @@ function update(dt){
     slide(P,P.dash.vx*dt,P.dash.vy*dt,10);P.dash.t-=dt;
     P.ghosts.push({x:P.x,y:P.y,anim:P.anim,animT:P.animT,face:P.face,life:0.22,max:0.22});
   }
+  (P.trail=P.trail||[]).push([P.x,P.y]);if(P.trail.length>7)P.trail.shift();   // for the speed lines (js/ambience.js)
   P.comboT-=dt;if(P.comboT<=0)P.comboStep=0;
-  if(P.lunge&&P.lunge.t>0){P.lunge.t-=dt;slide(P,Math.cos(P.lunge.a)*P.lunge.v*dt,Math.sin(P.lunge.a)*P.lunge.v*dt,10)}
+  if(P.lunge&&P.lunge.t>0){
+    P.lunge.t-=dt;slide(P,Math.cos(P.lunge.a)*P.lunge.v*dt,Math.sin(P.lunge.a)*P.lunge.v*dt,10);
+    if(P.lunge.dash)P.ghosts.push({x:P.x,y:P.y,anim:P.anim,animT:P.animT,face:P.face,life:0.2,max:0.2});
+    if(P.lunge.t<=0&&P.lunge.then){const f=P.lunge.then;P.lunge.then=null;f()}   // the chop lands at the end of its dash
+  }
   if(mouse.down&&P.atk<=0)swing();
   P.fireCD-=dt;updateFire(dt);P.spinCD-=dt;updateHeal(dt);
 
