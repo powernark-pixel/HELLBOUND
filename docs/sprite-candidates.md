@@ -1,6 +1,6 @@
-# Sprite candidates
+# Sprite and sound candidates
 
-Third-party art that might fit HELLBOUND. Nothing here is downloaded or in the game yet: these are links and notes
+Third-party art and audio that might fit HELLBOUND. Nothing here is downloaded or in the game yet: these are links and notes
 so Dave can look and pick. A scheduled Claude task adds new finds every week (newest batch at the bottom).
 
 ## What we're looking for
@@ -17,6 +17,10 @@ From `docs/STYLE_GUIDE.md` and `docs/ideas.md`:
   and props (flooded crypt, foundry, flesh pit), a slot machine and its symbols, spell and hit effects.
 - **Licences we can use:** CC0, CC-BY (credit in `CREDITS.md`), or a pack page that clearly allows commercial use.
   Avoid "no derivatives" (we recolour and re-sheet), non-commercial-only, GPL/CC-BY-SA art, and AI-generated packs.
+- **Sounds:** dark, gothic, weighty (not cartoony or chiptune). Needs: monster growls, hurt and death cries, spell
+  impacts (fire, lightning, blood), loot and crafting, slot machine (reels, lever, jackpot), UI, and ambience or music
+  loops per biome (crypt drips, foundry machinery, flesh pit). OGG or WAV; long loops as OGG/MP3. Every sound name the
+  game uses is in `audio/README.md`. Kenney's CC0 RPG Audio already covers swings, hits, footsteps and coins.
 
 **Fit** is a quick guess: ★★★ strong, ★★ worth a look, ★ long shot.
 
@@ -68,3 +72,24 @@ From `docs/STYLE_GUIDE.md` and `docs/ideas.md`:
 
 - [Pixel-MonsterPack-32x32](https://jinosoda.itch.io/monsterpack-32x32) (jinosoda): dark fantasy and the right size, but CC BY-ND (no recolouring) and not animated.
 - [Assorted 32x32 creatures](https://opengameart.org/content/assorted-32x32-creatures) (AndHeGames): CC0 but cute and cartoony.
+
+### Sounds
+
+| Pack | Artist | Price | Licence | Format | What's in it | Fit | Would be used for |
+|---|---|---|---|---|---|---|---|
+| [Free Monster Voice Pack](https://lazyspar7an.itch.io/free-monster-voice-pack-growls-grunts-death-sounds-wav) | lazyspar7an | Free / PWYW | Commercial use, no credit | WAV | Growls, grunts, pain and death screams, "darker, monster-like" | ★★★ | Imp, hound and demon voices, hurt and death |
+| [80 CC0 creature SFX](https://opengameart.org/content/80-cc0-creature-sfx) | rubberduck | Free | CC0 | 80 sounds | Grunts, hurts, monsters, trolls, bugs (some cute) | ★★ | Rats, bugs and filler grunts; pick the darker ones |
+| [Free Audio Creature Sample Pack](https://fairlight1337.itch.io/free-audio-creature-sample-pack) | fairlight1337 | Free | Commercial OK, credit required, no redistribution | not stated | Creature growls and voice bits | ★★ | Extra monster voices for variety |
+| [Basic Spell Impacts](https://lentikula.itch.io/freecc0-basic-spell-impacts-sfx) | lentikula | Free / PWYW | CC0 | WAV, 20 sounds | Lightning, fire, ice, water impacts | ★★★ | Fire Line hits and lightning |
+| [FIRE SPELL SFX pack](https://darkfantasystudio.itch.io/fire-spell-sfx-pack) | Dark Fantasy Studio | €9 | Royalty-free for commercial use; no AI | WAV, 21 sounds | Cinematic fire spells | ★★ | A heavier Fire Line and lava |
+| [Slot Machine sounds](https://mixkit.co/free-sound-effects/slot-machine/) | Mixkit | Free | Mixkit Licence (free incl. commercial; check before use) | 12 sounds | Reels spinning, coin wins, payout, bonus | ★★ | The slot machine, pitched down to sound grimmer |
+| [Ironchest's Dungeon Music Loops](https://ironchestgames.itch.io/ironchests-dungeon-music-loops) | Ironchest Games | Free / PWYW | CC0; no AI | OGG/WAV, 9 loops | Ambient dungeon music loops | ★★★ | Background ambience per biome (`ambience` in `audio/sfx.js`) |
+| [Music Loops Pack 1: Dark Fantasy](https://torone.itch.io/music-loops-pack-1-dark-fantasy) | Torone | Free / PWYW | CC-BY 4.0 (credit) | OGG, 4 loops | Combat, 2 exploration, story | ★★★ | Boss fights (combat loop) and the Shack |
+| [Dark chamber](https://opengameart.org/content/dark-chamber) | Marcelo Fernandez | Free | CC-BY 4.0 (credit) | MP3, 1 track | Mysterious, melodic dungeon track | ★★ | The Blood Altar or a crypt biome |
+
+Sounds looked at and skipped:
+
+- [Magic Spell SFX Soundpack](https://thesoundrack.itch.io/freemagicspellsfx) (425 spells incl. dark magic): no licence stated on the page. Worth asking the artist, it's big.
+- [80 CC0 creture SFX #2](https://opengameart.org/content/80-cc0-creture-sfx-2) and [Dark Dungeon Ambience](https://opengameart.org/content/dark-dungeon-ambience): no licence shown; check the live page.
+- [Medieval Fantasy Inventory Sounds Lite](https://visionaryeight.itch.io/medieval-fantasy-inventory-item-sounds-lite) ($9.99) and [Rummage & Loot](https://justinjetzorbas.itch.io/rummage-loot) ($8): no licence stated.
+- Gaps still open: biome ambience beds (dripping crypt, foundry machinery, flesh pit), crafting sounds, and UI.
