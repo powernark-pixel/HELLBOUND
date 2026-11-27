@@ -235,6 +235,9 @@ const loop = await page.evaluate(() => {
   // his death draws every blood drop left on the floor into the vat
   bloodDrops.push({ x: P.x + 900, y: P.y, vx: 0, vy: 0, z: 0, vz: 0, v: 5, ph: 0, age: 9 });
   killEnemy(boss); r.swept = bloodDrops.every(d => d.got);
+  // loot only drops from monsters: a chest pays stardust, not items
+  ground = []; chests.push({ x: P.x, y: P.y, open: false }); const sd = stardust; openChest();
+  r.chestNoLoot = ground.length === 0 && stardust > sd;
   // dying: Space after a short beat starts a new run
   P.inv = 0; hurt(99999); r.dead = dead;
   return r;
@@ -245,6 +248,7 @@ loop.biteTell && loop.bites ? ok('rats flash red before a bite, then bite') : fa
 loop.xray && loop.noXray ? ok('the knight shows through an enemy standing in front of him') : fail('knight outline broken: ' + JSON.stringify(loop));
 loop.bar ? ok('the Warden\'s bar shows as soon as he wakes') : fail('no Warden bar on waking');
 loop.enraged ? ok('the Warden announces his second phase') : fail('no enrage announcement');
+loop.chestNoLoot ? ok('chests give stardust, not item drops') : fail('a chest dropped items');
 loop.swept ? ok('the Warden\'s death collects all spilled blood') : fail('blood left on the floor after the Warden');
 await page.keyboard.press(' ');
 const early = await page.evaluate(() => dead);

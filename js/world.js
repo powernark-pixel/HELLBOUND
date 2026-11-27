@@ -45,7 +45,8 @@ const BIGS={
 function spawnBig(ch,x,y,fin){
   const kind=BIG_CH[ch];let e;
   if(kind==='warden')e=spawnEnemy('demon',{x,y,warden:true,hpMul:fin?1:WARDEN_MINI_HP});
-  else{e=spawnEnemy('eye',{x,y,hpMul:fin?9:5.5,dmgMul:fin?1.4:1.25});e.ocZ=fin?1.9:1.6;e.r=fin?26:22}
+  else{e=spawnEnemy('eye',{x,y,hpMul:fin?7:5.5,dmgMul:fin?1.15:1.1});   // eased for now: was 9 / 1.4 as the final boss
+    e.ocZ=fin?1.9:1.6;e.r=fin?26:22}
   e.big=kind;e.bossName=BIGS[kind].name;
   return e;
 }

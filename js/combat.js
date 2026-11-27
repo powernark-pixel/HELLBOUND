@@ -85,19 +85,22 @@ function killEnemy(e){
   if(e===boss){
     openArena();
     for(const d of bloodDrops)collectDrop(d);   // the altar drinks every drop you left behind, so no trip back for them
-    for(let k=0;k<3;k++)dropItem(e.x,e.y,3,floor+3);
+    dropItem(e.x,e.y,3,floor+3);   // one Epic-or-better: a single big moment beats a pile
     if(vatFull()){announce(title,'#ffe14f',2.5,'The stairs are unsealed. Follow the light');log('The stairs are unsealed. Follow the golden light.','#ffe14f')}
     else{announce(title,'#ffe14f',2.8,'Fill the blood vat to open the stairs');log(`${e.bossName} is dead, but the vat is only ${Math.floor(vat/vatNeed*100)}% full. Kill more.`,'#c4302c')}
   }else if(e.miniboss){
-    for(let k=0;k<2;k++)dropItem(e.x,e.y,2,floor+3);
+    dropItem(e.x,e.y,2,floor+3);   // one Rare-or-better
     stardust+=25;
     const next=level&&level.areas.find(a=>a.n===e.wakeArea+1&&!a.done);if(next)level.guide=next;   // light the way on
     announce(title,B.col,2.6,'+25 stardust');
-  }else if(Math.random()<Tt.drop*1.3){
-    dropItem(e.x,e.y,e.type==='demon'?2:0,floor+ri(0,3));
+  }else if(Math.random()<Tt.drop*LOOT_RATE){
+    dropItem(e.x,e.y,e.type==='demon'?2:1,floor+ri(0,3));   // never a plain Common: every drop is worth a look
   }
 }
-const ENEMY_DMG=0.75;   // all enemy damage is scaled by this (lower = easier)
+/* LOOT: items only drop from monsters, and rarely, so each drop is an event.
+   Dave found the old rate (1.3x) a flood of junk with no thrill. */
+const LOOT_RATE=0.45;   // multiplies each enemy type's drop chance in ET (js/data.js)
+const ENEMY_DMG=0.6;    // all enemy damage is scaled by this (lower = easier). Was 0.75; eased for now
 let deadAt=0;
 // back into the fight fast: after a short beat (so a held key or a panicked click can't skip the death)
 const RISE_DELAY=600;   // milliseconds (real time, so hit-stop can't stretch it)

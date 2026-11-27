@@ -5,6 +5,7 @@
    Fog: soft blobs on a small canvas, tiled across the screen, stuck to the floor so it drifts as you walk.
    Motes: specks of dust floating around the knight, only visible where the light is.
    Drips: drops of blood sliding down the bloody wall faces. */
+const FOG_ALPHA=0.06;   // how thick the drifting fog is (was 0.2: Dave found the smoke too heavy)
 let fogCv=null;
 function fogCanvas(){
   if(fogCv)return fogCv;

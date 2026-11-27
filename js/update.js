@@ -12,8 +12,8 @@ function update(dt){
   updateBubbles(dt,level?'blood':'lava');
   updateOculusFX(dt);
   updateBlood(dt);updateTrials(dt);
-  if(Math.random()<dt*8){
-    // drifting embers and ash
+  if(Math.random()<dt*3){
+    // drifting embers and ash (kept sparse so the air stays clear)
     const ash=Math.random()<0.35;
     parts.push({x:P.x+rnd(-320,320),y:P.y+rnd(-180,200),vx:rnd(-10,10),vy:rnd(-40,-10),life:rnd(1,2.5),max:2.5,
       c:ash?'#5d5059':pick(['#ff7a2b','#ffb347','#ff4f2b']),s:ash?1:rnd(1,2)});

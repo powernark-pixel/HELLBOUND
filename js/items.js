@@ -8,6 +8,10 @@ function dropItem(x,y,minR,ilvl){
   const it=makeItem(pick(SLOTS),ilvl,minR);
   it.x=x+rnd(-8,8);it.y=y+rnd(-8,8);it.age=0;it.bob=Math.random()*TAU;
   ground.push(it);
+  // a drop is an event: a flash in its rarity colour and a sound, bigger for better items
+  burst(it.x,it.y,RAR[it.r].c,10+it.r*6);
+  SFX.play(it.r>=3?'toll':'pickup',{r:it.r});
+  if(it.r>=2)announce(`${RAR[it.r].n.toUpperCase()} DROP`,colorOf(it),1.2);
   if(it.r>=4)log(`${RAR[it.r].n} drop: ${it.name}`,RAR[it.r].c);
 }
 function equipIdx(i){
@@ -265,12 +269,9 @@ function openChest(){
     log('The chest holds the Altar-Forged Blade. Equip it (I) to empower your Fire Line.','#ff8a2b');
     SFX.play('levelup');
   }
-  if(best.reward){
-    // the shack's reward chest: one guaranteed Magic+ item, sometimes better, sometimes a second
-    const roll=Math.random(),minR=roll<0.1?3:roll<0.4?2:1;
-    dropItem(best.x,best.y+20,minR,floor+2);
-    if(Math.random()<0.3)dropItem(best.x,best.y+20,1,floor+1);
-  }else for(let k=0;k<ri(2,3);k++)dropItem(best.x,best.y,1,floor+2);
+  // items only drop from monsters now: chests pay out stardust (the reward chest also gives perks
+  // and, after the first level, the Altar-Forged Blade)
+  const dust=best.reward?20:10;stardust+=dust;addText(best.x,best.y-20,`+${dust} STARDUST`,COL.arcane,1);
   burst(best.x,best.y,'#ffe14f',30);
   log('Chest opened.','#ffe14f');
   // the level just finished (floor-1) may grant a perk choice too

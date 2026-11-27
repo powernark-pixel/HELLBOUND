@@ -358,7 +358,7 @@ function drawIso(){
     lctx.fillStyle=g;lctx.fillRect(-lr,-lr,lr*2,lr*2);lctx.restore();
   }
   ctx.drawImage(lc,0,0,LW,LH);
-  if(!(level&&level.safe))drawFog(camX,camY,0.2);
+  if(!(level&&level.safe))drawFog(camX,camY,FOG_ALPHA);
   drawMotes(S_,psx,psy);
   drawGuide(S_);      // 'this way' arrow after a mini-boss falls
   drawHitboxes(S_);   // debug view (H), drawn over everything so it's always readable
@@ -404,7 +404,7 @@ function drawIso(){
     // you got hit: a quick red flash at the screen edges, so you notice it even in a crowd
     const hf=ctx.createRadialGradient(LW/2,LH/2,LH*0.25,LW/2,LH/2,LW*0.6);
     hf.addColorStop(0,COL.bloodHi+'00');hf.addColorStop(1,COL.bloodHi);
-    ctx.globalAlpha=0.55*P.hitFlash/0.3;ctx.fillStyle=hf;ctx.fillRect(0,0,LW,LH);ctx.globalAlpha=1;
+    ctx.globalAlpha=0.35*P.hitFlash/0.3;ctx.fillStyle=hf;ctx.fillRect(0,0,LW,LH);ctx.globalAlpha=1;
   }
   if(P.hp<P.maxHp*0.3&&!dead){
     // low health: the screen edges pulse red with the heartbeat
