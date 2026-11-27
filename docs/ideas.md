@@ -11,4 +11,5 @@ Monsters in certain biomes drop certain kinds of crafting loot, so where you far
 - **Drop weighting.** A biome's own materials are common there, other biomes' materials are rare there but not impossible. A rare "signature" material only drops in one biome, mostly off its elites or boss.
 - **Farming pull.** Players pick which area to run based on what they want to craft, which gives every biome a reason to be revisited. Trials or modifiers on a level could raise its material drop rate.
 - **Fits what's there.** Rides on the existing drop roll in `js/combat.js` and the loot and affix data in `js/data.js`; biomes would just add a material table per level.
+- **Variant: slot machine jackpot.** Instead of (or as well as) biome materials, hitting a jackpot on the slot machine lets you add a stat to an item. Biome materials could be the steady, targeted way to craft and the jackpot the lucky big hit, or the jackpot could be the only way to add a stat at all.
 - **Open questions.** Where crafting happens (the blood altar?), whether materials stack in their own stash tab, and whether blood sigils can buy them.
