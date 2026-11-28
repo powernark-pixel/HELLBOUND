@@ -181,7 +181,7 @@ const wt = await page.evaluate(() => {
   const stun = foe.stun > 0; foe.dead = true; P.stam = -5; P.atk = 0; P.stagger = 0; P.pend = null; swing(); const blocked = !P.pend;
   P.stam = STAM_MAX; P.stagger = 0; return { spent, whiff, stun, blocked };
 });
-wt.spent && wt.whiff && wt.stun && wt.blocked ? ok('swings cost stamina, a missed chop staggers, a landed chop stuns, and you can't swing when winded') : fail('weight is wrong: ' + JSON.stringify(wt));
+wt.spent && wt.whiff && wt.stun && wt.blocked ? ok('swings cost stamina, a missed chop staggers, a landed chop stuns, and you cannot swing when winded') : fail('weight is wrong: ' + JSON.stringify(wt));
 
 // 6. pause menu
 await page.keyboard.press('Escape');
