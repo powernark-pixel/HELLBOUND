@@ -141,41 +141,50 @@ const COMBO=[
   // the CHOP dashes forward first (about 2.5 tiles) and lands where the dash ends
   {anim:'attack2',anim_t:0.38,dmg:1.6,arc:1.25,reach:12,kb:1.7,lunge:CHOP_DASH_V,lt:CHOP_DASH_T,cd:1.5,trail:.26,grunt:'gruntHeavy',whoosh:'swingHeavy'},
 ];
+// starting a swing: pay stamina, grunt, raise the sword. It lands after a short wind-up
+// (strikeSwing, called from js/weight.js), and you can barely move until it's done.
 function swing(){
+  if(P.stagger>0||P.pend)return;
   const step=P.comboStep===1&&P.comboT>0?1:0,c=COMBO[step];
-  P.comboStep=step===0?1:0;P.comboT=step===0?COMBO_WINDOW+1/S.atkRate:0;
-  P.atk=c.cd/S.atkRate;P.swings++;
-  P.atkAnim=c.anim_t;P.atkHeavy=step===1;setAnim(P,c.anim);P.animT=0;
-  SFX.play(c.whoosh);SFX.play(c.grunt);
-  const oath=hasTrait('oath')&&P.swings%5===0,aim=P.aim;
-  if(step===1){
-    // dash, then strike from where you land (brief i-frames so the dash can carry you through a bite)
-    P.lunge={a:aim,v:c.lunge,t:c.lt,dash:true,then:()=>strike(step,c,oath,aim)};P.inv=Math.max(P.inv,c.lt+0.05);
-    SFX.play('roll');
-  }else{P.lunge={a:aim,v:c.lunge,t:c.lt};strike(step,c,oath,aim)}   // a small step into the swing
+  if(!spendStam(SWING_COST[step])){P.atk=0.2;return}   // too winded to swing
+  P.comboStep=step===0?1:0;P.comboT=step===0?COMBO_WINDOW+1/S.atkRate+WINDUP[0]:0;
+  P.atk=c.cd/S.atkRate+WINDUP[step];P.swings++;
+  P.atkAnim=c.anim_t+WINDUP[step];P.atkHeavy=step===1;setAnim(P,c.anim);P.animT=0;
+  SFX.play(c.grunt);
+  P.pend={step,c,a:P.aim,t:WINDUP[step]};   // the aim is locked in when you start
 }
-function strike(step,c,oath,aim){
-  P.aim=aim;
+function strikeSwing({step,c,a}){
+  if(dead)return;
+  SFX.play(c.whoosh);
+  const oath=hasTrait('oath')&&P.swings%5===0;
+  if(step===1){
+    // the CHOP dashes forward, then lands where you stop (brief i-frames carry you through a bite)
+    P.lunge={a,v:c.lunge,t:c.lt,dash:true,then:()=>landSwing(step,c,a,oath)};P.inv=Math.max(P.inv,c.lt+0.05);SFX.play('roll');
+  }else{P.lunge={a,v:c.lunge,t:c.lt};landSwing(step,c,a,oath)}   // a small step into the slash
+}
+function landSwing(step,c,a,oath){
+  if(dead)return;
   const R=S.range+c.reach,arc=S.arcDeg*c.arc;
   // the finisher sweeps the other way, so the two hits read as one flowing combo
-  swings.push({x:P.x,y:P.y,a:P.aim,life:c.trail,max:c.trail,r:R,arc:arc*Math.PI/180,oath,dir:step?-1:1,heavy:step===1});
+  swings.push({x:P.x,y:P.y,a,life:c.trail,max:c.trail,r:R,arc:arc*Math.PI/180,oath,dir:step?-1:1,heavy:step===1});
   const half=arc*Math.PI/360;
   let landed=false;
   for(const e of enemies){
     if(e.dead)continue;
     const d=dist(e,P),hr=hurtR(e);
     if(d>R+hr)continue;
-    let da=Math.atan2(e.y-P.y,e.x-P.x)-P.aim;
+    let da=Math.atan2(e.y-P.y,e.x-P.x)-a;
     da=Math.atan2(Math.sin(da),Math.cos(da));
     // anything right on top of you is always hit
-    if(d<hr+PLAYER_BODY||Math.abs(da)<=half+Math.asin(Math.min(1,hr/Math.max(d,1)))){dealDamage(e,S.damage*c.dmg*(step===1&&hasPerk('executioner')?1.4:1),{kb:c.kb});landed=true}
+    if(d<hr+PLAYER_BODY||Math.abs(da)<=half+Math.asin(Math.min(1,hr/Math.max(d,1)))){dealDamage(e,S.damage*c.dmg*(step===1&&hasPerk('executioner')?1.4:1),{kb:c.kb});landed=true;if(step===1)staggerFoe(e)}
   }
   if(step===1){
     // the chop hits the floor: dust, a crack, a thud
-    const fx=P.x+Math.cos(P.aim)*R*0.6,fy=P.y+Math.sin(P.aim)*R*0.6;
+    const fx=P.x+Math.cos(a)*R*0.6,fy=P.y+Math.sin(a)*R*0.6;
     for(let i=0;i<14;i++){const a=rnd(0,TAU),sp=rnd(40,120);parts.push({x:fx,y:fy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:rnd(.25,.45),max:.45,c:pick(['#5d5059','#4a3f48','#8a7a80']),s:rnd(1,2),ground:1})}
     decals.push({x:fx,y:fy,scorch:1});if(decals.length>200)decals.shift();
     shake=Math.max(shake,landed?0.4:0.25);if(landed)hitStop=Math.max(hitStop,0.07);
+    else{P.stagger=WHIFF_STAGGER;addText(P.x,P.y-30,'WHIFF',COL.boneLo,1)}   // the blade bites the floor: you stagger
   }
   if(oath){
     for(let k=0;k<12;k++){

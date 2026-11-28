@@ -196,6 +196,19 @@ why.urge ? ok('the flask slot pulses when health is low') : fail('flask slot did
 why.stagger ? ok('Cleave shoves, staggers and cancels a hound\'s lunge') : fail('Cleave did not stagger');
 why.spoiled ? ok('Fire Line spoils an archer\'s shot') : fail('Fire Line did not spoil the archer: ' + JSON.stringify(why));
 why.dodge ? ok('a hit during a roll is dodged') : fail('the roll did not dodge');
+// weight (js/weight.js): swings cost stamina, a missed chop staggers you, a landed chop stuns a foe
+const wt = await page.evaluate(() => {
+  const land = () => { if (P.lunge && P.lunge.then) { const f = P.lunge.then; P.lunge.then = null; P.lunge.t = 0; f(); } };   // skip the chop's dash
+  P.stam = STAM_MAX; P.pend = null; P.stagger = 0; P.atk = 0; P.comboStep = 0; swing(); const spent = P.stam < STAM_MAX;
+  P.pend = null; P.atk = 0; P.comboStep = 1; P.comboT = 1; P.stam = STAM_MAX;
+  for (const e of enemies) if (Math.hypot(e.x - P.x, e.y - P.y) < 200) e.x += 2000;   // nothing to hit
+  swing(); P.pend.t = 0; updateWeight(0); land(); const whiff = P.stagger > 0;
+  const foe = spawnEnemy('imp', { x: P.x + Math.cos(P.aim) * 30, y: P.y + Math.sin(P.aim) * 30 }); foe.hp = foe.max = 9999;
+  P.stagger = 0; P.atk = 0; P.comboStep = 1; P.comboT = 1; P.stam = STAM_MAX; swing(); P.pend.t = 0; updateWeight(0); land();
+  const stun = foe.stun > 0; foe.dead = true; P.stam = -5; P.atk = 0; P.stagger = 0; P.pend = null; swing(); const blocked = !P.pend;
+  P.stam = STAM_MAX; P.stagger = 0; return { spent, whiff, stun, blocked };
+});
+wt.spent && wt.whiff && wt.stun && wt.blocked ? ok('swings cost stamina, a missed chop staggers, a landed chop stuns, and you cannot swing when winded') : fail('weight is wrong: ' + JSON.stringify(wt));
 
 // 6. pause menu
 await page.keyboard.press('Escape');

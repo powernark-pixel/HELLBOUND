@@ -223,7 +223,7 @@ function newGame(){
   floor=1;
   P={x:0,y:0,vx:0,vy:0,hp:100,sh:0,maxHp:100,maxSh:0,lvl:1,xp:0,xpNext:30,
      atk:0,atkAnim:0,hurtT:0,roll:0,inv:0,sinceHit:9,aim:0,face:1,swings:0,warned:false,
-     anim:'idle',animT:0,bonusHp:0,boons:[],perks:[],vessel:0,sigils:0,ichor:0,surgeT:0,dash:null,ghosts:[],stepT:0,hbT:0,fireCD:0,gotAltarBlade:false,flasks:FLASK_MAX,comboStep:0,comboT:0,atkHeavy:false,lunge:null,flaskProg:0,healLeft:0,healT:0,spinCD:0};
+     anim:'idle',animT:0,bonusHp:0,boons:[],perks:[],vessel:0,sigils:0,stam:STAM_MAX,stamT:0,stagger:0,pend:null,ichor:0,surgeT:0,dash:null,ghosts:[],stepT:0,hbT:0,fireCD:0,gotAltarBlade:false,flasks:FLASK_MAX,comboStep:0,comboT:0,atkHeavy:false,lunge:null,flaskProg:0,healLeft:0,healT:0,spinCD:0};
   eq={blade:makeItem('blade',1,0),helm:null,plate:null,gloves:null,greaves:null,boots:null,ring:null,sigil:null};
   inv=[];stardust=0;filter=0;dead=false;shake=0;parts=[];texts=[];swings=[];invOpen=false;pickupSeq=0;
   closeAllOverlays();
