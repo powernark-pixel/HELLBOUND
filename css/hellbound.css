@@ -6,7 +6,7 @@
 :root{
   --u:2px;
   --ink:#0a0608; --stone:#120b0f; --iron:#45414e;
-  --blood:#8f1a1f; --blood-hi:#c4302c; --gold:#b48a34; --gold-hi:#e0bf68; --gold-lo:#7a5a1c;
+  --blood:#8f1a1f; --blood-hi:#c4302c; --blood-pale:#ff8a7a; --fire:#ff6a1a; --gold:#b48a34; --gold-hi:#e0bf68; --gold-lo:#7a5a1c;
   --bone:#d6cab2; --bone-lo:#a89a84; --ash:#8a8494;
   --f-title:'Pirata One','UnifrakturMaguntia',Georgia,serif;
   --f-label:'Cinzel',Georgia,serif;
@@ -72,9 +72,28 @@ h3{font-size:calc(var(--u)*10);margin:calc(var(--u)*3) 0 calc(var(--u)*2)}
 #skills{position:absolute;left:50%;bottom:calc(var(--u)*8);transform:translateX(-50%);display:flex;gap:calc(var(--u)*5)}
 .skill{position:relative;width:calc(var(--u)*24);height:calc(var(--u)*24);box-sizing:border-box}
 .skill canvas,.skill .ico{position:absolute;left:50%;top:50%;width:calc(var(--u)*16);height:calc(var(--u)*16);margin:calc(var(--u)*-8) 0 0 calc(var(--u)*-8);image-rendering:pixelated}
-.skill .cd{position:absolute;left:0;right:0;bottom:0;height:0;background:rgba(0,0,0,.72)}
+/* the cooldown sweep: dark, with a pale edge so you can see it draining */
+.skill .cd{position:absolute;left:0;right:0;bottom:0;height:0;background:linear-gradient(rgba(214,202,178,.55) 0 calc(var(--u)*1),rgba(0,0,0,.78) calc(var(--u)*1))}
 .skill .key{position:absolute;left:0;right:0;bottom:calc(var(--u)*-7);text-align:center;font-family:var(--f-pixel);font-size:calc(var(--u)*4.5);color:var(--bone-lo);text-shadow:0 calc(var(--u)*1) 0 #000}
-.skill.ready{box-shadow:0 0 calc(var(--u)*4) #ff6a1a}
+.skill.ready{box-shadow:0 0 calc(var(--u)*4) var(--fire)}
+#skRoll.ready{box-shadow:0 0 calc(var(--u)*3) var(--bone-lo)}
+/* seconds left on a cooldown, over the dark sweep */
+.skill .sec{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--f-pixel);font-size:calc(var(--u)*8);color:var(--bone);text-shadow:0 calc(var(--u)*1) 0 #000,0 0 calc(var(--u)*2) #000,0 0 calc(var(--u)*2) #000;pointer-events:none}
+/* ready again: one bright flash */
+.skill.ping{animation:skPing .45s ease-out}
+@keyframes skPing{0%{filter:brightness(2.4);transform:scale(1.18)}100%{filter:brightness(1);transform:scale(1)}}
+/* pressed too soon: a quick shake and a red tint */
+.skill.deny{animation:skDeny .28s linear}
+@keyframes skDeny{0%,100%{transform:translateX(0)}20%{transform:translateX(calc(var(--u)*-2));filter:sepia(1) hue-rotate(-50deg) saturate(4)}40%{transform:translateX(calc(var(--u)*2))}60%{transform:translateX(calc(var(--u)*-1.5))}80%{transform:translateX(calc(var(--u)*1))}}
+/* the sword's next click is the heavy CHOP */
+.skill .pip{position:absolute;left:calc(var(--u)*1);top:calc(var(--u)*1);width:calc(var(--u)*3);height:calc(var(--u)*3);background:var(--bone);box-shadow:0 0 0 calc(var(--u)*1) var(--ink),0 0 calc(var(--u)*3) var(--bone);opacity:0;transition:opacity .08s}
+.skill .pip.on{opacity:1}
+/* kills toward the next flask */
+.skill .prog{position:absolute;left:calc(var(--u)*1);right:calc(var(--u)*1);bottom:calc(var(--u)*-1);height:calc(var(--u)*2);background:var(--ink)}
+.skill .prog div{height:100%;width:0;background:var(--blood-hi)}
+/* low health and a flask in hand: drink now */
+#skFlask.urge{animation:skUrge .8s ease-in-out infinite}
+@keyframes skUrge{50%{box-shadow:0 0 calc(var(--u)*6) var(--blood-hi),0 0 calc(var(--u)*2) var(--blood-pale)}}
 .skill .cnt{position:absolute;right:calc(var(--u)*1.5);top:calc(var(--u)*0.5);font-family:var(--f-pixel);font-size:calc(var(--u)*5);color:#ffd9c0;text-shadow:0 calc(var(--u)*1) 0 #000}
 #skFlaskIco{background:url(../assets/items/blood_flask.png) 0 0/100% 100%}
 .skill.empty .ico{opacity:.35}

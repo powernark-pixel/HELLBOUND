@@ -33,7 +33,7 @@ addEventListener('keydown',e=>{
   if((k==='r'&&!dead)||k==='2')drinkFlask();
   if(k==='v')injectBlood();   // inject the syringe (js/blood.js)
   if(k==='f'){filter=(filter+1)%FILTERS.length;log(`Loot filter: ${FILTERS[filter]}`,'#ffb347');renderInv()}
-  if(k==='r'&&dead)newGame();   // R is the flask while alive, "rise again" once dead
+  if(dead&&(k==='r'||k===' '||k==='enter'))tryRise();   // R is the flask while alive, "rise again" once dead
   if(k==='m'){const on=SFX.toggle();log(on?'Sound on':'Sound muted (M)','#c9a99a');soundLabel()}
 });
 addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false});
@@ -41,6 +41,6 @@ addEventListener('blur',()=>{for(const k in keys)keys[k]=false;mouse.down=false}
 // Convert screen mouse position to logical (640x360) pixels, so aim matches the scaled canvas
 addEventListener('mousemove',e=>{const r=cv.getBoundingClientRect();mouse.x=(e.clientX-r.left)/SCALE;mouse.y=(e.clientY-r.top)/SCALE});
 // Only clicks on the game itself swing the blade (not clicks on menus or panels)
-addEventListener('mousedown',e=>{if(e.button===0&&scene==='game'&&!anyPanelOpen()&&e.target===cv)mouse.down=true;if(e.button===2&&e.target===cv)castFireLine()});
+addEventListener('mousedown',e=>{if(e.button===0&&scene==='game'&&dead&&e.target===cv){tryRise();return}if(e.button===0&&scene==='game'&&!anyPanelOpen()&&e.target===cv)mouse.down=true;if(e.button===2&&e.target===cv)castFireLine()});
 addEventListener('mouseup',e=>{if(e.button===0)mouse.down=false});
 addEventListener('contextmenu',e=>e.preventDefault());

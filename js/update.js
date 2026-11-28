@@ -4,6 +4,7 @@
 /* =====================================================================
    9. UPDATE (one step of game logic per frame)
    ===================================================================== */
+const ROLL_IFRAMES=0.35;   // seconds you're untouchable from the start of a roll: covers a hound's whole lunge (0.28 s)
 function update(dt){
   time+=dt;
   if(scene!=='game'){updateTitle(dt);return}
@@ -11,14 +12,14 @@ function update(dt){
   updateBubbles(dt,level?'blood':'lava');
   updateOculusFX(dt);
   updateBlood(dt);updateTrials(dt);
-  if(Math.random()<dt*8){
-    // drifting embers and ash
+  if(Math.random()<dt*3){
+    // drifting embers and ash (kept sparse so the air stays clear)
     const ash=Math.random()<0.35;
     parts.push({x:P.x+rnd(-320,320),y:P.y+rnd(-180,200),vx:rnd(-10,10),vy:rnd(-40,-10),life:rnd(1,2.5),max:2.5,
       c:ash?'#5d5059':pick(['#ff7a2b','#ffb347','#ff4f2b']),s:ash?1:rnd(1,2)});
   }
   // Animation timers run even when paused
-  P.animT+=dt;P.atkAnim-=dt;P.hurtT-=dt;
+  P.animT+=dt;P.atkAnim-=dt;P.hurtT-=dt;P.hitFlash=(P.hitFlash||0)-dt;
   if(P.ghosts){for(const g of P.ghosts)g.life-=dt;P.ghosts=P.ghosts.filter(g=>g.life>0)}
   for(const c of corpses){c.animT+=dt;c.life-=dt}
   corpses=corpses.filter(c=>c.life>0);
@@ -40,12 +41,12 @@ function update(dt){
   {const dsx=mouse.x-LW/2,dsy=mouse.y-(LH/2+2);
    P.aim=Math.atan2(2*dsy-dsx,dsx+2*dsy);P.face=dsx<0?-1:1;}
 
-  P.roll-=dt;P.inv-=dt;P.atk-=dt;P.sinceHit+=dt;
+  P.roll-=dt;P.inv-=dt;P.atk-=dt;P.sinceHit+=dt;P.rollIF-=dt;
   if(keys[' ']&&P.roll<=0&&!(P.stagger>0)&&spendStam(ROLL_COST)){
     let dx=ux,dy=uy;
     if(!mx&&!my){dx=Math.cos(P.aim);dy=Math.sin(P.aim)}
     P.dash={vx:dx*870,vy:dy*870,t:0.15};   // ~130px over 0.15s
-    P.roll=S.rollCD;P.inv=0.3;SFX.play('roll');
+    P.roll=S.rollCD;P.inv=Math.max(P.inv,ROLL_IFRAMES);P.rollIF=ROLL_IFRAMES;SFX.play('roll');
     burst(P.x,P.y,'#5d5059',16);burst(P.x,P.y,'#ffb347',6);
     keys[' ']=false;
   }
@@ -54,8 +55,13 @@ function update(dt){
     slide(P,P.dash.vx*dt,P.dash.vy*dt,10);P.dash.t-=dt;
     P.ghosts.push({x:P.x,y:P.y,anim:P.anim,animT:P.animT,face:P.face,life:0.22,max:0.22});
   }
+  (P.trail=P.trail||[]).push([P.x,P.y]);if(P.trail.length>7)P.trail.shift();   // for the speed lines (js/ambience.js)
   P.comboT-=dt;if(P.comboT<=0)P.comboStep=0;
-  if(P.lunge&&P.lunge.t>0){P.lunge.t-=dt;slide(P,Math.cos(P.lunge.a)*P.lunge.v*dt,Math.sin(P.lunge.a)*P.lunge.v*dt,10)}
+  if(P.lunge&&P.lunge.t>0){
+    P.lunge.t-=dt;slide(P,Math.cos(P.lunge.a)*P.lunge.v*dt,Math.sin(P.lunge.a)*P.lunge.v*dt,10);
+    if(P.lunge.dash)P.ghosts.push({x:P.x,y:P.y,anim:P.anim,animT:P.animT,face:P.face,life:0.2,max:0.2});
+    if(P.lunge.t<=0&&P.lunge.then){const f=P.lunge.then;P.lunge.then=null;f()}   // the chop lands at the end of its dash
+  }
   updateWeight(dt);
   if(mouse.down&&P.atk<=0)swing();
   P.fireCD-=dt;updateFire(dt);P.spinCD-=dt;updateHeal(dt);
@@ -117,12 +123,19 @@ function update(dt){
       if(Math.random()<dt*6)parts.push({x:e.x+rnd(-6,6),y:e.y-e.r,vx:rnd(-10,10),vy:rnd(-30,-15),life:.4,max:.4,c:COL.bone,s:1});
     }else if((d<Tt.aggro||e.warden)&&!e.dormant){
       if(e.type==='archer'){
-        if(d>170){vx=nx*e.spd;vy=ny*e.spd}
-        else if(d<120){vx=-nx*e.spd;vy=-ny*e.spd}
-        e.fire-=dt;
-        if(e.fire<=0&&d<620){
-          ebullets.push({x:e.x,y:e.y,vx:nx*190,vy:ny*190,life:3.5,dmg:(9+floor*2)*e.dmgMul,r:4,c:'#ffe6b0'});
-          e.fire=Tt.shoot;e.shotAnim=0.3;if(d<420)SFX.play('arrow');
+        // archers draw and aim first (a thin line shows where the arrow will fly), then loose it
+        // along that line. Step sideways while it aims and the arrow misses.
+        if(e.act==='wind'){
+          e.actT-=dt;
+          if(e.actT<=0){
+            ebullets.push({x:e.x,y:e.y,vx:e.lx*190,vy:e.ly*190,life:3.5,dmg:(9+floor*2)*e.dmgMul,r:4,c:COL.arrow});
+            e.act=null;e.fire=Tt.shoot;e.shotAnim=0.3;if(d<420)SFX.play('arrow');
+          }
+        }else{
+          if(d>170){vx=nx*e.spd;vy=ny*e.spd}
+          else if(d<120){vx=-nx*e.spd;vy=-ny*e.spd}
+          e.fire-=dt;
+          if(e.fire<=0&&d<620){e.act='wind';e.actT=e.windMax=ARCHER_AIM;e.lx=nx;e.ly=ny;if(d<420)SFX.play('chest')}
         }
       }else if(e.warden){
         [vx,vy]=wardenAI(e,d,nx,ny,dt);
@@ -139,7 +152,8 @@ function update(dt){
       if(e.act)e.act=null;
       e.wt-=dt;
       if(e.wt<=0){e.wt=rnd(1,3);e.wa=rnd(0,TAU)}
-      vx=Math.cos(e.wa)*e.spd*.3;vy=Math.sin(e.wa)*e.spd*.3;
+      // sleeping bosses stay put (a wandering Warden could wake through the gate and lock you out)
+      if(!e.dormant){vx=Math.cos(e.wa)*e.spd*.3;vy=Math.sin(e.wa)*e.spd*.3}
     }
     if(e.kbT>0){e.kbT-=dt;slide(e,e.kbx*dt,e.kby*dt,e.r*0.8);vx*=0.2;vy*=0.2}   // knocked back: barely steers
     slide(e,vx*dt,vy*dt,e.r*0.8);
@@ -160,7 +174,7 @@ function update(dt){
     }
     if(e.warden){
       const reach=bodyR(e)+PLAYER_BODY;if(d<reach&&!e.dormant)slide(P,nx*(reach-d),ny*(reach-d),10);
-    }else if(d<bodyR(e)+PLAYER_BODY&&e.touch<=0&&!(e.stun>0)){
+    }else if(e.touch<=0&&!(e.stun>0)&&biteLands(e,d,bodyR(e)+PLAYER_BODY,dt)){   // biters flash red first (js/enemies.js)
       const mult=1+(floor-1)*0.15;
       hurt(Tt.dmg*mult*e.dmgMul*(e.act==='lunge'?1.3:1));   // a landed lunge bites harder
       e.touch=0.7;

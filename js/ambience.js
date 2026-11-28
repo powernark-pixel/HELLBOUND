@@ -5,6 +5,7 @@
    Fog: soft blobs on a small canvas, tiled across the screen, stuck to the floor so it drifts as you walk.
    Motes: specks of dust floating around the knight, only visible where the light is.
    Drips: drops of blood sliding down the bloody wall faces. */
+const FOG_ALPHA=0.06;   // how thick the drifting fog is (was 0.2: Dave found the smoke too heavy)
 let fogCv=null;
 function fogCanvas(){
   if(fogCv)return fogCv;
@@ -46,4 +47,21 @@ function drawDrip(x,y,seed){
   ctx.fillStyle='#8f1a1f';ctx.fillRect(x,y-WALL_H+8,1,6);             // the stain it runs from
   if(t<0.55){const k=t/0.55,yy=y-WALL_H+14+k*k*(WALL_H-14);ctx.fillStyle='#c4302c';ctx.fillRect(x,Math.round(yy),1,2)}
   else if(t<0.7){ctx.fillStyle='#8f1a1f';ctx.fillRect(x-1,y,3,1)}
+}
+
+/* Speed lines: short streaks trailing the knight when he moves, long bright ones when he dashes
+   or chops, so his movement reads as fast and heavy. P.trail holds his last few positions. */
+const SPEED_MIN=14,SPEED_FULL=70;   // trail length (px over ~7 frames) where lines start, and where they're strongest
+function drawSpeedLines(S_,psx,psy){
+  const tr=P.trail;if(!tr||tr.length<3||dead)return;
+  const [ox,oy]=tr[0],mv=Math.hypot(P.x-ox,P.y-oy);if(mv<SPEED_MIN)return;
+  const [x0,y0]=S_(ox,oy),dx=psx-x0,dy=psy-y0,k=Math.min(1,(mv-SPEED_MIN)/(SPEED_FULL-SPEED_MIN));
+  ctx.save();ctx.lineWidth=1;
+  const rows=[-4,-10,-16,-22,-27];
+  rows.forEach((h,i)=>{
+    const wob=Math.sin(time*40+i*2.1),len=0.6+0.9*k+0.25*wob,sx=psx-dx*0.25+wob,sy=psy+h-dy*0.25;
+    ctx.globalAlpha=(0.15+0.55*k)*(i%2?0.7:1);ctx.strokeStyle=k>0.5?COL.fireHi:COL.bone;
+    ctx.beginPath();ctx.moveTo(Math.round(sx)+.5,Math.round(sy)+.5);ctx.lineTo(Math.round(sx-dx*len)+.5,Math.round(sy-dy*len)+.5);ctx.stroke();
+  });
+  ctx.restore();
 }

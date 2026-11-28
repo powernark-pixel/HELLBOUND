@@ -1,5 +1,18 @@
 /* HELLBOUND · js/skills.js · Skills: Blood Flask, Cleave, Fire Line
-   (Files load in the order listed in index.html and share one global scope.) */
+   (Files load in the order listed in index.html and share one global scope.)
+
+   Each button has one job in the Blood Altar run:
+     CLICK  sword combo: the default. Slash, then a heavy CHOP finisher for a single tough foe.
+     SPACE  roll: dodge THROUGH a hound's lunge, a brute's slam or an arrow (you're untouchable mid-roll).
+     Q      Fire Line: the answer to archers and lines of imps. It pierces, reaches far and spoils an archer's shot.
+     E      Cleave: when you're surrounded. Shoves the whole crowd away and staggers it so nothing can bite.
+     R      Blood Flask: when your health is low (the slot pulses red). Kills refill it. */
+
+// Pressing a skill that isn't ready shakes its slot and clunks, so a press is never silent
+function skillDeny(slot,why){
+  const el=$(slot);if(el){el.classList.remove('deny');void el.offsetWidth;el.classList.add('deny')}
+  SFX.play('ui');if(why)log(why,COL.bloodHi);
+}
 
 /* ----- BLOOD FLASK (R) -----
    Drink to heal 45% of max health over one second. Start each level with 3.
@@ -7,8 +20,8 @@
 const FLASK_MAX=3,FLASK_HEAL=0.45,FLASK_KILLS=6;
 function drinkFlask(){
   if(scene!=='game'||dead||paused||anyPanelOpen())return;
-  if(P.flasks<1){log('No blood flasks left. Kill to refill them.','#c4302c');return}
-  if(P.hp>=P.maxHp){log('Already at full health.','#c9a99a');return}
+  if(P.flasks<1){skillDeny('skFlask','No blood flasks left. Kill to refill them.');return}
+  if(P.hp>=P.maxHp){skillDeny('skFlask');log('Already at full health.',COL.text);return}
   P.flasks--;trialEvent('flask');P.healLeft+=P.maxHp*FLASK_HEAL;P.healT=1;
   SFX.play('drink');addText(P.x,P.y-30,'FLASK','#ff6a6a',1);
   for(let i=0;i<14;i++)parts.push({x:P.x+rnd(-8,8),y:P.y+rnd(-4,4),vx:rnd(-12,12),vy:rnd(-60,-25),life:rnd(.4,.8),max:.8,c:pick(['#c4302c','#ff6a6a','#8f1a1f']),s:rnd(1,2)});
@@ -27,10 +40,15 @@ function updateHeal(dt){
 
 /* ----- CLEAVE (E) -----
    A full spin of the blade: hits everything around you for 1.6x damage, shoves it away,
-   and you can't be hurt for a moment while you spin. */
+   staggers it (it can't bite and any attack it was winding up is cancelled), and you can't
+   be hurt for a moment while you spin. It's the button for when you're surrounded. */
 const SPIN_CD=6;
+const CLEAVE_SHOVE=380;       // how hard the crowd is thrown away (heavy demons get half)
+const CLEAVE_SHOVE_T=0.25;    // seconds they fly back (they can barely steer meanwhile)
+const CLEAVE_STAGGER=0.8;     // seconds a cleaved foe can't bite you
 function castSpin(){
-  if(scene!=='game'||dead||paused||anyPanelOpen()||P.spinCD>0)return;
+  if(scene!=='game'||dead||paused||anyPanelOpen())return;
+  if(P.spinCD>0){skillDeny('skSpin');return}
   P.spinCD=spinCdMax();P.inv=Math.max(P.inv,0.3);
   const R=S.range*1.4*(hasPerk('whirlwind')?1.2:1);
   swings.push({x:P.x,y:P.y,a:P.aim,life:.18,r:R,arc:TAU-0.01,oath:false});
@@ -40,7 +58,12 @@ function castSpin(){
   for(const e of enemies){
     if(e.dead||dist(e,P)>R+hurtR(e))continue;
     dealDamage(e,S.damage*1.6);
-    if(!isBig(e)&&!e.dead){const a=Math.atan2(e.y-P.y,e.x-P.x),k=e.type==='demon'?200:420;e.kbx=Math.cos(a)*k;e.kby=Math.sin(a)*k;e.kbT=0.16;e.act=null}
+    if(!isBig(e)&&!e.dead){
+      const a=Math.atan2(e.y-P.y,e.x-P.x),k=CLEAVE_SHOVE*(e.type==='demon'?0.5:1);
+      e.kbx=Math.cos(a)*k;e.kby=Math.sin(a)*k;e.kbT=CLEAVE_SHOVE_T;
+      e.act=null;e.touch=Math.max(e.touch,CLEAVE_STAGGER);   // the stagger: wind-up cancelled, no bite for a moment
+      for(let i=0;i<5;i++)parts.push({x:e.x+rnd(-5,5),y:e.y-e.r-4,vx:rnd(-30,30),vy:rnd(-40,-15),life:.45,max:.45,c:pick([COL.bone,COL.white]),s:1});   // dazed sparks
+    }
   }
   for(let i=0;i<24;i++){const a=i/24*TAU;parts.push({x:P.x+Math.cos(a)*R*0.7,y:P.y+Math.sin(a)*R*0.7,vx:Math.cos(a)*90,vy:Math.sin(a)*90,life:.3,max:.3,c:pick(['#fff1c2','#ffd27a','#5d5059']),s:1,ground:1})}
 }
@@ -48,14 +71,20 @@ function castSpin(){
 /* ----- FIRE LINE (Q or right-click) -----
    A wave of fire pillars rushes out in a straight line toward where you aim. Each pillar burns
    enemies it touches (once per wave). Walls stop it. With the PYRE trait (the Altar-Forged Blade)
-   it reaches twice as far, hits twice as hard and leaves burning ground. */
+   it reaches twice as far, hits twice as hard and leaves burning ground.
+   It pierces, so it's the answer to a line of imps, and it SPOILS AN ARCHER'S SHOT: an archer
+   it burns loses its aim and has to draw again. */
 const FIRE_CD=3.2,FIRE_CD_PYRE=2.5;
+const FIRE_LEN=260;           // how far the wave runs: far enough to reach the archers on their ledge
+const FIRE_LEN_PYRE=440;      // how far it runs with the PYRE trait
+const FIRE_SPOIL=1.4;         // seconds a burnt archer needs before it can start aiming again
 function fireCdMax(){return (hasTrait('pyre')?FIRE_CD_PYRE:FIRE_CD)*(hasPerk('emberheart')?0.7:1)}
 function castFireLine(){
-  if(scene!=='game'||dead||paused||anyPanelOpen()||P.fireCD>0)return;
+  if(scene!=='game'||dead||paused||anyPanelOpen())return;
+  if(P.fireCD>0){skillDeny('skFire');return}
   const pyre=hasTrait('pyre');
   P.fireCD=fireCdMax();
-  fireWaves.push({x:P.x,y:P.y,dx:Math.cos(P.aim),dy:Math.sin(P.aim),len:pyre?380:200,dist:10,next:16,hit:new Set(),
+  fireWaves.push({x:P.x,y:P.y,dx:Math.cos(P.aim),dy:Math.sin(P.aim),len:pyre?FIRE_LEN_PYRE:FIRE_LEN,dist:10,next:16,hit:new Set(),
     dmg:S.damage*(pyre?2.8:1.4),pyre});
   P.atkAnim=0.3;setAnim(P,'attack');P.animT=0;shake=Math.max(shake,0.2);SFX.play('fireline');
 }
@@ -71,6 +100,7 @@ function updateFire(dt){
       for(const e of enemies){
         if(e.dead||w.hit.has(e)||Math.hypot(e.x-px,e.y-py)>14+hurtR(e))continue;
         w.hit.add(e);dealDamage(e,w.dmg);
+        if(e.type==='archer'&&!e.dead){if(e.act==='wind')addText(e.x,e.y-e.r-14,'SPOILED',COL.fireHi,1);e.act=null;e.fire=Math.max(e.fire,FIRE_SPOIL)}
       }
       for(let i=0;i<3;i++)parts.push({x:px+rnd(-6,6),y:py+rnd(-6,6),vx:rnd(-20,20),vy:rnd(-60,-20),life:rnd(.4,.9),max:.9,c:pick(['#ff6a1a','#ffd27a','#a12a06']),s:rnd(1,2)});
       w.next+=16;

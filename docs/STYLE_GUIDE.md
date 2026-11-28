@@ -41,6 +41,7 @@ All colours have names in `js/style.js` (`COL.blood`, `COL.gold`...). Use the na
 | **Fire** | `fireDeep` `#a12a06`, `fire` `#ff6a1a`, `ember` `#ff7a2b`, `fireHi` `#ffd27a` | Fire Line, embers, lava, torches |
 | **Bone and ash** | `bone` `#d6cab2`, `boneLo` `#a89a84`, `text` `#c9a99a`, `ash` `#5d5059`, `ashDark` `#4a3f48` | text, stone, dust |
 | **Magic** | `volt` `#9ef0ff`, `voltDeep` `#5ad8ff`, `arcane` `#8fa8ff`, `perk` `#ff8ad8`, `voidC` `#b46bff`, `danger` `#ff4f6e` | one colour per kind of power, so a fight can be read at a glance |
+| **Enemy warnings** | `warnDeep` `#ff2a1a`, `warn` `#ff5a3a`, `warnHi` `#ff7a2a`, `arrow` `#ffe6b0` | danger zones on the floor (fill, blinking edge, filling core), archer aim lines; archer arrows |
 | **Outline** | `ink` `#0a0608` | the 1 px outline around every sprite |
 
 **Rule of thumb:** red means blood or danger, gold means reward or "go here", blue-white means electricity,
@@ -63,6 +64,20 @@ pale blue means stardust, pink means perks. Don't reuse a meaning colour for som
 - **Noita influence:** things that move a lot are drawn live, pixel by pixel, instead of from a sprite sheet: the Oculus, lightning, sparks, lava and blood pools, the vat. Sparks bounce, and lightning lights up the room.
 - **Warnings before damage:** every big enemy attack shows where it will land first (red lanes and circles, blue rings for electricity), with enough time to roll out.
 - **Readable at a glance:** if something matters (a drop, a warning, the way forward), it gets a dark halo or a light so it shows on any floor.
+- **Readable in a crowd:** the knight is redrawn as a pale outline when an enemy stands in front of him, he has a small health bar under his feet once hurt, warning edges are drawn again on top of enemies standing in them, and small damage numbers are quiet and short (crits and damage you take stay big).
+
+### One warning, one counter
+
+Every enemy tells you before it hurts you, and there is one clear answer to each.
+
+| Enemy | Warning | Counter |
+|---|---|---|
+| Rat, imp | flashes red and crouches for a moment before a bite | step back or roll during the flash |
+| Hound | growls and shivers; a red lane shows its run | step sideways out of the lane |
+| Archer | draws the bow; a red aim line grows toward you | step sideways off the line |
+| Demon | raises its fists; a red circle fills under it | roll out of the circle, then hit it while it recovers |
+| The Oculus | blue rings mark the spots and close to a point | leave the rings before they close |
+| The Warden | a red circle (slam) or red lanes (orbs) | get out of the circle / stand in the gap; hit him when the gold ring shows |
 
 ## 5. Code layout
 

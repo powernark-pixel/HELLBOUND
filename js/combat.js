@@ -84,23 +84,36 @@ function killEnemy(e){
   const B=BIGS[e.big]||BIGS.warden,title=`${(e.bossName||B.name).toUpperCase()} ${B.death}`;
   if(e===boss){
     openArena();
-    for(let k=0;k<3;k++)dropItem(e.x,e.y,3,floor+3);
+    for(const d of bloodDrops)collectDrop(d);   // the altar drinks every drop you left behind, so no trip back for them
+    dropItem(e.x,e.y,3,floor+3);   // one Epic-or-better: a single big moment beats a pile
     if(vatFull()){announce(title,'#ffe14f',2.5,'The stairs are unsealed. Follow the light');log('The stairs are unsealed. Follow the golden light.','#ffe14f')}
     else{announce(title,'#ffe14f',2.8,'Fill the blood vat to open the stairs');log(`${e.bossName} is dead, but the vat is only ${Math.floor(vat/vatNeed*100)}% full. Kill more.`,'#c4302c')}
   }else if(e.miniboss){
-    for(let k=0;k<2;k++)dropItem(e.x,e.y,2,floor+3);
+    dropItem(e.x,e.y,2,floor+3);   // one Rare-or-better
     stardust+=25;
     const next=level&&level.areas.find(a=>a.n===e.wakeArea+1&&!a.done);if(next)level.guide=next;   // light the way on
     announce(title,B.col,2.6,'+25 stardust');
-  }else if(Math.random()<Tt.drop*1.3){
-    dropItem(e.x,e.y,e.type==='demon'?2:0,floor+ri(0,3));
+  }else if(Math.random()<Tt.drop*LOOT_RATE){
+    dropItem(e.x,e.y,e.type==='demon'?2:1,floor+ri(0,3));   // never a plain Common: every drop is worth a look
   }
 }
-const ENEMY_DMG=0.75;   // all enemy damage is scaled by this (lower = easier)
+/* LOOT: items only drop from monsters, and rarely, so each drop is an event.
+   Dave found the old rate (1.3x) a flood of junk with no thrill. */
+const LOOT_RATE=0.45;   // multiplies each enemy type's drop chance in ET (js/data.js)
+const ENEMY_DMG=0.6;    // all enemy damage is scaled by this (lower = easier). Was 0.75; eased for now
+let deadAt=0;
+// back into the fight fast: after a short beat (so a held key or a panicked click can't skip the death)
+const RISE_DELAY=600;   // milliseconds (real time, so hit-stop can't stretch it)
+function tryRise(){if(dead&&performance.now()-deadAt>=RISE_DELAY){newGame();for(const k in keys)keys[k]=false;mouse.down=false;return true}return false}
+// a hit that the roll's untouchable moment swallowed: say so, so you learn the roll works
+function rollDodged(){
+  if(time-(P.dodgeAt||-9)<0.5)return;P.dodgeAt=time;
+  addText(P.x,P.y-28,'DODGE',COL.bone,1);burst(P.x,P.y,COL.bone,8);
+}
 function hurt(d,noIF){
   if(dead)return;
-  if(!noIF&&P.inv>0)return;
-  if(!noIF){d*=ENEMY_DMG*(hasPerk('ironhide')?0.88:1);P.inv=0.35}   // a moment of grace after each hit, so a pack can't shred you in one go
+  if(!noIF&&P.inv>0){if(P.rollIF>0)rollDodged();return}
+  if(!noIF){d*=ENEMY_DMG*(hasPerk('ironhide')?0.88:1);P.inv=0.35;P.hitFlash=0.3}   // a moment of grace after each hit, so a pack can't shred you in one go
   P.sinceHit=0;
   P.hurtT=0.3;                 // triggers the player's hurt animation
   let rem=d;
@@ -110,9 +123,9 @@ function hurt(d,noIF){
   if(!noIF)SFX.play('hurt');
   if(d>=4)bloodFx(P.x,P.y-6,'hit',Math.random()<.5);
   if(P.hp<=0){
-    P.hp=0;dead=true;setAnim(P,'death');SFX.play('death');
-    announce('THE KNIGHT FALLS','#c4302c',99,'Press R to rise again · Esc for the menu');
-    log('Press R to begin again','#ff4f6e');
+    P.hp=0;dead=true;deadAt=performance.now();setAnim(P,'death');SFX.play('death');
+    announce('THE KNIGHT FALLS','#c4302c',99,'R, Space or click to rise again · Esc for the menu');
+    log('Press R, Space or click to begin again','#ff4f6e');
   }
 }
 
@@ -122,9 +135,11 @@ function hurt(d,noIF){
    After the finisher there's a short recovery, then the combo starts over.
    Holding the mouse button chains them automatically: slash, CHOP, slash, CHOP... */
 const COMBO_WINDOW=0.6;
+const CHOP_DASH_V=560,CHOP_DASH_T=0.14;   // the heavy chop's dash: speed and duration (~78 px)
 const COMBO=[
-  {anim:'attack', anim_t:0.25,dmg:1,  arc:1,   reach:0, kb:1,  lunge:70, cd:0.8, trail:.18,grunt:'grunt',     whoosh:'swing'},
-  {anim:'attack2',anim_t:0.38,dmg:1.6,arc:1.25,reach:12,kb:1.7,lunge:190,cd:1.5,trail:.26,grunt:'gruntHeavy',whoosh:'swingHeavy'},
+  {anim:'attack', anim_t:0.25,dmg:1,  arc:1,   reach:0, kb:1,  lunge:70, lt:0.09,cd:0.8, trail:.18,grunt:'grunt',     whoosh:'swing'},
+  // the CHOP dashes forward first (about 2.5 tiles) and lands where the dash ends
+  {anim:'attack2',anim_t:0.38,dmg:1.6,arc:1.25,reach:12,kb:1.7,lunge:CHOP_DASH_V,lt:CHOP_DASH_T,cd:1.5,trail:.26,grunt:'gruntHeavy',whoosh:'swingHeavy'},
 ];
 // starting a swing: pay stamina, grunt, raise the sword. It lands after a short wind-up
 // (strikeSwing, called from js/weight.js), and you can barely move until it's done.
@@ -140,9 +155,15 @@ function swing(){
 }
 function strikeSwing({step,c,a}){
   if(dead)return;
-  P.lunge={a,v:c.lunge,t:0.09};   // a small step into the swing
   SFX.play(c.whoosh);
   const oath=hasTrait('oath')&&P.swings%5===0;
+  if(step===1){
+    // the CHOP dashes forward, then lands where you stop (brief i-frames carry you through a bite)
+    P.lunge={a,v:c.lunge,t:c.lt,dash:true,then:()=>landSwing(step,c,a,oath)};P.inv=Math.max(P.inv,c.lt+0.05);SFX.play('roll');
+  }else{P.lunge={a,v:c.lunge,t:c.lt};landSwing(step,c,a,oath)}   // a small step into the slash
+}
+function landSwing(step,c,a,oath){
+  if(dead)return;
   const R=S.range+c.reach,arc=S.arcDeg*c.arc;
   // the finisher sweeps the other way, so the two hits read as one flowing combo
   swings.push({x:P.x,y:P.y,a,life:c.trail,max:c.trail,r:R,arc:arc*Math.PI/180,oath,dir:step?-1:1,heavy:step===1});

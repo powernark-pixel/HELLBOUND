@@ -170,14 +170,41 @@ sk.fire ? ok('Q casts Fire Line') : fail('Q did not cast Fire Line');
 sk.flasks === 2 && sk.healed ? ok('R drinks a Blood Flask and heals') : fail('the Blood Flask did not work: ' + JSON.stringify(sk));
 sk.spin ? ok('E spins a Cleave') : fail('E did not Cleave');
 
+// 5c. every button has a reason: Cleave staggers a crowd, Fire Line spoils an archer's shot,
+//     the roll dodges, and the skill bar shows seconds left / shakes when a skill isn't ready
+const why = await page.evaluate(async () => {
+  const r = {};
+  r.secs = document.getElementById('skFireS').textContent !== '' && parseFloat(document.getElementById('skFireCd').style.height) > 0;
+  castFireLine(); r.deny = document.getElementById('skFire').classList.contains('deny');
+  P.flasks = 1; P.hp = P.maxHp * 0.2; P.healT = 0; updateHUD(); r.urge = document.getElementById('skFlask').classList.contains('urge');
+  enemies.length = 0; P.spinCD = 0; P.fireCD = 0;
+  const hound = spawnEnemy('hound', { x: P.x + 16, y: P.y, hpMul: 50 }); hound.act = 'wind'; hound.actT = 0.4;
+  castSpin(); r.stagger = hound.act === null && hound.touch >= 0.7 && hound.kbT > 0.2;
+  enemies.length = 0;
+  const archer = spawnEnemy('archer', { x: P.x + 60, y: P.y, hpMul: 50 }); archer.act = 'wind'; archer.actT = 0.6; archer.windMax = 0.6;
+  P.aim = Math.atan2(archer.y - P.y, archer.x - P.x); castFireLine();
+  await new Promise(res => setTimeout(res, 250));
+  r.spoiled = archer.act !== 'wind' && archer.fire > 0.5;
+  enemies.length = 0;
+  const hp = P.hp; P.rollIF = 0.3; P.inv = 0.3; hurt(10); r.dodge = P.hp === hp;
+  P.rollIF = 0; P.inv = 0; P.hp = P.maxHp;
+  return r;
+});
+why.secs ? ok('the skill bar shows a cooldown sweep and seconds left') : fail('no cooldown seconds on the skill bar');
+why.deny ? ok('pressing a skill on cooldown shakes its slot') : fail('no "not ready" feedback');
+why.urge ? ok('the flask slot pulses when health is low') : fail('flask slot did not pulse at low health');
+why.stagger ? ok('Cleave shoves, staggers and cancels a hound\'s lunge') : fail('Cleave did not stagger');
+why.spoiled ? ok('Fire Line spoils an archer\'s shot') : fail('Fire Line did not spoil the archer: ' + JSON.stringify(why));
+why.dodge ? ok('a hit during a roll is dodged') : fail('the roll did not dodge');
 // weight (js/weight.js): swings cost stamina, a missed chop staggers you, a landed chop stuns a foe
 const wt = await page.evaluate(() => {
+  const land = () => { if (P.lunge && P.lunge.then) { const f = P.lunge.then; P.lunge.then = null; P.lunge.t = 0; f(); } };   // skip the chop's dash
   P.stam = STAM_MAX; P.pend = null; P.stagger = 0; P.atk = 0; P.comboStep = 0; swing(); const spent = P.stam < STAM_MAX;
   P.pend = null; P.atk = 0; P.comboStep = 1; P.comboT = 1; P.stam = STAM_MAX;
   for (const e of enemies) if (Math.hypot(e.x - P.x, e.y - P.y) < 200) e.x += 2000;   // nothing to hit
-  swing(); P.pend.t = 0; updateWeight(0); const whiff = P.stagger > 0;
+  swing(); P.pend.t = 0; updateWeight(0); land(); const whiff = P.stagger > 0;
   const foe = spawnEnemy('imp', { x: P.x + Math.cos(P.aim) * 30, y: P.y + Math.sin(P.aim) * 30 }); foe.hp = foe.max = 9999;
-  P.stagger = 0; P.atk = 0; P.comboStep = 1; P.comboT = 1; P.stam = STAM_MAX; swing(); P.pend.t = 0; updateWeight(0);
+  P.stagger = 0; P.atk = 0; P.comboStep = 1; P.comboT = 1; P.stam = STAM_MAX; swing(); P.pend.t = 0; updateWeight(0); land();
   const stun = foe.stun > 0; foe.dead = true; P.stam = -5; P.atk = 0; P.stagger = 0; P.pend = null; swing(); const blocked = !P.pend;
   P.stam = STAM_MAX; P.stagger = 0; return { spent, whiff, stun, blocked };
 });
@@ -191,6 +218,57 @@ await page.click('#btnResume');
 // 7. play for a few seconds to catch errors inside the game loop
 await page.mouse.move(800, 360);
 await page.mouse.down(); await page.waitForTimeout(3000); await page.mouse.up();
+
+// 8. the core loop: telegraphs, the Warden's fight, dying and rising again
+await page.evaluate(() => { if (paused) togglePause(); });
+const loop = await page.evaluate(() => {
+  newGame();
+  const r = {};
+  // an archer aims (wind-up with a warning line) before it shoots
+  enemies = []; ebullets = [];
+  const a = spawnEnemy('archer', { x: P.x + 200, y: P.y }); a.fire = 0;
+  update(0.05); r.aims = a.act === 'wind' && ebullets.length === 0;
+  for (let i = 0; i < 14; i++) update(0.05);
+  r.shoots = ebullets.length === 1;
+  // a rat flashes red before its bite lands; the knight shows through an enemy in front of him
+  enemies = []; ebullets = []; P.inv = 0; P.sh = 0;
+  const rat = spawnEnemy('rat', { x: P.x + 6, y: P.y + 6 }), hp0 = P.hp;
+  P.sinceHit = 9; update(0.016); r.biteTell = rat.bite > 0 && P.hp === hp0 && P.sinceHit > 1;
+  for (let i = 0; i < 15; i++) update(0.016);
+  r.bites = P.sinceHit < 0.5;   // hurt() was called
+  enemies = []; spawnEnemy('demon', { x: P.x + 10, y: P.y + 10 }); draw(); r.xray = knightHidden;
+  enemies = []; draw(); r.noXray = !knightHidden;
+  enemies = []; P.hp = P.maxHp; P.inv = 0;
+  // the Warden's bar shows as soon as he wakes; he announces his second phase
+  enemies = []; ebullets = [];
+  boss = spawnBig('W', P.x + 300, P.y, true); boss.dormant = false;
+  updateHUD && updateHUD(); r.bar = getComputedStyle(document.getElementById('bossbar')).display !== 'none';
+  boss.hp = boss.max * 0.4; update(0.016);
+  r.enraged = !!boss.enraged && /ENRAGED/.test(document.getElementById('banner').textContent);
+  // his death draws every blood drop left on the floor into the vat
+  bloodDrops.push({ x: P.x + 900, y: P.y, vx: 0, vy: 0, z: 0, vz: 0, v: 5, ph: 0, age: 9 });
+  killEnemy(boss); r.swept = bloodDrops.every(d => d.got);
+  // loot only drops from monsters: a chest pays stardust, not items
+  ground = []; chests.push({ x: P.x, y: P.y, open: false }); const sd = stardust; openChest();
+  r.chestNoLoot = ground.length === 0 && stardust > sd;
+  // dying: Space after a short beat starts a new run
+  P.inv = 0; hurt(99999); r.dead = dead;
+  return r;
+});
+loop.aims ? ok('archers aim with a warning before shooting') : fail('archer did not wind up: ' + JSON.stringify(loop));
+loop.shoots ? ok('archers shoot after aiming') : fail('archer never shot');
+loop.biteTell && loop.bites ? ok('rats flash red before a bite, then bite') : fail('bite tell broken: ' + JSON.stringify(loop));
+loop.xray && loop.noXray ? ok('the knight shows through an enemy standing in front of him') : fail('knight outline broken: ' + JSON.stringify(loop));
+loop.bar ? ok('the Warden\'s bar shows as soon as he wakes') : fail('no Warden bar on waking');
+loop.enraged ? ok('the Warden announces his second phase') : fail('no enrage announcement');
+loop.chestNoLoot ? ok('chests give stardust, not item drops') : fail('a chest dropped items');
+loop.swept ? ok('the Warden\'s death collects all spilled blood') : fail('blood left on the floor after the Warden');
+await page.keyboard.press(' ');
+const early = await page.evaluate(() => dead);
+await page.waitForTimeout(700);
+await page.keyboard.press(' ');
+const risen = await page.evaluate(() => !dead && P.hp > 0);
+loop.dead && early && risen ? ok('Space rises again after a short beat') : fail(`rise again failed (dead ${loop.dead}, held ${early}, risen ${risen})`);
 
 for (const e of errors) fail(e);
 await browser.close();
