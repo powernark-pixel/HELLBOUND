@@ -170,6 +170,19 @@ sk.fire ? ok('Q casts Fire Line') : fail('Q did not cast Fire Line');
 sk.flasks === 2 && sk.healed ? ok('R drinks a Blood Flask and heals') : fail('the Blood Flask did not work: ' + JSON.stringify(sk));
 sk.spin ? ok('E spins a Cleave') : fail('E did not Cleave');
 
+// weight (js/weight.js): swings cost stamina, a missed chop staggers you, a landed chop stuns a foe
+const wt = await page.evaluate(() => {
+  P.stam = STAM_MAX; P.pend = null; P.stagger = 0; P.atk = 0; P.comboStep = 0; swing(); const spent = P.stam < STAM_MAX;
+  P.pend = null; P.atk = 0; P.comboStep = 1; P.comboT = 1; P.stam = STAM_MAX;
+  for (const e of enemies) if (Math.hypot(e.x - P.x, e.y - P.y) < 200) e.x += 2000;   // nothing to hit
+  swing(); P.pend.t = 0; updateWeight(0); const whiff = P.stagger > 0;
+  const foe = spawnEnemy('imp', { x: P.x + Math.cos(P.aim) * 30, y: P.y + Math.sin(P.aim) * 30 }); foe.hp = foe.max = 9999;
+  P.stagger = 0; P.atk = 0; P.comboStep = 1; P.comboT = 1; P.stam = STAM_MAX; swing(); P.pend.t = 0; updateWeight(0);
+  const stun = foe.stun > 0; foe.dead = true; P.stam = -5; P.atk = 0; P.stagger = 0; P.pend = null; swing(); const blocked = !P.pend;
+  P.stam = STAM_MAX; P.stagger = 0; return { spent, whiff, stun, blocked };
+});
+wt.spent && wt.whiff && wt.stun && wt.blocked ? ok('swings cost stamina, a missed chop staggers, a landed chop stuns, and you cannot swing when winded') : fail('weight is wrong: ' + JSON.stringify(wt));
+
 // 6. pause menu
 await page.keyboard.press('Escape');
 (await page.isVisible('#pausePanel')) ? ok('Escape opens the pause menu') : fail('Escape did not open the pause menu');
