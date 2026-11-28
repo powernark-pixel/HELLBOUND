@@ -101,7 +101,7 @@ function drawIso(){
   isoLights.length=0;
   const light=(x,y,r,i)=>{const [sx,sy]=S_(x,y);isoLights.push(sx,sy,r,i)};
   addLight=(x,y,r,i=1,screen)=>{if(screen)isoLights.push(x,y,r,i);else light(x,y,r,i)};
-  light(P.x,P.y,200*flick,1);
+  light(P.x,P.y,(level&&level.safe?200:MURK_LIGHT)*flick,1);   // murk: a smaller light in the levels (js/weight.js)
   // visible range of tiles (screen corners back to world, plus a margin for wall height)
   const W=(sx,sy)=>{const X=sx-camX,Y=sy-camY;return [X+2*Y,2*Y-X]};
   const c=[W(-40,-60),W(LW+40,-60),W(-40,LH+60),W(LW+40,LH+60)];
@@ -284,7 +284,7 @@ function drawIso(){
   // ---- 5. LIGHTING: ellipses lying on the ground ----
   lctx.globalCompositeOperation='source-over';
   lctx.clearRect(0,0,lc.width,lc.height);
-  lctx.fillStyle=level&&level.safe?'rgba(4,1,4,0.5)':'rgba(4,1,4,0.9)';lctx.fillRect(0,0,lc.width,lc.height);
+  lctx.fillStyle=level&&level.safe?'rgba(4,1,4,0.5)':`rgba(4,1,4,${MURK_DARK})`;lctx.fillRect(0,0,lc.width,lc.height);
   lctx.globalCompositeOperation='destination-out';
   for(let i=0;i<isoLights.length;i+=4){
     const lx=isoLights[i]/2,ly=isoLights[i+1]/2,lr=isoLights[i+2]*0.42,li=isoLights[i+3];
@@ -304,6 +304,7 @@ function drawIso(){
   wg.addColorStop(0,'#ff9a4a');wg.addColorStop(1,'#3a0a10');
   ctx.fillStyle=wg;ctx.fillRect(0,0,LW,LH);ctx.restore();
 
+  drawStamina(psx,psy);   // the stamina bar under the knight (js/weight.js)
   // ---- 6. TEXT ABOVE THE DARKNESS: damage numbers and shack prompts ----
   ctx.save();ctx.textAlign='center';
   for(const t of texts){

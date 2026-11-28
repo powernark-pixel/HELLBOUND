@@ -24,6 +24,7 @@ A gothic dark-fantasy dungeon crawler for the browser. Play it at https://powern
   | `perks.js` | perks offered by the reward chest |
   | `engine.js` | the Stardust Engine: stardust → +1% weapon stats |
   | `liquids.js` | lava and blood pools |
+  | `weight.js` | the heavy feel: stamina, swings with a wind-up, staggers, and how dark the levels are |
   | `trials.js` | trials: optional challenges per level that earn blood sigils, which grow the vessel |
   | `blood.js` | blood drops from kills, the vat vessel on the right edge, and the blood syringe (V to inject a surge) |
   | `enemies.js` | hound lunge, demon slam, the Warden's fight, ground warnings |

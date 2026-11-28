@@ -30,7 +30,8 @@ function update(dt){
   if(mx||my){const wx=mx+2*my,wy=2*my-mx;mx=wx;my=wy}
   const ml=Math.hypot(mx,my)||1;
   const ux=mx/ml,uy=my/ml;
-  const tvx=(mx||my)?ux*S.spd:0,tvy=(mx||my)?uy*S.spd:0;
+  const spd=S.spd*moveMul();   // swinging, winded or staggered: slower (js/weight.js)
+  const tvx=(mx||my)?ux*spd:0,tvy=(mx||my)?uy*spd:0;
   P.vx+=(tvx-P.vx)*Math.min(1,dt*10);
   P.vy+=(tvy-P.vy)*Math.min(1,dt*10);
   slide(P,P.vx*dt,P.vy*dt,10);
@@ -40,7 +41,7 @@ function update(dt){
    P.aim=Math.atan2(2*dsy-dsx,dsx+2*dsy);P.face=dsx<0?-1:1;}
 
   P.roll-=dt;P.inv-=dt;P.atk-=dt;P.sinceHit+=dt;
-  if(keys[' ']&&P.roll<=0){
+  if(keys[' ']&&P.roll<=0&&!(P.stagger>0)&&spendStam(ROLL_COST)){
     let dx=ux,dy=uy;
     if(!mx&&!my){dx=Math.cos(P.aim);dy=Math.sin(P.aim)}
     P.dash={vx:dx*870,vy:dy*870,t:0.15};   // ~130px over 0.15s
@@ -48,12 +49,14 @@ function update(dt){
     burst(P.x,P.y,'#5d5059',16);burst(P.x,P.y,'#ffb347',6);
     keys[' ']=false;
   }
+  if(keys[' ']&&P.stam<=0)keys[' ']=false;   // too winded to roll
   if(P.dash&&P.dash.t>0){
     slide(P,P.dash.vx*dt,P.dash.vy*dt,10);P.dash.t-=dt;
     P.ghosts.push({x:P.x,y:P.y,anim:P.anim,animT:P.animT,face:P.face,life:0.22,max:0.22});
   }
   P.comboT-=dt;if(P.comboT<=0)P.comboStep=0;
   if(P.lunge&&P.lunge.t>0){P.lunge.t-=dt;slide(P,Math.cos(P.lunge.a)*P.lunge.v*dt,Math.sin(P.lunge.a)*P.lunge.v*dt,10)}
+  updateWeight(dt);
   if(mouse.down&&P.atk<=0)swing();
   P.fireCD-=dt;updateFire(dt);P.spinCD-=dt;updateHeal(dt);
 
@@ -109,7 +112,10 @@ function update(dt){
     const nx=dx/d,ny=dy/d;
     e.touch-=dt;e.flash-=dt;e.animT+=dt;
     let vx=0,vy=0;
-    if((d<Tt.aggro||e.warden)&&!e.dormant){
+    if(e.stun>0){   // staggered by a heavy chop: reels, can't act (js/weight.js)
+      e.stun-=dt;vx=-nx*20;vy=-ny*20;
+      if(Math.random()<dt*6)parts.push({x:e.x+rnd(-6,6),y:e.y-e.r,vx:rnd(-10,10),vy:rnd(-30,-15),life:.4,max:.4,c:COL.bone,s:1});
+    }else if((d<Tt.aggro||e.warden)&&!e.dormant){
       if(e.type==='archer'){
         if(d>170){vx=nx*e.spd;vy=ny*e.spd}
         else if(d<120){vx=-nx*e.spd;vy=-ny*e.spd}
@@ -154,7 +160,7 @@ function update(dt){
     }
     if(e.warden){
       const reach=bodyR(e)+PLAYER_BODY;if(d<reach&&!e.dormant)slide(P,nx*(reach-d),ny*(reach-d),10);
-    }else if(d<bodyR(e)+PLAYER_BODY&&e.touch<=0){
+    }else if(d<bodyR(e)+PLAYER_BODY&&e.touch<=0&&!(e.stun>0)){
       const mult=1+(floor-1)*0.15;
       hurt(Tt.dmg*mult*e.dmgMul*(e.act==='lunge'?1.3:1));   // a landed lunge bites harder
       e.touch=0.7;
