@@ -206,6 +206,17 @@ as its own focused piece of work.
   - **Few enemies, each a threat:** fewer foes, but each one able to kill you if you're careless.
 - Question: how far toward this? A full "slow and heavy" mode would change the whole game; a darker,
   heavier level (a crypt or catacomb) could try it out first.
+- *(First pass built: stamina for swings and rolls, a wind-up before each swing lands, slow movement
+  while swinging, a stagger when a heavy chop misses, ordinary foes stunned by a chop that lands, and
+  darker levels with a smaller light. All the numbers are at the top of `js/weight.js`.)*
+
+### 27. Saloons: cowboy levels
+- Western levels: a **saloon** (swinging doors, a bar to vault, a piano, a balcony with shooters),
+  a dusty main street, a mine, a church on the hill. Ties in with the **gunslinger** class idea.
+- In the heavy, murky feel: dim oil lamps and smoke; few enemies but each deadly; a slow, weighty
+  revolver (six shots, a slow reload you have to commit to, like a heavy swing).
+- Question: is the West one of hell's circles (a damned frontier town), a side level, or a separate
+  world above ground (like the gardens and the mansion)?
 
 ---
 
